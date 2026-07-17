@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FCA/PCA CI Selection Tool</title>
+<style>
+  :root {
+    --bg: #0b0e14;
+    --surface: #111520;
+    --border: #1e2a42;
+    --accent: #00d4ff;
+    --accent2: #ff6b35;
+    --warn: #ffd166;
+    --success: #06d6a0;
+    --danger: #ef476f;
+    --text: #c8d6f0;
+    --text-dim: #5a7299;
+    --text-bright: #e8f0ff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .container { max-width: 860px; margin: 0 auto; padding: 40px 24px 80px; position: relative; z-index: 1; }
+  .header { border-left: 3px solid var(--accent); padding-left: 20px; margin-bottom: 40px; }
+  .header .label { font-size: 11px; letter-spacing: 3px; color: var(--accent); text-transform: uppercase; margin-bottom: 6px; font-weight: 600; }
+  .header h1 { font-size: clamp(26px, 5vw, 44px); font-weight: 800; color: var(--text-bright); line-height: 1.1; letter-spacing: 1px; text-transform: uppercase; }
+  .header p { margin-top: 10px; color: var(--text-dim); font-size: 14px; max-width: 560px; }
+  .def-card { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent2); padding: 18px 22px; margin-bottom: 36px; }
+  .def-card .def-label { font-size: 10px; letter-spacing: 2px; color: var(--accent2); text-transform: uppercase; margin-bottom: 8px; font-weight: 700; }
+  .def-card p { font-size: 13.5px; color: var(--text); line-height: 1.75; }
+  .part-banner { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; font-weight: 700; padding: 6px 12px; margin-bottom: 12px; display: inline-block; border: 1px solid; }
+  .part-a { color: var(--accent); border-color: rgba(0,212,255,0.3); background: rgba(0,212,255,0.06); }
+  .part-b { color: var(--danger); border-color: rgba(239,71,111,0.3); background: rgba(239,71,111,0.06); }
+  .part-c { color: var(--warn); border-color: rgba(255,209,102,0.3); background: rgba(255,209,102,0.06); }
+  .step-indicator { display: flex; align-items: center; gap: 8px; margin-bottom: 28px; font-size: 12px; color: var(--text-dim); flex-wrap: wrap; }
+  .step-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); transition: background 0.3s; flex-shrink: 0; }
+  .step-dot.active { background: var(--accent); }
+  .step-dot.done-yes { background: var(--success); }
+  .step-dot.done-no { background: var(--text-dim); }
+  .question-card { background: var(--surface); border: 1px solid var(--border); padding: 28px; animation: slideIn 0.25s ease; }
+  @keyframes slideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .question-header { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 18px; }
+  .q-num { font-size: 10px; color: var(--accent); background: rgba(0,212,255,0.08); border: 1px solid rgba(0,212,255,0.2); padding: 4px 9px; white-space: nowrap; margin-top: 4px; letter-spacing: 1px; font-weight: 700; flex-shrink: 0; }
+  .question-text { font-size: 20px; font-weight: 700; color: var(--text-bright); line-height: 1.3; }
+  .question-sub { font-size: 13px; color: var(--text-dim); margin-top: 8px; line-height: 1.7; padding: 10px 14px; background: rgba(255,255,255,0.02); border-left: 2px solid var(--border); }
+  .criterion-ref { font-size: 11px; color: var(--accent2); background: rgba(255,107,53,0.08); border: 1px solid rgba(255,107,53,0.2); padding: 3px 8px; display: inline-block; margin-top: 12px; font-weight: 600; letter-spacing: 1px; }
+  .answer-buttons { display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap; align-items: center; }
+  .btn { font-size: 14px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 11px 28px; border: none; cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 7px; font-family: inherit; }
+  .btn-yes { background: rgba(6,214,160,0.12); color: var(--success); border: 1px solid rgba(6,214,160,0.35); }
+  .btn-yes:hover { background: rgba(6,214,160,0.22); border-color: var(--success); transform: translateY(-1px); }
+  .btn-no { background: rgba(239,71,111,0.1); color: var(--danger); border: 1px solid rgba(239,71,111,0.3); }
+  .btn-no:hover { background: rgba(239,71,111,0.2); border-color: var(--danger); transform: translateY(-1px); }
+  .btn-back { background: transparent; color: var(--text-dim); border: 1px solid var(--border); margin-left: auto; font-size: 12px; padding: 9px 18px; }
+  .btn-back:hover { color: var(--text); border-color: var(--text-dim); }
+  .btn-reset { background: transparent; color: var(--text-dim); border: 1px solid var(--border); font-size: 12px; padding: 9px 18px; }
+  .btn-reset:hover { color: var(--accent); border-color: var(--accent); }
+  .progress-bar { height: 2px; background: var(--border); margin-bottom: 28px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--success)); transition: width 0.4s ease; }
+  .status-strip { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+  .status-chip { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; font-weight: 700; padding: 3px 10px; border: 1px solid var(--border); color: var(--text-dim); }
+  .status-chip.hit-a { color: var(--accent); border-color: rgba(0,212,255,0.35); background: rgba(0,212,255,0.08); }
+  .status-chip.hit-b { color: var(--danger); border-color: rgba(239,71,111,0.35); background: rgba(239,71,111,0.08); }
+  .status-chip.hit-c { color: var(--warn); border-color: rgba(255,209,102,0.35); background: rgba(255,209,102,0.08); }
+  .result-card { padding: 30px; animation: slideIn 0.3s ease; }
+  .result-ci { background: rgba(6,214,160,0.05); border: 1px solid rgba(6,214,160,0.3); border-top: 3px solid var(--success); }
+  .result-no-ci { background: rgba(239,71,111,0.05); border: 1px solid rgba(239,71,111,0.25); border-top: 3px solid var(--danger); }
+  .result-consider { background: rgba(255,209,102,0.05); border: 1px solid rgba(255,209,102,0.25); border-top: 3px solid var(--warn); }
+  .result-badge { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; padding: 4px 12px; display: inline-block; margin-bottom: 14px; font-weight: 700; }
+  .badge-ci { background: rgba(6,214,160,0.15); color: var(--success); }
+  .badge-no-ci { background: rgba(239,71,111,0.15); color: var(--danger); }
+  .badge-consider { background: rgba(255,209,102,0.15); color: var(--warn); }
+  .result-title { font-size: 30px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; color: var(--text-bright); }
+  .result-desc { color: var(--text); font-size: 14px; line-height: 1.8; margin-bottom: 18px; }
+  .triggered-list { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .tl-label { font-size: 10px; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 10px; font-weight: 700; }
+  .triggered-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 13px; color: var(--text); }
+  .triggered-item:last-child { border-bottom: none; }
+  .ti-ref { font-size: 10px; color: var(--accent2); background: rgba(255,107,53,0.1); padding: 2px 7px; white-space: nowrap; margin-top: 2px; font-weight: 700; letter-spacing: 1px; flex-shrink: 0; }
+  .next-steps { margin-top: 20px; padding: 16px 18px; background: rgba(0,212,255,0.04); border: 1px solid rgba(0,212,255,0.15); }
+  .ns-label { font-size: 10px; letter-spacing: 2px; color: var(--accent); text-transform: uppercase; margin-bottom: 10px; font-weight: 700; }
+  .next-steps ul { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+  .next-steps li { font-size: 13px; color: var(--text); padding-left: 18px; position: relative; line-height: 1.6; }
+  .next-steps li::before { content: '>'; position: absolute; left: 0; color: var(--accent); font-weight: 700; }
+  .safety-note { margin-top: 16px; padding: 14px 18px; background: rgba(239,71,111,0.06); border: 1px solid rgba(239,71,111,0.25); font-size: 13px; color: var(--text); line-height: 1.7; }
+  .safety-note .sn-label { font-size: 10px; letter-spacing: 2px; color: var(--danger); text-transform: uppercase; margin-bottom: 8px; font-weight: 700; }
+  .result-actions { display: flex; gap: 12px; margin-top: 22px; flex-wrap: wrap; }
+  .answers-trail { margin-bottom: 18px; display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+  .trail-label { font-size: 10px; color: var(--text-dim); letter-spacing: 1px; text-transform: uppercase; margin-right: 4px; }
+  .trail-item { font-size: 10px; padding: 3px 8px; font-weight: 700; letter-spacing: 1px; }
+  .trail-yes { background: rgba(6,214,160,0.1); color: var(--success); border: 1px solid rgba(6,214,160,0.2); }
+  .trail-no { background: rgba(239,71,111,0.1); color: var(--danger); border: 1px solid rgba(239,71,111,0.2); }
+  .footer-note { margin-top: 40px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--border); font-size: 12px; color: var(--text-dim); line-height: 1.7; }
+  @media (max-width: 600px) { .btn-back { margin-left: 0; } .question-header { flex-direction: column; gap: 8px; } }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="label">Configuration Audit Process &middot; Appendix C &middot; Decision Tool</div>
+    <h1>FCA/PCA<br>CI Selection</h1>
+    <p>Determine whether a Configuration Item should be designated for Functional and/or Physical Configuration Audit per the Configuration Audit Process (FCA/PCA), Appendix C.</p>
+  </div>
+  <div class="def-card">
+    <div class="def-label">When to run this assessment &mdash; &sect;5.2.1 / Appendix C</div>
+    <p>Complete one assessment per CI at <strong>initial audit planning</strong>, at each <strong>CM-plan revision</strong>, and on any <strong>Part D trigger event</strong>: substantive design, process, facility, tooling, or supplier change (SM-0001 MoC); new quality escape or safety event traceable to the CI; CSA reconciliation anomaly; hazard log revision adding a risk control to the CI. Record the result and rationale for every CI evaluated &mdash; designated or not &mdash; and attach it to the Audit Designation Assessment Record (Section 6).</p>
+  </div>
+  <div id="tool-area"></div>
+  <div class="footer-note">
+    <strong>Reference:</strong> Configuration Audit Process (FCA/PCA), &sect;5.2.1 Audit Designation and Appendix C &mdash; FCA/PCA CI Selection Checklist. Selection of the audit type (FCA, PCA, both, or delta audit of open scope) follows the contract scope and program judgment; this tool determines whether designation is required. It is a decision aid only and does not substitute for engineering judgment, System Safety concurrence, or contractual requirements.
+  </div>
+</div>
+<script>
+var Q = [
+  { id:'A1', part:'a', partLabel:'Part A — Mandatory Designation', num:'A1 / CONTRACT',
+    text:'Is the CI identified in the contract, SOW, or CMP as requiring FCA and/or PCA?',
+    sub:'Contract designation is the first source of audit designation. If the CI is contractually called out, designation is mandatory and the remaining parts only determine whether risk factors expand the audit scope.',
+    ref:'Appendix C \u00b7 A1 / \u00a75.2.1' },
+  { id:'A2', part:'a', partLabel:'Part A — Mandatory Designation', num:'A2 / BASELINE',
+    text:'Is the CI an Acquirer-controlled CI whose product baseline the Acquirer will establish?',
+    sub:'PCA completion establishes the Product Baseline (PBL). If the Acquirer will establish this CI\u2019s product baseline, a PCA is required to do so.',
+    ref:'Appendix C \u00b7 A2 / \u00a75.2.1' },
+  { id:'B1', part:'b', partLabel:'Part B — Safety Criticality (SM-0001)', num:'B1 / HAZARD CONTROLS',
+    text:'Does the CI implement or host one or more hazard risk controls recorded in the SM-0001 hazard log?',
+    sub:'CIs carrying hazard risk controls are presumptively designated. Check the hazard log for controls allocated to this CI or to functions it hosts.',
+    ref:'Appendix C \u00b7 B1' },
+  { id:'B2', part:'b', partLabel:'Part B — Safety Criticality (SM-0001)', num:'B2 / CRITERION (B)',
+    text:'Is the CI a criterion-(b) CI \u2014 failure might result in serious injury, loss of life, or loss of primary system capability?',
+    sub:'Criterion-(b) per [XXX-CM-PROC-001] \u00a75.3. Consider both direct failure modes and cascading effects.',
+    ref:'Appendix C \u00b7 B2' },
+  { id:'B3', part:'b', partLabel:'Part B — Safety Criticality (SM-0001)', num:'B3 / SEVERITY',
+    text:'Is the severity of the CI\u2019s credible failure consequence in the highest two severity categories of the program safety risk matrix?',
+    sub:'E.g., catastrophic/hazardous; matrix levels 4\u20135. Use the pre-anchored severity where the CM Floor Register records one.',
+    ref:'Appendix C \u00b7 B3' },
+  { id:'B4', part:'b', partLabel:'Part B — Safety Criticality (SM-0001)', num:'B4 / SW / FW',
+    text:'Is the CI safety-critical software, or firmware embedded in a safety-critical device?',
+    sub:'Includes CSCIs performing safety functions and firmware whose host device is safety-critical, regardless of the firmware\u2019s own function.',
+    ref:'Appendix C \u00b7 B4' },
+  { id:'B5', part:'b', partLabel:'Part B — Safety Criticality (SM-0001)', num:'B5 / SPOF',
+    text:'Is the CI a single-point-of-failure item for a safety-related function?',
+    sub:'No redundancy or alternate means exists: failure of this one item defeats the safety-related function.',
+    ref:'Appendix C \u00b7 B5' },
+  { id:'C1', part:'c', partLabel:'Part C — Risk Factors', num:'C1 / DESIGN MATURITY',
+    text:'Is the design new or novel rather than proven heritage?',
+    sub:'First-of-type, new technology, or unproven margins. Heritage designs with substantial modification should be treated as new.',
+    ref:'Appendix C \u00b7 C1' },
+  { id:'C2', part:'c', partLabel:'Part C — Risk Factors', num:'C2 / DESIGN CHANGE',
+    text:'Has the CI undergone substantive design change since its last audit?',
+    sub:'A substantive design change is an SM-0001 management-of-change trigger and a Part D reassessment event in its own right.',
+    ref:'Appendix C \u00b7 C2' },
+  { id:'C3', part:'c', partLabel:'Part C — Risk Factors', num:'C3 / MFG CHANGE',
+    text:'Is there a new or changed manufacturing source, process, facility, or tooling for the CI?',
+    sub:'Production risk factor: transferred lines, new facilities, altered processes, or replacement tooling can break the as-designed/as-built correspondence audits exist to verify.',
+    ref:'Appendix C \u00b7 C3' },
+  { id:'C4', part:'c', partLabel:'Part C — Risk Factors', num:'C4 / SUB-TIER',
+    text:'Is there a new or changed sub-tier supplier for the CI or its critical components?',
+    sub:'Includes second-source qualification and supplier substitutions at any tier feeding critical components.',
+    ref:'Appendix C \u00b7 C4' },
+  { id:'C5', part:'c', partLabel:'Part C — Risk Factors', num:'C5 / HISTORY',
+    text:'Does the CI or its production line have a history of quality escapes, nonconformances, FOD findings, or subcontractor disclosures?',
+    sub:'SM-0001 safety data sources. Consider findings against the production line even where not attributed to this specific CI.',
+    ref:'Appendix C \u00b7 C5' },
+  { id:'C6', part:'c', partLabel:'Part C — Risk Factors', num:'C6 / WORK / DATA FINDINGS',
+    text:'Have findings of work performed not in accordance with approved data, or of inaccurate, incomplete, or ambiguous manufacturing data, been recorded against the CI?',
+    sub:'SM-0001 safety data. These findings indicate the released data or its execution cannot be relied on without audit verification.',
+    ref:'Appendix C \u00b7 C6' },
+  { id:'C7', part:'c', partLabel:'Part C — Risk Factors', num:'C7 / CSA HEALTH',
+    text:'Do CSA reconciliation health indicators show anomalies for the CI?',
+    sub:'As-designed/as-built delta aging, unincorporated-change backlog, or serial/effectivity discrepancies \u2014 indicating the at-scale reconciliation may not be functioning for this CI: the condition audits exist to detect.',
+    ref:'Appendix C \u00b7 C7' },
+  { id:'C8', part:'c', partLabel:'Part C — Risk Factors', num:'C8 / AUDIT HISTORY',
+    text:'Has the CI never received an FCA/PCA, or does a prior audit have an open delta or unresolved action items?',
+    sub:'A never-audited CI has no verified baseline correspondence; open deltas or unresolved RFAs mean the prior audit scope was never closed.',
+    ref:'Appendix C \u00b7 C8' }
+];
+
+var CL = {
+  'A1': { ref:'A1', text:'Identified in contract, SOW, or CMP as requiring FCA and/or PCA' },
+  'A2': { ref:'A2', text:'Acquirer-controlled CI \u2014 PCA required to establish the Product Baseline' },
+  'B1': { ref:'B1', text:'Implements or hosts hazard risk controls in the SM-0001 hazard log' },
+  'B2': { ref:'B2', text:'Criterion-(b) CI \u2014 failure might cause serious injury, loss of life, or loss of primary capability' },
+  'B3': { ref:'B3', text:'Credible failure consequence in highest two severity categories (levels 4\u20135)' },
+  'B4': { ref:'B4', text:'Safety-critical software or firmware in a safety-critical device' },
+  'B5': { ref:'B5', text:'Single point of failure for a safety-related function' },
+  'C1': { ref:'C1', text:'New or novel design rather than proven heritage' },
+  'C2': { ref:'C2', text:'Substantive design change since last audit (SM-0001 MoC trigger)' },
+  'C3': { ref:'C3', text:'New or changed manufacturing source, process, facility, or tooling' },
+  'C4': { ref:'C4', text:'New or changed sub-tier supplier for CI or critical components' },
+  'C5': { ref:'C5', text:'History of quality escapes, nonconformances, FOD findings, or subcontractor disclosures' },
+  'C6': { ref:'C6', text:'Findings of work not per approved data, or inaccurate/incomplete/ambiguous manufacturing data' },
+  'C7': { ref:'C7', text:'CSA reconciliation health anomalies (delta aging, change backlog, serial/effectivity discrepancies)' },
+  'C8': { ref:'C8', text:'Never audited, or prior audit has open delta or unresolved action items' }
+};
+
+var S = { qIdx:0, history:[] };
+
+function yesIds(prefix) {
+  var out=[];
+  for(var i=0;i<S.history.length;i++)
+    if(S.history[i].a==='yes' && S.history[i].id.charAt(0)===prefix) out.push(S.history[i].id);
+  return out;
+}
+
+function trail() {
+  if(!S.history.length) return '';
+  var h='<div class="answers-trail"><span class="trail-label">Path:</span>';
+  for(var i=0;i<S.history.length;i++) h+='<span class="trail-item trail-'+S.history[i].a+'">'+S.history[i].id+': '+S.history[i].a.toUpperCase()+'</span>';
+  return h+'</div>';
+}
+
+function statusStrip() {
+  var a=yesIds('A').length, b=yesIds('B').length, c=yesIds('C').length;
+  return '<div class="status-strip">'+
+    '<span class="status-chip'+(a?' hit-a':'')+'">Part A: '+a+' yes</span>'+
+    '<span class="status-chip'+(b?' hit-b':'')+'">Part B: '+b+' yes</span>'+
+    '<span class="status-chip'+(c?' hit-c':'')+'">Part C: '+c+' yes / 2 to designate</span>'+
+  '</div>';
+}
+
+function render() {
+  var q=Q[S.qIdx], total=Q.length, pct=(S.qIdx/total)*100;
+  var dots='';
+  for(var i=0;i<total;i++) {
+    var cls='';
+    if(i<S.qIdx) cls=S.history[i]&&S.history[i].a==='yes'?'done-yes':'done-no';
+    else if(i===S.qIdx) cls='active';
+    dots+='<div class="step-dot '+cls+'"></div>';
+  }
+  var back=S.history.length?'<button class="btn btn-back" onclick="goBack()">&larr; Back</button>':'';
+  document.getElementById('tool-area').innerHTML=
+    '<div class="progress-bar"><div class="progress-fill" style="width:'+pct+'%"></div></div>'+
+    '<div class="step-indicator">'+dots+'<span style="margin-left:8px">Question '+(S.qIdx+1)+' of '+total+'</span></div>'+
+    statusStrip()+
+    trail()+
+    '<div class="question-card">'+
+      '<div class="part-banner part-'+q.part+'">'+q.partLabel+'</div>'+
+      '<div class="question-header"><div class="q-num">'+q.num+'</div><div class="question-text">'+q.text+'</div></div>'+
+      '<div class="question-sub">'+q.sub+'</div>'+
+      '<div class="criterion-ref">'+q.ref+'</div>'+
+      '<div class="answer-buttons">'+
+        '<button class="btn btn-yes" onclick="answer(\'yes\')">&#10003; Yes</button>'+
+        '<button class="btn btn-no" onclick="answer(\'no\')">&#10007; No</button>'+
+        back+
+      '</div>'+
+    '</div>';
+}
+
+function answer(ans) {
+  S.history.push({id:Q[S.qIdx].id,a:ans});
+  if(S.qIdx===Q.length-1) { showResult(); return; }
+  S.qIdx++;
+  render();
+}
+
+function goBack() {
+  if(!S.history.length) return;
+  S.history.pop();
+  S.qIdx=S.history.length;
+  render();
+}
+
+function goBackFromResult() {
+  if(!S.history.length) return;
+  S.history.pop();
+  S.qIdx=S.history.length;
+  render();
+}
+
+function trigBlock(label, ids) {
+  if(!ids.length) return '';
+  var h='<div class="triggered-list"><div class="tl-label">'+label+'</div>';
+  for(var i=0;i<ids.length;i++) { var c=CL[ids[i]]; h+='<div class="triggered-item"><div class="ti-ref">'+c.ref+'</div><div>'+c.text+'</div></div>'; }
+  return h+'</div>';
+}
+
+function showResult() {
+  var aY=yesIds('A'), bY=yesIds('B'), cY=yesIds('C');
+  var r, safetyNote='', trig='';
+
+  if(aY.length) {
+    r={ type:'ci', badge:'\u25b2 Designate \u2014 Contract Scope', title:'Mandatory Designation',
+      desc:'Part A criteria are met: designate this CI for FCA/PCA per the contract scope. '+
+        (bY.length||cY.length
+          ? 'Risk factors were also triggered \u2014 assess whether they expand the audit scope (e.g., add a delta audit or an earlier increment).'
+          : 'No additional risk factors were triggered; the contractually defined audit scope applies.'),
+      next:[
+        'Record the assessment on the Appendix C checklist and attach it to the Audit Designation Assessment Record (Section 6)',
+        'Select audit type per contract scope: FCA, PCA, or both'+((bY.length||cY.length)?' \u2014 and evaluate scope expansion (delta audit / earlier increment) against the triggered risk factors':''),
+        'If the Acquirer will establish the product baseline (A2), schedule the PCA as the PBL-establishing event',
+        'Enter the CI in the audit plan and data package per \u00a75.2.2 (nomenclature, specification numbers, CI identifiers)',
+        'Re-run this checklist on any Part D trigger event and at each CM-plan revision'
+      ]};
+    trig=trigBlock('Part A \u2014 Mandatory Criteria Met', aY)+trigBlock('Part B \u2014 Safety Factors Triggered', bY)+trigBlock('Part C \u2014 Risk Factors Triggered', cY);
+  } else if(bY.length) {
+    r={ type:'ci', badge:'\u25b2 Presumptive Designation \u2014 Safety', title:'Designate for FCA/PCA',
+      desc:'One or more Part B safety-criticality criteria are met. The CI is presumptively designated for audit. Omitting this CI from audit scope requires documented System Safety concurrence.',
+      next:[
+        'Record the assessment on the Appendix C checklist and attach it to the Audit Designation Assessment Record (Section 6)',
+        'Determine audit type (FCA, PCA, or both) and record it in the Disposition block',
+        'Obtain System Safety sign-off \u2014 required whenever any Part B answer is YES',
+        'If internally initiated, tailor ceremony only, not substance: F42\u2013F44 and F29\u2013F31/F34 performed in full (\u00a75.2.1)',
+        'Route any findings affecting hazard risk controls per SM-0001',
+        'Re-run this checklist on any Part D trigger event and at each CM-plan revision'
+      ]};
+    safetyNote='<div class="safety-note"><div class="sn-label">System Safety Concurrence</div>Any YES in Part B creates presumptive designation. If the program elects not to designate this CI, that omission requires documented System Safety concurrence \u2014 it cannot be dispositioned by CM alone.</div>';
+    trig=trigBlock('Part B \u2014 Safety Factors Triggered', bY)+trigBlock('Part C \u2014 Risk Factors Triggered', cY);
+  } else if(cY.length>=2) {
+    r={ type:'ci', badge:'\u25b2 Risk-Based Designation', title:'Designate for FCA/PCA',
+      desc:'Two or more Part C risk factors are met ('+cY.length+' of 8). Per Appendix C, designate the CI for audit \u2014 or document the rationale for not designating.',
+      next:[
+        'Record the assessment on the Appendix C checklist and attach it to the Audit Designation Assessment Record (Section 6)',
+        'Determine audit type (FCA, PCA, both, or delta audit of open scope) and record it in the Disposition block',
+        'If electing NOT to designate despite the triggered factors, document the rationale in the Disposition block',
+        'If internally initiated, tailor ceremony only, not substance: F42\u2013F44 and F29\u2013F31/F34 performed in full (\u00a75.2.1)',
+        'Obtain CM and Systems Engineering sign-off',
+        'Re-run this checklist on any Part D trigger event and at each CM-plan revision'
+      ]};
+    trig=trigBlock('Part C \u2014 Risk Factors Triggered', cY);
+  } else if(cY.length===1) {
+    r={ type:'consider', badge:'\u25c8 Below Threshold \u2014 Record & Monitor', title:'Designation Not Required',
+      desc:'Only one Part C risk factor is met \u2014 below the two-factor designation threshold, with no Part A or Part B criteria triggered. Designation is not required, but the single triggered factor should be recorded and monitored: a second factor at any Part D trigger event tips the CI into designation.',
+      next:[
+        'Record the assessment and rationale on the Appendix C checklist \u2014 required for every CI evaluated, designated or not (Section 6)',
+        'Mark the Disposition block: DO NOT DESIGNATE',
+        'Monitor the triggered factor; re-run this checklist on any Part D trigger event',
+        'Re-assess at each CM-plan revision',
+        'Obtain CM and Systems Engineering sign-off'
+      ]};
+    trig=trigBlock('Part C \u2014 Risk Factor Triggered', cY);
+  } else {
+    r={ type:'no-ci', badge:'\u2715 Do Not Designate', title:'No Audit Designation',
+      desc:'No Part A, Part B, or Part C criteria are met. The CI is not designated for FCA/PCA at this time. The assessment must still be recorded \u2014 the process requires a documented rationale for every CI evaluated, designated or not.',
+      next:[
+        'Record the assessment and rationale on the Appendix C checklist and attach it to the Audit Designation Assessment Record (Section 6)',
+        'Mark the Disposition block: DO NOT DESIGNATE',
+        'Re-run this checklist on any Part D trigger event: design/process/facility/tooling/supplier change, quality escape or safety event, CSA anomaly, or hazard log revision adding a risk control to the CI',
+        'Re-assess at each CM-plan revision',
+        'Obtain CM and Systems Engineering sign-off'
+      ]};
+  }
+
+  var tc=r.type==='ci'?'result-ci':r.type==='no-ci'?'result-no-ci':'result-consider';
+  var bc=r.type==='ci'?'badge-ci':r.type==='no-ci'?'badge-no-ci':'badge-consider';
+  var steps=''; for(var j=0;j<r.next.length;j++) steps+='<li>'+r.next[j]+'</li>';
+  var back=S.history.length?'<button class="btn btn-back" onclick="goBackFromResult()">&larr; Revise Last Answer</button>':'';
+  document.getElementById('tool-area').innerHTML=
+    '<div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>'+
+    statusStrip()+
+    trail()+
+    '<div class="result-card '+tc+'">'+
+      '<div class="result-badge '+bc+'">'+r.badge+'</div>'+
+      '<div class="result-title">'+r.title+'</div>'+
+      '<div class="result-desc">'+r.desc+'</div>'+
+      safetyNote+
+      trig+
+      '<div class="next-steps"><div class="ns-label">Recommended Next Steps</div><ul>'+steps+'</ul></div>'+
+      '<div class="result-actions"><button class="btn btn-reset" onclick="reset()">&#8635; New Assessment</button>'+back+'</div>'+
+    '</div>';
+}
+
+function reset() { S={qIdx:0,history:[]}; render(); }
+render();
+</script>
+</body>
+</html>
