@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Same CI or Separate CIs — Decision Tool</title>
+<style>
+  :root {
+    --bg: #0b0e14;
+    --surface: #111520;
+    --border: #1e2a42;
+    --accent: #00d4ff;
+    --accent2: #ff6b35;
+    --warn: #ffd166;
+    --success: #06d6a0;
+    --danger: #ef476f;
+    --text: #c8d6f0;
+    --text-dim: #5a7299;
+    --text-bright: #e8f0ff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .container { max-width: 860px; margin: 0 auto; padding: 40px 24px 80px; position: relative; z-index: 1; }
+  .header { border-left: 3px solid var(--accent); padding-left: 20px; margin-bottom: 40px; }
+  .header .label { font-size: 11px; letter-spacing: 3px; color: var(--accent); text-transform: uppercase; margin-bottom: 6px; font-weight: 600; }
+  .header h1 { font-size: clamp(26px, 5vw, 44px); font-weight: 800; color: var(--text-bright); line-height: 1.1; letter-spacing: 1px; text-transform: uppercase; }
+  .header p { margin-top: 10px; color: var(--text-dim); font-size: 14px; max-width: 560px; }
+  .def-card { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent2); padding: 18px 22px; margin-bottom: 20px; }
+  .def-card .def-label { font-size: 10px; letter-spacing: 2px; color: var(--accent2); text-transform: uppercase; margin-bottom: 8px; font-weight: 700; }
+  .def-card p { font-size: 13.5px; color: var(--text); line-height: 1.75; }
+  .def-card p + p { margin-top: 8px; }
+  .def-card.alt { border-left-color: var(--accent); margin-bottom: 36px; }
+  .def-card.alt .def-label { color: var(--accent); }
+  .step-indicator { display: flex; align-items: center; gap: 8px; margin-bottom: 28px; font-size: 12px; color: var(--text-dim); }
+  .step-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); transition: background 0.3s; flex-shrink: 0; }
+  .step-dot.active { background: var(--accent); }
+  .step-dot.done { background: var(--success); }
+  .question-card { background: var(--surface); border: 1px solid var(--border); padding: 28px; animation: slideIn 0.25s ease; }
+  @keyframes slideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .question-header { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 18px; }
+  .q-num { font-size: 10px; color: var(--accent); background: rgba(0,212,255,0.08); border: 1px solid rgba(0,212,255,0.2); padding: 4px 9px; white-space: nowrap; margin-top: 4px; letter-spacing: 1px; font-weight: 700; flex-shrink: 0; }
+  .question-text { font-size: 20px; font-weight: 700; color: var(--text-bright); line-height: 1.3; }
+  .question-sub { font-size: 13px; color: var(--text-dim); margin-top: 8px; line-height: 1.7; padding: 10px 14px; background: rgba(255,255,255,0.02); border-left: 2px solid var(--border); }
+  .question-sub strong { color: var(--text); }
+  .criterion-ref { font-size: 11px; color: var(--accent2); background: rgba(255,107,53,0.08); border: 1px solid rgba(255,107,53,0.2); padding: 3px 8px; display: inline-block; margin-top: 12px; font-weight: 600; letter-spacing: 1px; }
+  .answer-buttons { display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap; align-items: center; }
+  .btn { font-size: 14px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 11px 28px; border: none; cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 7px; font-family: inherit; }
+  .btn-yes { background: rgba(6,214,160,0.12); color: var(--success); border: 1px solid rgba(6,214,160,0.35); }
+  .btn-yes:hover { background: rgba(6,214,160,0.22); border-color: var(--success); transform: translateY(-1px); }
+  .btn-no { background: rgba(239,71,111,0.1); color: var(--danger); border: 1px solid rgba(239,71,111,0.3); }
+  .btn-no:hover { background: rgba(239,71,111,0.2); border-color: var(--danger); transform: translateY(-1px); }
+  .btn-back { background: transparent; color: var(--text-dim); border: 1px solid var(--border); margin-left: auto; font-size: 12px; padding: 9px 18px; }
+  .btn-back:hover { color: var(--text); border-color: var(--text-dim); }
+  .btn-reset { background: transparent; color: var(--text-dim); border: 1px solid var(--border); font-size: 12px; padding: 9px 18px; }
+  .btn-reset:hover { color: var(--accent); border-color: var(--accent); }
+  .btn-copy { background: rgba(0,212,255,0.08); color: var(--accent); border: 1px solid rgba(0,212,255,0.25); font-size: 12px; padding: 9px 18px; }
+  .btn-copy:hover { background: rgba(0,212,255,0.16); border-color: var(--accent); }
+  .progress-bar { height: 2px; background: var(--border); margin-bottom: 28px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--success)); transition: width 0.4s ease; }
+  .result-card { padding: 30px; animation: slideIn 0.3s ease; }
+  .result-one { background: rgba(6,214,160,0.05); border: 1px solid rgba(6,214,160,0.3); border-top: 3px solid var(--success); }
+  .result-sep { background: rgba(0,212,255,0.04); border: 1px solid rgba(0,212,255,0.25); border-top: 3px solid var(--accent); }
+  .result-no-ci { background: rgba(239,71,111,0.05); border: 1px solid rgba(239,71,111,0.25); border-top: 3px solid var(--danger); }
+  .result-badge { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; padding: 4px 12px; display: inline-block; margin-bottom: 14px; font-weight: 700; }
+  .badge-one { background: rgba(6,214,160,0.15); color: var(--success); }
+  .badge-sep { background: rgba(0,212,255,0.15); color: var(--accent); }
+  .badge-no-ci { background: rgba(239,71,111,0.15); color: var(--danger); }
+  .result-title { font-size: 30px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; color: var(--text-bright); }
+  .result-desc { color: var(--text); font-size: 14px; line-height: 1.8; margin-bottom: 18px; }
+  .triggered-list { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .tl-label { font-size: 10px; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 10px; font-weight: 700; }
+  .triggered-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 13px; color: var(--text); }
+  .triggered-item:last-child { border-bottom: none; }
+  .ti-ref { font-size: 10px; color: var(--accent2); background: rgba(255,107,53,0.1); padding: 2px 7px; white-space: nowrap; margin-top: 2px; font-weight: 700; letter-spacing: 1px; flex-shrink: 0; }
+  .next-steps { margin-top: 20px; padding: 16px 18px; background: rgba(0,212,255,0.04); border: 1px solid rgba(0,212,255,0.15); }
+  .ns-label { font-size: 10px; letter-spacing: 2px; color: var(--accent); text-transform: uppercase; margin-bottom: 10px; font-weight: 700; }
+  .next-steps ul { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+  .next-steps li { font-size: 13px; color: var(--text); padding-left: 18px; position: relative; line-height: 1.6; }
+  .next-steps li::before { content: '>'; position: absolute; left: 0; color: var(--accent); font-weight: 700; }
+  .mbse-flag { margin-top: 20px; padding: 16px 18px; background: rgba(255,209,102,0.05); border: 1px solid rgba(255,209,102,0.3); border-left: 3px solid var(--warn); }
+  .mbse-flag .mf-label { font-size: 10px; letter-spacing: 2px; color: var(--warn); text-transform: uppercase; margin-bottom: 8px; font-weight: 700; }
+  .mbse-flag p { font-size: 13px; color: var(--text); line-height: 1.7; }
+  .result-actions { display: flex; gap: 12px; margin-top: 22px; flex-wrap: wrap; }
+  .answers-trail { margin-bottom: 18px; display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+  .trail-label { font-size: 10px; color: var(--text-dim); letter-spacing: 1px; text-transform: uppercase; margin-right: 4px; }
+  .trail-item { font-size: 10px; padding: 3px 8px; font-weight: 700; letter-spacing: 1px; }
+  .trail-yes { background: rgba(6,214,160,0.1); color: var(--success); border: 1px solid rgba(6,214,160,0.2); }
+  .trail-no { background: rgba(239,71,111,0.1); color: var(--danger); border: 1px solid rgba(239,71,111,0.2); }
+  .footer-note { margin-top: 40px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--border); font-size: 12px; color: var(--text-dim); line-height: 1.7; }
+  @media (max-width: 600px) { .btn-back { margin-left: 0; } .question-header { flex-direction: column; gap: 8px; } }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="label">EIA-649-1A &middot; GEIA-HB-649A &middot; [XXX-CM-PROC-001] &middot; Decision Tool</div>
+    <h1>Same CI or<br>Separate CIs</h1>
+    <p>For two or more items (different part numbers) that appear related: determine whether they share one CI identifier with part-number variants, or are designated as separate CIs.</p>
+  </div>
+  <div class="def-card">
+    <div class="def-label">Principle &mdash; CI Number vs. Part Number</div>
+    <p>The <strong>CI identifier</strong> follows the end-use <strong>function</strong> and the management need for separate configuration control. The <strong>Part or Identifying Number (PIN)</strong> follows <strong>form, fit, and function</strong> &mdash; it changes whenever a modification creates a non-interchangeable condition. Multiple non-interchangeable part numbers can therefore legitimately live under one CI as variants, and one part number can appear under multiple CIs.</p>
+  </div>
+  <div class="def-card alt">
+    <div class="def-label">Note &mdash; One Part Number, Multiple CIs</div>
+    <p>The mapping runs both directions. A single part number instantiated in multiple subsystems that perform <strong>distinct functions</strong> &mdash; or whose instantiations fulfill <strong>different functional requirements</strong> &mdash; is assigned a distinct CI per functional instantiation. Example: the same antenna part number installed once in the UHF subsystem and once in the MIDS JTRS subsystem is one PIN but two CIs, because each installation satisfies a different end-use function, sits in a different branch of the CI hierarchy, and needs its own change effectivity address.</p>
+  </div>
+  <div id="tool-area"></div>
+  <div class="footer-note">
+    <strong>Reference:</strong> EIA-649-1A &sect;3.2.1 (CI selection), GEIA-HB-649A &sect;7.9 / Appendix D (supplemental selection criteria), &sect;7.4.1 (product identifier issuance and change), and [XXX-CM-PROC-001] &sect;5.3&ndash;5.5 and Appendix B (MBSE alignment). Final CI designation authority for Acquirer-controlled CIs rests with the Acquirer. This tool is a decision aid; it does not substitute for engineering judgment or contract requirements.
+  </div>
+</div>
+<script>
+var Q = [
+  { id:'end-use', num:'G0 / PREREQUISITE',
+    text:'Does each item satisfy a system end-use function?',
+    sub:'Items with no end-use function (raw materials, bulk commodities, purely structural elements with no defined functional role) are not CI candidates and are controlled within their parent CI\u2019s configuration documentation.',
+    ref:'[XXX-CM-PROC-001] \u00a75.3 \u00b7 EIA-649-1A \u00a73.2.1(2)',
+    yesGoto:'qualifies', noResult:'not-candidates' },
+  { id:'qualifies', num:'G1 / CI QUALIFICATION',
+    text:'Do the items warrant CI designation at all?',
+    sub:'Run the Table 5-1 screen (Appendix A checklist): critical to system function, safety consequence, complex technology, Acquirer-designated, separate versions/nomenclature, financial risk, or required logistics elements (APL/AEL/ACL, test equipment, technical manuals, PMS, tag-out). If <strong>no</strong> criterion applies, these are parts &mdash; not CIs &mdash; regardless of how many part numbers exist. Avoid over-designation.',
+    ref:'EIA-649-1A \u00a73.2.1(2)(a\u2013g) \u00b7 [XXX-CM-PROC-001] Table 5-1',
+    yesGoto:'same-function', noResult:'parts-only' },
+  { id:'same-function', num:'G2 / FUNCTION',
+    text:'Do the items perform the same end-use function?',
+    sub:'The CI identifier follows function. Items performing different end-use functions are different CIs by definition &mdash; even if physically similar, from the same vendor, or sharing a part number. This is also why one part number instantiated in subsystems with distinct functions maps to multiple CIs.',
+    ref:'EIA-649-1A \u00a72.3 \u00b7 GEIA-HB-649A App. D (b)',
+    yesGoto:'same-parent', noResult:'separate' },
+  { id:'same-parent', num:'G3 / HIERARCHY',
+    text:'Do the items share the same parent in the CI hierarchy (same sub-subsystem)?',
+    sub:'<strong>Where MBSE is used, answer this from the model</strong> &mdash; the CI structure mirrors the model decomposition (Appendix B) and shall not diverge from it. If you believe the model has abstracted these items incorrectly (e.g., one block where there should be siblings, or vice versa), do NOT answer from what the model \u201cshould\u201d say: flag the discrepancy to Systems Engineering for model disposition per Appendix B.4 / \u00a75.10, then return to this assessment. Where no MBSE model exists, answer from the engineering product structure/BOM.',
+    ref:'[XXX-CM-PROC-001] \u00a75.2.1, \u00a75.4, App. B',
+    yesGoto:'safety', noResult:'separate' },
+  { id:'safety', num:'G4 / SAFETY',
+    text:'Is any of the items safety-critical per SM-0001?',
+    sub:'If <strong>either</strong> item is safety-critical, designate separately. Safety-critical items carry criterion (b)/F01 obligations, hazard-to-CI traceability, and tighter change control. Sharing a CI between a safety-critical and a non-critical variant either forces the whole CI to inherit safety controls or blurs the hazard traceability &mdash; both are worse than a second CI number.',
+    ref:'EIA-649-1A \u00a73.2.1(2b) \u00b7 SM-0001 \u00b7 Floor ID F01',
+    yesResult:'separate', noGoto:'one-spec' },
+  { id:'one-spec', num:'G5 / ONE SPEC TEST',
+    text:'Can a single specification define performance AND interfaces for all variants?',
+    sub:'A tabulated spec covering all variants is acceptable. <strong>Interface caution:</strong> appearing on the same ICD is NOT sufficient evidence of a common interface definition. If the ICD distinctly calls out separate interfaces for each item, that complexity requires analysis: determine whether one interface definition genuinely governs all variants, or whether the ICD is documenting genuinely different interfaces that need separate change effectivity. Do not stop at \u201cthey\u2019re on the same ICD.\u201d',
+    ref:'GEIA-HB-649A App. D (e, h, k) \u00b7 [XXX-CM-PROC-001] \u00a75.5, \u00a75.8',
+    yesGoto:'same-verification', noResult:'separate' },
+  { id:'same-verification', num:'G6 / VERIFICATION TEST',
+    text:'Do the items share the same verification requirements and verification plan?',
+    sub:'One qualification and acceptance basis must cover all variants. If the variants require separate definition of performance and test requirements, or must be independently testable to different requirements, they are separate CIs.',
+    ref:'GEIA-HB-649A App. D (h, q)',
+    yesGoto:'effectivity', noResult:'separate' },
+  { id:'effectivity', num:'G7 / CHANGE EFFECTIVITY',
+    text:'Will changes to one item routinely need a separate change effectivity address?',
+    sub:'If a change to one variant must regularly be dispositioned, tracked, and cut in independently of the others, each needs its own effectivity address &mdash; a primary reason for separate CI designation. If changes will normally apply across the family, one CI suffices.',
+    ref:'GEIA-HB-649A App. D (c)',
+    yesResult:'separate', noGoto:'external' },
+  { id:'external', num:'G8 / EXTERNAL DRIVERS',
+    text:'Does Acquirer direction, nomenclature, or logistics force separation?',
+    sub:'Acquirer-directed CI designation, separate military nomenclature requirements, or logistics elements managed per-item (separate provisioning lists, separate technical manual coverage, separate NSNs at the CI level) override the consolidation.',
+    ref:'EIA-649-1A \u00a73.2.1(2d, e, g)',
+    yesResult:'separate', noGoto:'mbse-used' },
+  { id:'mbse-used', num:'G9 / MBSE CHECK',
+    text:'Is MBSE used on this program?',
+    sub:'Before recording the result, verify the verdict against the architecture model. The CI structure and the model are two views of one decomposition and shall not diverge.',
+    ref:'[XXX-CM-PROC-001] \u00a75.2.1, App. B',
+    yesGoto:'mbse-match', noResult:'one-ci', noAlign:true },
+  { id:'mbse-match', num:'G10 / MODEL ALIGNMENT',
+    text:'Does this verdict match how the items are represented in the MBSE model today?',
+    sub:'One CI verdict should map to one model element (with variants represented below it); a separate-CIs verdict should map to sibling model elements. Note that SysML can legitimately represent a variant family either way &mdash; one logical block with multiple physical realizations, or sibling blocks &mdash; so a mismatch may mean the architect stopped abstracting at a different level, not that anyone is wrong. The screen result is evidence for which representation is correct.',
+    ref:'[XXX-CM-PROC-001] App. B.4, \u00a75.10',
+    yesResult:'one-ci', noResult:'one-ci-diverge' }
+];
+
+var GL = {
+  'same-function':     { ref:'G2',  text:'Different end-use functions \u2014 CI identifier follows function' },
+  'same-parent':       { ref:'G3',  text:'Different parents in the CI hierarchy / MBSE decomposition (different sub-subsystems)' },
+  'safety':            { ref:'G4',  text:'At least one item is safety-critical per SM-0001 \u2014 separate hazard traceability and change control required' },
+  'one-spec':          { ref:'G5',  text:'No single specification can define performance and interfaces for all variants' },
+  'same-verification': { ref:'G6',  text:'Verification requirements or verification plans differ between items' },
+  'effectivity':       { ref:'G7',  text:'Separate change effectivity addresses are needed' },
+  'external':          { ref:'G8',  text:'Acquirer direction, nomenclature, or logistics forces separation' }
+};
+
+var R = {
+  'not-candidates': {
+    type:'no-ci', badge:'\u2715 Not CI Candidates', title:'No End-Use Function',
+    desc:'One or more items do not satisfy a system end-use function and are not CI candidates. Control them within the parent CI\u2019s configuration documentation. The same-CI-or-separate question does not arise.',
+    next:['Record the end-use function gate result on the Appendix A checklist','Identify the parent CI under which each item is controlled','Reassess if the items\u2019 role in the system changes (\u00a75.10)']
+  },
+  'parts-only': {
+    type:'no-ci', badge:'\u25c8 Parts, Not CIs', title:'Control as Parts Under the Parent CI',
+    desc:'No Table 5-1 criterion applies, so these items should not be designated as CIs at any level. They are parts within the parent CI\u2019s product structure. Their distinct part numbers already capture the non-interchangeable differences \u2014 no CI decision is needed. Designating commodity items as CIs creates unmanageable change traffic (over-designation, \u00a75.3).',
+    next:['Complete an Appendix A checklist per item; record the DO NOT DESIGNATE result and rationale','Confirm each item appears in the parent CI\u2019s product structure / PPSL with correct PIN and CAGE','Confirm interface differences are captured in the parent CI\u2019s configuration documentation','Reassess on \u00a75.10 triggers (new hazard analyses, separate procurement, logistics changes)']
+  },
+  'separate': {
+    type:'sep', badge:'\u25b2 Separate CIs', title:'Designate as Separate CIs',
+    desc:'The items require separate CI identifiers. Each CI gets its own entry in the CI hierarchy, its own configuration documentation determination, its own change effectivity address, and its own baseline management.',
+    next:['Complete an Appendix A checklist per item; record rationale citing the triggered gate(s) below','Place each CI in the hierarchy with parent, children, and owning design activity (\u00a75.4)','Verify each pairwise boundary appears in the interface register or carries a signed no-interface determination (\u00a75.5.1)','Assign identifiers per \u00a75.7 (CAGE + PIN; nomenclature where contracted)','Submit for Acquirer concurrence per \u00a75.6','Record designations in the CSA system']
+  },
+  'one-ci': {
+    type:'one', badge:'\u25cf One CI', title:'One CI, Multiple PN Variants',
+    desc:'The items share one end-use function, one parent, one specification basis, one verification basis, and common change effectivity \u2014 and no external driver forces separation. Designate one CI and carry the part numbers as variants beneath it. The PINs continue to capture the non-interchangeable form/fit/function differences; the CI captures the managed function.',
+    next:['Complete one Appendix A checklist for the CI; record the variant consolidation rationale','Record the CI-to-PIN variant mapping in the CI index (\u00a76)','Structure the specification to tabulate variant differences, including per-variant interface callouts','Verify the interface register rows identify which variant(s) each interface applies to (\u00a75.5.1)','Submit for Acquirer concurrence per \u00a75.6','On any future variant divergence (spec, verification, effectivity, safety), re-run this assessment (\u00a75.10)']
+  },
+  'one-ci-diverge': {
+    type:'one', badge:'\u25cf One CI \u2014 Model Divergence', title:'One CI, Pending Model Disposition',
+    desc:'The screen supports one CI with PN variants, but the current MBSE representation does not match. Do not record the CI decision yet, and do not designate CIs against model elements that do not exist \u2014 that breaks the Appendix B.4 traceability rule (every CI resolves to a model element and vice versa).',
+    next:['Route the discrepancy to Systems Engineering as a model disposition item per Appendix B.4','If SE concurs, the model is corrected; the decomposition change is itself a \u00a75.10 re-evaluation trigger','If SE does not concur, resolve at a technical review \u2014 CM does not override the architecture unilaterally','Record the CI decision only after the model and CI structure agree','Note: the screen result is engineering evidence for which model representation is correct \u2014 bring it to the SE discussion']
+  }
+};
+
+R['separate-diverge'] = {
+  type:'sep', badge:'\u25b2 Separate CIs \u2014 Model Divergence', title:'Separate CIs, Pending Model Disposition',
+  desc:'The screen requires separate CIs, but the current MBSE representation does not match (e.g., a single model element where siblings are needed). Do not designate two CIs against one model element \u2014 that breaks the Appendix B.4 traceability rule.',
+  next:['Route the discrepancy to Systems Engineering as a model disposition item per Appendix B.4','If SE concurs, the model is corrected; the decomposition change is itself a \u00a75.10 re-evaluation trigger','If SE does not concur, resolve at a technical review \u2014 CM does not override the architecture unilaterally','Record the CI designations only after the model and CI structure agree','Note: the screen result is engineering evidence for which model representation is correct \u2014 bring it to the SE discussion']
+};
+
+var S = { qIdx:0, history:[], triggered:[] };
+
+function idxById(id) { for (var i=0;i<Q.length;i++) if (Q[i].id===id) return i; return 0; }
+
+function verdict() { return S.triggered.length ? 'separate' : 'one-ci'; }
+
+function trail() {
+  if (!S.history.length) return '';
+  var h='<div class="answers-trail"><span class="trail-label">Path:</span>';
+  for (var i=0;i<S.history.length;i++) h+='<span class="trail-item trail-'+S.history[i].a+'">'+S.history[i].a.toUpperCase()+'</span>';
+  return h+'</div>';
+}
+
+function render() {
+  var q=Q[S.qIdx], total=Q.length, pct=(S.qIdx/total)*100;
+  var dots=''; for (var i=0;i<total;i++) dots+='<div class="step-dot '+(i<S.qIdx?'done':i===S.qIdx?'active':'')+'"></div>';
+  var back=S.history.length?'<button class="btn btn-back" onclick="goBack()">&larr; Back</button>':'';
+  document.getElementById('tool-area').innerHTML=
+    '<div class="progress-bar"><div class="progress-fill" style="width:'+pct+'%"></div></div>'+
+    '<div class="step-indicator">'+dots+'<span style="margin-left:8px">Gate '+(S.qIdx+1)+' of '+total+'</span></div>'+
+    trail()+
+    '<div class="question-card">'+
+      '<div class="question-header"><div class="q-num">'+q.num+'</div><div class="question-text">'+q.text+'</div></div>'+
+      '<div class="question-sub">'+q.sub+'</div>'+
+      '<div class="criterion-ref">'+q.ref+'</div>'+
+      '<div class="answer-buttons">'+
+        '<button class="btn btn-yes" onclick="answer(\'yes\')">&#10003; Yes</button>'+
+        '<button class="btn btn-no" onclick="answer(\'no\')">&#10007; No</button>'+
+        back+
+      '</div>'+
+    '</div>';
+}
+
+function answer(ans) {
+  var q=Q[S.qIdx];
+  S.history.push({id:q.id,a:ans});
+  var resultKey=null, gotoId=null;
+  if (ans==='yes') { resultKey=q.yesResult||null; gotoId=q.yesGoto||null; }
+  else { resultKey=q.noResult||null; gotoId=q.noGoto||null; }
+
+  if (q.id==='mbse-used') {
+    if (ans==='no') { showResult(verdict()); } else { S.qIdx=idxById('mbse-match'); render(); }
+    return;
+  }
+  if (q.id==='mbse-match') {
+    if (ans==='yes') { showResult(verdict()); }
+    else { showResult(verdict()==='separate' ? 'separate-diverge' : 'one-ci-diverge'); }
+    return;
+  }
+
+  if (resultKey==='separate') {
+    if (GL[q.id]) S.triggered.push(q.id);
+    // A separation verdict still runs the MBSE alignment check before recording.
+    S.qIdx=idxById('mbse-used');
+    render();
+    return;
+  }
+  if (resultKey) { showResult(resultKey); return; }
+  S.qIdx=idxById(gotoId);
+  render();
+}
+
+function goBack() {
+  if (!S.history.length) return;
+  var last=S.history.pop();
+  S.triggered=S.triggered.filter(function(c){return c!==last.id;});
+  S.qIdx=idxById(last.id);
+  render();
+}
+
+function rationaleText(key) {
+  var r=R[key];
+  var lines=[];
+  lines.push('SAME-CI / SEPARATE-CI ASSESSMENT \u2014 '+r.title);
+  lines.push('Per [XXX-CM-PROC-001] \u00a75.3 / EIA-649-1A \u00a73.2.1 / GEIA-HB-649A App. D');
+  lines.push('');
+  lines.push('Path:');
+  for (var i=0;i<S.history.length;i++) {
+    var q=Q[idxById(S.history[i].id)];
+    lines.push('  '+q.num+' \u2014 '+q.text+' \u2014 '+S.history[i].a.toUpperCase());
+  }
+  if (S.triggered.length) {
+    lines.push('');
+    lines.push('Separation driver(s):');
+    for (var j=0;j<S.triggered.length;j++) lines.push('  '+GL[S.triggered[j]].ref+' \u2014 '+GL[S.triggered[j]].text);
+  }
+  lines.push('');
+  lines.push('Verdict: '+r.title);
+  return lines.join('\n');
+}
+
+function copyRationale(key) {
+  var t=rationaleText(key);
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(t).then(function(){
+      var b=document.getElementById('copy-btn'); if(b){b.textContent='\u2713 Copied';}
+    });
+  } else {
+    var ta=document.createElement('textarea'); ta.value=t; document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); var b=document.getElementById('copy-btn'); if(b){b.textContent='\u2713 Copied';} } catch(e){}
+    document.body.removeChild(ta);
+  }
+}
+
+function showResult(key) {
+  var r=R[key];
+  var tc=r.type==='one'?'result-one':r.type==='sep'?'result-sep':'result-no-ci';
+  var bc=r.type==='one'?'badge-one':r.type==='sep'?'badge-sep':'badge-no-ci';
+  var trig='';
+  if (S.triggered.length && (key==='separate'||key==='separate-diverge')) {
+    trig='<div class="triggered-list"><div class="tl-label">Separation Driver(s)</div>';
+    for (var i=0;i<S.triggered.length;i++) { var c=GL[S.triggered[i]]; trig+='<div class="triggered-item"><div class="ti-ref">'+c.ref+'</div><div>'+c.text+'</div></div>'; }
+    trig+='</div>';
+  }
+  var mbse='';
+  if (key==='one-ci-diverge'||key==='separate-diverge') {
+    mbse='<div class="mbse-flag"><div class="mf-label">\u26a0 Model Divergence \u2014 Hold</div><p>The CI structure and the MBSE model are two views of one decomposition and shall not diverge (App. B.1). Adjudicating this CI question may drive a change to the model &mdash; that is a legitimate, expected outcome, not a workaround. Route to Systems Engineering before recording.</p></div>';
+  }
+  var steps=''; for (var j=0;j<r.next.length;j++) steps+='<li>'+r.next[j]+'</li>';
+  var back=S.history.length?'<button class="btn btn-back" onclick="goBackFromResult()">&larr; Revise Last Answer</button>':'';
+  document.getElementById('tool-area').innerHTML=
+    '<div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>'+
+    trail()+
+    '<div class="result-card '+tc+'">'+
+      '<div class="result-badge '+bc+'">'+r.badge+'</div>'+
+      '<div class="result-title">'+r.title+'</div>'+
+      '<div class="result-desc">'+r.desc+'</div>'+
+      trig+
+      mbse+
+      '<div class="next-steps"><div class="ns-label">Recommended Next Steps</div><ul>'+steps+'</ul></div>'+
+      '<div class="result-actions">'+
+        '<button id="copy-btn" class="btn btn-copy" onclick="copyRationale(\''+key+'\')">&#9112; Copy Rationale for Appendix A Record</button>'+
+        '<button class="btn btn-reset" onclick="reset()">&#8635; New Assessment</button>'+back+
+      '</div>'+
+    '</div>';
+}
+
+function goBackFromResult() {
+  if (!S.history.length) return;
+  var last=S.history.pop();
+  S.triggered=S.triggered.filter(function(c){return c!==last.id;});
+  S.qIdx=idxById(last.id);
+  render();
+}
+
+function reset() { S={qIdx:0,history:[],triggered:[]}; render(); }
+render();
+</script>
+</body>
+</html>
