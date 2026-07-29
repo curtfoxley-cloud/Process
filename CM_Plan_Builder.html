@@ -61,6 +61,13 @@ button.sec{font:inherit;background:#fff;color:var(--ink);border:1px solid var(--
 ul.check{margin:6px 0 0 18px;padding:0;font-size:13.5px}
 ul.check li{margin-bottom:3px}
 .hidden{display:none}
+.sev{display:inline-block;padding:2px 7px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap}
+.sev.catastrophic{background:#f3dede;color:#8c2b2b}
+.sev.severe{background:#f6eddb;color:#7a5a17}
+tr.detail>td{background:#f7f9fc;border-top:none}
+tr.floorrow.rowbad>td{box-shadow:inset 3px 0 0 #b23a3a}
+label.conf{display:block;margin-top:6px;font-size:11px;color:#444;font-weight:600}
+label.conf input{margin-right:5px}
 </style>
 </head>
 <body>
@@ -219,6 +226,8 @@ const COVER=[
    'PROPRIETARY. Contains proprietary information; do not distribute outside the receiving organization without written consent.'],
    free:true},
  {k:'userSig',l:'USER signatory line (Name, Title, Organization)',ph:'J. Smith, Systems Engineer, Code 4.1',w:2},
+ {k:'authCat',l:'Risk-acceptance authority \u2014 catastrophic severity',ph:'Chief Executive Officer',w:2},
+ {k:'authSev',l:'Risk-acceptance authority \u2014 severe severity',ph:'Vice President, Engineering',w:2},
  {k:'officeCode',l:'CM office code',ph:'Code 4.1.2'},
  {k:'phone',l:'CM contact phone'},
  {k:'email',l:'CM contact email'}
@@ -229,11 +238,66 @@ const QB=SCHEMA.questions.filter(q=>q.kind==='body');
 const QF=SCHEMA.questions.filter(q=>q.kind==='floor');
 const APPQmap={}; APPQ.forEach(r=>APPQmap[r.floor]=r);
 
+/* --- severity is inherited from the barrier safety case, not re-rated here.
+   Barriers B6, B7 and B12 are Severe; every other barrier is Catastrophic.
+   Org convention: 1 = Catastrophic, 2 = Severe. Metric weight is keyed to the
+   LABEL (Catastrophic 3, Severe 2) so the numeric code can never invert it. --- */
+const SEVERE_BARRIERS=['B6','B7','B12'];
+const SEV_NUM={Catastrophic:1,Severe:2};
+const SEV_WT={Catastrophic:3,Severe:2};
+function sevOf(fid){
+  const b=((APPQmap[fid]||{}).barrier||'').split(/[,;]/).map(x=>x.trim()).filter(Boolean);
+  if(!b.length) return 'Catastrophic';
+  return b.every(x=>SEVERE_BARRIERS.indexOf(x)>=0)?'Severe':'Catastrophic';
+}
+function sevLabel(fid){const s=sevOf(fid);return s+' ('+SEV_NUM[s]+')';}
+function reqAuthority(fid){
+  return sevOf(fid)==='Catastrophic'
+    ? (S.g.authCat||'[catastrophic-severity risk acceptance authority]')
+    : (S.g.authSev||'[severe-severity risk acceptance authority]');
+}
+function newFloorState(){
+  return {disp:'performed',owner:(PARTICIPANT_SEED[0]||[''])[0],text:'',touched:false,
+          confirmed:false,evid:'',hcMethod:'',hcFreq:'',hcLast:'',hcNext:'',signoff:'',
+          valRef:'',validator:'',raRef:'',raAuth:'',interim:''};
+}
+function floorDefaults(st){const d=newFloorState();Object.keys(d).forEach(k=>{if(st[k]===undefined)st[k]=d[k]});return st;}
+/* a row counts as dispositioned only when affirmatively confirmed */
+function isDisp(fid){const st=S.floor[fid];return st.disp!=='none' && st.confirmed;}
+function missingFields(fid){
+  const st=S.floor[fid],m=[];
+  if(st.disp==='none') return ['disposition'];
+  if(st.disp==='risk'){
+    if(!st.raRef.trim())m.push('risk acceptance reference');
+    if(!st.raAuth.trim())m.push('accepting authority');
+  } else {
+    if(!st.evid.trim())m.push('evidence reference');
+    if(!st.hcMethod.trim())m.push('health check method');
+    if(!st.hcFreq.trim())m.push('health check frequency');
+    if(!st.hcNext.trim())m.push('next check due');
+    if(st.disp==='equivalent'){
+      if(!st.valRef.trim())m.push('independent validation reference');
+      if(!st.validator.trim())m.push('validator');
+    }
+  }
+  if(!st.signoff.trim())m.push('sign-off');
+  return m;
+}
+function coverage(){
+  let tot=0,cov=0,openTop=0,riskWt=0,catRisk=0,incomplete=0;
+  QF.forEach(q=>{const f=q.floor,w=SEV_WT[sevOf(f)];tot+=w;
+    if(isDisp(f)){cov+=w;if(S.floor[f].disp==='risk'){riskWt+=w;if(sevOf(f)==='Catastrophic')catRisk++;}}
+    else openTop++;
+    if(missingFields(f).length)incomplete++;});
+  return {tot:tot,cov:cov,pct:tot?cov/tot:0,openTop:openTop,riskWt:riskWt,
+          riskShare:cov?riskWt/cov:0,catRisk:catRisk,incomplete:incomplete};
+}
+
 function seedRows(){
  S.rows.participants=PARTICIPANT_SEED.map(r=>[r[0],r[1]]);
  S.rows.stakeholders=STAKEHOLDER_SEED.map(r=>[r[0],r[1]]);
  S.rows.changerec=[['','','A','Initial release','NR','']];
- QF.forEach(q=>{S.floor[q.floor]={disp:'performed',owner:PARTICIPANT_SEED[0][0],text:'',touched:false}});
+ QF.forEach(q=>{S.floor[q.floor]=newFloorState()});
 }
 seedRows();
 
@@ -253,12 +317,21 @@ function floorText(fid){
   if(st.touched) return st.text;
   const sec=aq.sections||'Section 2';
   const owner=st.owner||'the assigned role';
+  const hc=(st.hcMethod.trim()||'[health check method]')+', '+(st.hcFreq.trim()||'[frequency]')+
+           (st.hcNext.trim()?', next due '+st.hcNext.trim():'');
+  const interim=st.interim.trim()?' Interim mechanism: '+st.interim.trim():'';
   if(st.disp==='performed')
-    return 'Performed. Implemented per '+sec+'; owned by '+owner+'; evidence recorded in '+(S.g.cmTool||'[CM system of record]')+'.';
+    return 'Performed. Implemented per '+sec+'; owned by '+owner+'; evidence: '+
+      (st.evid.trim()||'[evidence reference]')+'. Barrier health check: '+hc+'.'+interim;
   if(st.disp==='equivalent')
-    return 'Replaced by a documented equivalent control approved by '+(S.g.authority||'[approval authority]')+'. '+(st.text||'[Describe the equivalent control and cite its approval.]')+' Owned by '+owner+'.';
+    return 'Replaced by a documented equivalent control. '+
+      (st.text.trim()||'[Describe the equivalent control.]')+' Independently validated by '+
+      (st.validator.trim()||'[validator]')+' ('+(st.valRef.trim()||'[validation reference]')+
+      '); owned by '+owner+'. Barrier health check: '+hc+'.'+interim;
   if(st.disp==='risk')
-    return 'Risk-accepted. Acceptance reference [insert], approved by '+(S.g.authority||'[approval authority]')+' at the level required for the hazard severity band. Owned by '+owner+'.';
+    return 'Risk-accepted at '+sevLabel(fid)+' severity. Acceptance reference '+
+      (st.raRef.trim()||'[acceptance reference]')+', approved by '+
+      (st.raAuth.trim()||reqAuthority(fid))+'. Owned by '+owner+'.'+interim;
   return 'Not yet dispositioned.';
 }
 
@@ -357,48 +430,184 @@ function resetA(id){S.touched[id]=false;delete S.a[id];showStep(cur)}
 function useSample(id){const q=QB.find(x=>x.id===id);S.a[id]=q.sample;S.touched[id]=true;showStep(cur)}
 
 function renderFloor(){
+ const cv=coverage();
  main().appendChild(el('<div><h2 class="step">7.0 CM floor requirement dispositions</h2>'+
-  '<p class="lead">Every row must be dispositioned; rows cannot be deleted. Default is <em>performed</em>, with the implementation statement drafted from the Appendix Q section mapping. '+
-  'Change the disposition where a documented equivalent control or a risk acceptance applies.</p></div>'));
- main().appendChild(el('<div class="card"><label class="t">Bulk actions</label><div style="margin-top:8px">'+
+  '<p class="lead">Every row must be dispositioned <em>and confirmed</em>; rows cannot be deleted. '+
+  'The implementation statement is drafted for you, but a row does not count until you tick <strong>Confirmed</strong> &mdash; '+
+  'an untouched default is not a decision. Severity is inherited from the barrier safety case and is not re-rated here.</p></div>'));
+
+ main().appendChild(el('<div class="card"><label class="t">Status</label><div id="floorstat" style="margin-top:6px"></div></div>'));
+
+ const clusters=[...new Set(QF.map(q=>(APPQmap[q.floor]||{}).barrier||'\u2014'))];
+ main().appendChild(el('<div class="card"><label class="t">Bulk owner assignment</label>'+
+  '<div class="instr">Assign by barrier group rather than all at once &mdash; blanket ownership of all 44 rows is nominal ownership.</div>'+
+  '<div style="margin-top:8px">'+
   '<select id="bulkOwner">'+S.rows.participants.map(r=>'<option>'+esc(r[0])+'</option>').join('')+'</select> '+
-  '<button class="mini" onclick="bulkOwner()">Assign owner to all rows</button></div></div>'));
- const clusters={};
- QF.forEach(q=>{const c=(APPQmap[q.floor]||{}).barrier||'';(clusters[c]=clusters[c]||[]).push(q)});
+  '<select id="bulkScope"><option value="">Barrier group\u2026</option>'+
+    clusters.map(c=>'<option value="'+esc(c)+'">'+esc(c)+'</option>').join('')+
+    '<option value="__ALL__">All rows (not recommended)</option></select> '+
+  '<button class="mini" onclick="bulkOwner()">Assign</button></div></div>'));
+
  const card=el('<div class="card"><table class="rows" id="ft"></table></div>');main().appendChild(card);
  drawFloor();
 }
+
+function floorStatHTML(){
+ const cv=coverage();
+ const gate=cv.openTop===0;
+ return '<div style="display:flex;gap:18px;flex-wrap:wrap;align-items:center">'+
+  '<div><b style="font-size:20px">'+(cv.pct*100).toFixed(1)+'%</b><div class="cite">severity-weighted coverage</div></div>'+
+  '<div><b style="font-size:20px" class="'+(gate?'':'bad')+'">'+cv.openTop+'</b><div class="cite">top-band rows open (target 0)</div></div>'+
+  '<div><b style="font-size:20px" class="'+(cv.incomplete?'bad':'')+'">'+cv.incomplete+'</b><div class="cite">rows with missing record fields</div></div>'+
+  '<div><b style="font-size:20px">'+(cv.riskShare*100).toFixed(0)+'%</b><div class="cite">of coverage by risk acceptance</div></div>'+
+  '</div>';
+}
+
+function fInput(fid,k,ph,wide){
+ return '<input type="text" value="'+esc(S.floor[fid][k]||'')+'" placeholder="'+esc(ph)+'"'+
+   (wide?' style="width:100%"':'')+' oninput="setFloorField(\''+fid+'\',\''+k+'\',this.value)">';
+}
+
+function detailHTML(fid){
+ const st=S.floor[fid], miss=missingFields(fid);
+ let inner='';
+ if(st.disp==='none'){
+   inner='<div class="bad">Not dispositioned. A floor requirement may not be left open &mdash; perform it, replace it with a validated equivalent control, or route a formal risk acceptance.</div>';
+ } else if(st.disp==='risk'){
+   inner='<div class="instr">Risk acceptance at '+esc(sevLabel(fid))+' severity routes to: <b>'+esc(reqAuthority(fid))+'</b>. '+
+     'Severity is pre-anchored to the barrier and is not re-rated to lower the required authority.</div>'+
+     '<div class="grid2" style="margin-top:8px">'+
+     '<div class="q"><label class="t">Risk acceptance reference</label>'+fInput(fid,'raRef','RA-2026-014')+'</div>'+
+     '<div class="q"><label class="t">Accepting authority (name / title)</label>'+fInput(fid,'raAuth',reqAuthority(fid))+'</div>'+
+     '<div class="q"><label class="t">Sign-off (name / date)</label>'+fInput(fid,'signoff','J. Smith / 2026-08-01')+'</div>'+
+     '<div class="q"><label class="t">Interim mechanism (if the owning process is not yet written)</label>'+fInput(fid,'interim','Change board procedure pending process release, planned Q4')+'</div>'+
+     '</div>';
+ } else {
+   inner='<div class="grid2">'+
+     '<div class="q"><label class="t">Evidence reference</label>'+fInput(fid,'evid','Procedure / record / system reference')+'</div>'+
+     '<div class="q"><label class="t">Sign-off (name / date)</label>'+fInput(fid,'signoff','J. Smith / 2026-08-01')+'</div>'+
+     '<div class="q"><label class="t">Barrier health check &mdash; method</label>'+fInput(fid,'hcMethod','Sampled record review against release log')+'</div>'+
+     '<div class="q"><label class="t">Health check frequency</label>'+fInput(fid,'hcFreq','Quarterly')+'</div>'+
+     '<div class="q"><label class="t">Last performed</label>'+fInput(fid,'hcLast','2026-06-30')+'</div>'+
+     '<div class="q"><label class="t">Next due</label>'+fInput(fid,'hcNext','2026-09-30')+'</div>'+
+     (st.disp==='equivalent'
+       ? '<div class="q"><label class="t">Independent validation reference</label>'+fInput(fid,'valRef','VAL-2026-003')+'</div>'+
+         '<div class="q"><label class="t">Validated by (independent of the program)</label>'+fInput(fid,'validator','CM/Safety Assurance')+'</div>'
+       : '')+
+     '<div class="q" style="grid-column:1/3"><label class="t">Interim mechanism (if the owning process is not yet written)</label>'+fInput(fid,'interim','State the interim mechanism and the planned process date')+'</div>'+
+     '</div>';
+ }
+ const missTxt=miss.length?'<div class="bad" style="margin-top:6px">Missing: '+esc(miss.join(', '))+'</div>':'';
+ return '<div style="padding:2px 2px 8px">'+inner+missTxt+'</div>';
+}
+
 function drawFloor(){
  const t=document.getElementById('ft');
  const own=S.rows.participants.map(r=>r[0]);
- t.innerHTML='<tr><th>ID</th><th style="width:26%">Requirement</th><th>Owner</th><th>Disposition</th><th style="width:38%">Implementation statement</th></tr>'+
- QF.map(q=>{const aq=APPQmap[q.floor]||{},st=S.floor[q.floor];
-  return '<tr class="floorrow"><td class="fid">'+q.floor+'<div class="pill '+(aq.inclusion||'').toLowerCase()+'">'+esc(aq.inclusion||'')+'</div></td>'+
-  '<td><div class="req">'+esc(q.requirement)+'</div><div class="cite">'+esc(q.clause)+' &middot; '+esc(aq.sections||'')+'</div></td>'+
-  '<td><select onchange="setFloor(\''+q.floor+'\',\'owner\',this.value)">'+own.map(o=>'<option'+(o===st.owner?' selected':'')+'>'+esc(o)+'</option>').join('')+'</select></td>'+
-  '<td><select onchange="setFloor(\''+q.floor+'\',\'disp\',this.value)">'+
-   [['performed','Performed'],['equivalent','Equivalent control'],['risk','Risk accepted'],['none','Not dispositioned']]
-   .map(o=>'<option value="'+o[0]+'"'+(st.disp===o[0]?' selected':'')+'>'+o[1]+'</option>').join('')+'</select></td>'+
-  '<td><textarea oninput="setFloorText(\''+q.floor+'\',this.value)">'+esc(floorText(q.floor))+'</textarea></td></tr>';}).join('');
+ let html='<tr><th>ID</th><th style="width:24%">Requirement</th><th>Severity</th><th>Owner</th><th>Disposition</th><th style="width:32%">Implementation statement</th></tr>';
+ QF.forEach(q=>{
+  const fid=q.floor, aq=APPQmap[fid]||{}, st=S.floor[fid];
+  const bad=!isDisp(fid)||missingFields(fid).length;
+  html+='<tr class="floorrow'+(bad?' rowbad':'')+'">'+
+   '<td class="fid">'+fid+'<div class="pill '+(aq.inclusion||'').toLowerCase()+'">'+esc(aq.inclusion||'')+'</div></td>'+
+   '<td><div class="req">'+esc(q.requirement)+'</div><div class="cite">'+esc(q.clause)+' &middot; '+esc(aq.barrier||'')+' &middot; '+esc(aq.sections||'')+'</div></td>'+
+   '<td><span class="sev '+sevOf(fid).toLowerCase()+'">'+esc(sevLabel(fid))+'</span></td>'+
+   '<td><select onchange="setFloor(\''+fid+'\',\'owner\',this.value)">'+own.map(o=>'<option'+(o===st.owner?' selected':'')+'>'+esc(o)+'</option>').join('')+'</select></td>'+
+   '<td><select onchange="setFloor(\''+fid+'\',\'disp\',this.value)">'+
+     [['performed','Performed'],['equivalent','Equivalent control'],['risk','Risk accepted'],['none','Not dispositioned']]
+     .map(o=>'<option value="'+o[0]+'"'+(st.disp===o[0]?' selected':'')+'>'+o[1]+'</option>').join('')+'</select>'+
+     '<label class="conf"><input type="checkbox"'+(st.confirmed?' checked':'')+' onchange="setFloorField(\''+fid+'\',\'confirmed\',this.checked)"> Confirmed</label></td>'+
+   '<td><textarea oninput="setFloorText(\''+fid+'\',this.value)">'+esc(floorText(fid))+'</textarea></td></tr>'+
+   '<tr class="detail"><td colspan="6">'+detailHTML(fid)+'</td></tr>';
+ });
+ t.innerHTML=html;
+ const s=document.getElementById('floorstat'); if(s) s.innerHTML=floorStatHTML();
 }
-function setFloor(f,k,v){S.floor[f][k]=v;S.floor[f].touched=false;drawFloor();nav()}
-function setFloorText(f,v){S.floor[f].text=v;S.floor[f].touched=true;nav()}
-function bulkOwner(){const v=document.getElementById('bulkOwner').value;QF.forEach(q=>{S.floor[q.floor].owner=v;S.floor[q.floor].touched=false});drawFloor()}
+function setFloor(f,k,v){S.floor[f][k]=v;S.floor[f].touched=false;if(k==='disp')S.floor[f].confirmed=false;drawFloor();nav()}
+function setFloorField(f,k,v){S.floor[f][k]=v;if(k!=='confirmed')S.floor[f].touched=false;drawFloor();nav()}
+function setFloorText(f,v){S.floor[f].text=v;S.floor[f].touched=true;nav();const s=document.getElementById('floorstat');if(s)s.innerHTML=floorStatHTML()}
+function bulkOwner(){
+ const v=document.getElementById('bulkOwner').value;
+ const scope=document.getElementById('bulkScope').value;
+ if(!scope){alert('Choose a barrier group first.');return}
+ if(scope==='__ALL__'&&!confirm('Assign every floor requirement to one role? Blanket ownership is rarely real ownership.'))return;
+ QF.forEach(q=>{const b=(APPQmap[q.floor]||{}).barrier||'\u2014';
+   if(scope==='__ALL__'||b===scope){S.floor[q.floor].owner=v;S.floor[q.floor].touched=false}});
+ drawFloor();nav();
+}
+
+/* ------------------------------------------ disposition record export */
+function floorRecords(){
+ return QF.map(q=>{const f=q.floor,aq=APPQmap[f]||{},st=S.floor[f];
+  const dispLabel={performed:'Performed',equivalent:'Equivalent control',risk:'Risk-accepted',none:'Open'}[st.disp];
+  return {program:S.g.program||'',floor_id:f,clause:q.clause,requirement:q.requirement,
+   barrier:aq.barrier||'',hazard:aq.hazard||'',inclusion:aq.inclusion||'',cmp_sections:aq.sections||'',
+   severity:sevOf(f),severity_code:SEV_NUM[sevOf(f)],weight:SEV_WT[sevOf(f)],
+   disposition:dispLabel,confirmed:st.confirmed?'Y':'N',owner:st.owner||'',
+   evidence_ref:st.evid||'',equivalent_validation_ref:st.valRef||'',validated_by:st.validator||'',
+   risk_acceptance_ref:st.raRef||'',accepting_authority:st.raAuth||'',
+   health_check_method:st.hcMethod||'',health_check_frequency:st.hcFreq||'',
+   last_performed:st.hcLast||'',next_due:st.hcNext||'',signoff:st.signoff||'',
+   interim_mechanism:st.interim||'',implementation_statement:floorText(f),
+   missing_fields:missingFields(f).join('; ')};});
+}
+function exportFloorCSV(){
+ const rows=floorRecords();const cols=Object.keys(rows[0]);
+ const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+ const csv=[cols.join(',')].concat(rows.map(r=>cols.map(c=>q(r[c])).join(','))).join('\r\n');
+ dl(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}),
+    (S.g.program||'Program').replace(/[^\w-]+/g,'_')+'_floor_disposition_record.csv');
+}
+function exportFloorJSON(){
+ const cv=coverage();
+ const payload={program:S.g.program||'',generated:new Date().toISOString(),
+  measures:{severity_weighted_coverage:+(cv.pct).toFixed(4),weighted_total:cv.tot,weighted_covered:cv.cov,
+   top_band_open_count:cv.openTop,rows_with_missing_fields:cv.incomplete,
+   risk_accepted_share_of_coverage:+(cv.riskShare).toFixed(4),catastrophic_risk_accepted:cv.catRisk,
+   gate:cv.openTop===0?'PASS':'FAIL'},
+  weights:{Catastrophic:SEV_WT.Catastrophic,Severe:SEV_WT.Severe},
+  records:floorRecords()};
+ dl(new Blob([JSON.stringify(payload,null,1)],{type:'application/json'}),
+    (S.g.program||'Program').replace(/[^\w-]+/g,'_')+'_floor_disposition_record.json');
+}
 
 function renderReview(){
  const missG=GLOBALS.filter(f=>!(S.g[f.k]||'').trim()).map(f=>f.l);
  const missC=COVER.filter(f=>f.k!=='logoLine'&&!(S.g[f.k]||'').trim()).map(f=>f.l);
  const blanks=QB.filter(q=>AUTO[q.id]===undefined&&BLANK.indexOf(q.id)<0&&!answer(q.id).trim());
- const undisp=QF.filter(q=>S.floor[q.floor].disp==='none');
- const risk=QF.filter(q=>S.floor[q.floor].disp==='risk');
+ const cv=coverage();
+ const undisp=QF.filter(q=>!isDisp(q.floor));
+ const risk=QF.filter(q=>S.floor[q.floor].disp==='risk'&&isDisp(q.floor));
+ const incomplete=QF.filter(q=>missingFields(q.floor).length);
+ const gate=cv.openTop===0;
  let h='<h2 class="step">Review &amp; generate</h2><p class="lead">The document is produced from your original template: same styles, tables, headings and Appendix Q. Instruction and sample text is removed.</p>';
+
+ h+='<div class="card"><label class="t">CM floor coverage measures</label>'+
+   '<div class="instr">Read the gate first. A high weighted percentage with a non-zero top-band count is a failure, not a pass &mdash; the count is never averaged into the percentage.</div>'+
+   '<div style="display:flex;gap:22px;flex-wrap:wrap;margin-top:10px">'+
+   '<div><b style="font-size:26px">'+(cv.pct*100).toFixed(1)+'%</b><div class="cite">severity-weighted coverage<br>(Catastrophic 3, Severe 2)</div></div>'+
+   '<div><b style="font-size:26px" class="'+(gate?'':'bad')+'">'+cv.openTop+'</b><div class="cite">top-band requirements open<br>target zero</div></div>'+
+   '<div><b style="font-size:26px">'+(cv.riskShare*100).toFixed(0)+'%</b><div class="cite">of coverage by risk acceptance<br>rather than performance</div></div>'+
+   '<div><b style="font-size:26px" class="'+(cv.catRisk?'bad':'')+'">'+cv.catRisk+'</b><div class="cite">catastrophic requirements<br>risk-accepted</div></div>'+
+   '</div>'+
+   '<div style="margin-top:12px;padding:10px;border-radius:6px;background:'+(gate?'#e8f2e8':'#f7e3e3')+'"><b>'+
+   (gate?'GATE PASS \u2014 every floor requirement is dispositioned and confirmed.'
+        :'GATE FAIL \u2014 '+cv.openTop+' floor requirement(s) are open or unconfirmed. Coverage is not a substitute.')+
+   '</b></div></div>';
+
  h+='<div class="card"><label class="t">Checks</label><ul class="check">';
  h+='<li>'+(missG.length?'<span class="bad">Profile fields empty ('+missG.length+'):</span> '+esc(missG.join('; ')):'Program profile complete')+'</li>';
  h+='<li>'+(missC.length?'<span class="bad">Cover fields empty ('+missC.length+'):</span> '+esc(missC.join('; ')):'Cover and signature fields complete')+'</li>';
  h+='<li>'+(blanks.length?blanks.length+' narrative paragraph(s) left blank &mdash; those paragraphs will be omitted':'All narrative items have content')+'</li>';
- h+='<li>'+(undisp.length?'<span class="bad">'+undisp.length+' floor requirement(s) not dispositioned: '+undisp.map(q=>q.floor).join(', ')+'</span>':'All 44 floor requirements dispositioned')+'</li>';
- h+='<li>'+risk.length+' floor requirement(s) covered by risk acceptance rather than performance'+(risk.length?': '+risk.map(q=>q.floor).join(', '):'')+'</li>';
+ h+='<li>'+(undisp.length?'<span class="bad">'+undisp.length+' floor requirement(s) open or unconfirmed: '+undisp.map(q=>q.floor).join(', ')+'</span>':'All 44 floor requirements dispositioned and confirmed')+'</li>';
+ h+='<li>'+(incomplete.length?'<span class="bad">'+incomplete.length+' row(s) missing disposition-record fields: '+incomplete.map(q=>q.floor).join(', ')+'</span>':'Disposition record complete on every row')+'</li>';
+ h+='<li>'+(risk.length?risk.length+' requirement(s) covered by risk acceptance: '+risk.map(q=>q.floor+' ('+sevOf(q.floor).charAt(0)+')').join(', '):'No requirements covered by risk acceptance')+'</li>';
  h+='</ul></div>';
+
+ h+='<div class="note"><b>The plan is not the record.</b> Export the disposition record as structured data and load it into the compliance matrix &mdash; a disposition kept only as narrative inside the plan cannot be queried, and the coverage measures above cannot be recomputed from it.</div>';
+ h+='<div class="card"><label class="t">Disposition record export</label><div style="margin-top:8px">'+
+    '<button class="sec" onclick="exportFloorCSV()">Export disposition record (.csv)</button> '+
+    '<button class="sec" onclick="exportFloorJSON()">Export disposition record + measures (.json)</button></div></div>';
  h+='<div class="note">After opening the document in Word: update the table of contents (Ctrl+A, F9), insert the organizational chart in Section 4, and confirm no blue or red instruction text remains.</div>';
  h+='<div class="card"><button class="pri" onclick="generate()">Generate .docx</button> <button class="sec" onclick="saveJSON()">Save answers as JSON</button><div class="cite" id="genmsg" style="margin-top:10px"></div></div>';
  main().appendChild(el('<div>'+h+'</div>'));
@@ -412,7 +621,7 @@ function saveJSON(){
 function loadJSON(inp){
  const f=inp.files[0];if(!f)return;const r=new FileReader();
  r.onload=()=>{try{const o=JSON.parse(r.result);Object.assign(S.g,o.g||{});S.a=o.a||{};S.touched=o.touched||{};
-  if(o.rows)S.rows=o.rows;if(o.floor)Object.keys(o.floor).forEach(k=>S.floor[k]=o.floor[k]);showStep(cur);}catch(e){alert('Could not read that file: '+e.message)}};
+  if(o.rows)S.rows=o.rows;if(o.floor)Object.keys(o.floor).forEach(k=>{if(S.floor[k])S.floor[k]=floorDefaults(Object.assign(S.floor[k],o.floor[k]))});showStep(cur);}catch(e){alert('Could not read that file: '+e.message)}};
  r.readAsText(f);inp.value='';
 }
 function dl(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
@@ -458,6 +667,10 @@ function buildDoc(){
  return d;
 }
 function generate(){
+ const cv=coverage();
+ if(cv.openTop>0 && !confirm('GATE FAIL: '+cv.openTop+' floor requirement(s) are open or unconfirmed.\n\n'+
+   'Generating now produces a plan that asserts compliance it cannot evidence. Continue anyway?')) return;
+ if(cv.incomplete>0 && !confirm(cv.incomplete+' row(s) are missing disposition-record fields (evidence, health check, sign-off, or acceptance reference).\n\nContinue anyway?')) return;
  try{
   const files=[];
   Object.keys(PARTS).forEach(n=>{
