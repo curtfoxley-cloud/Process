@@ -1204,7 +1204,36 @@ var MODULES = [
     why:"Scope growing from build into any element of design authority is a named re-classification trigger, and the most commonly missed one. Once the supplier can propose changes, an entire requirement set becomes applicable that a build-to-print classification never imposed."
   }},
 
-  {id:"M2-06", title:"Reading the matrix", body:[
+  {id:"M2-06", title:"Who does what", body:[
+    P("Flowdown is not a CM activity with an audience. It is a chain of handoffs, and nearly every failure in this module is a handoff that did not happen \u2014 not a judgement that went wrong."),
+    TABLE(["Function","What they own in this process"],[
+      ["Configuration Management","Owns the process. Classifies each procurement and records it; derives the requirement set and its deliverables; resolves conditionals; drafts or reviews the CM content of the statement of work and signs it before release; maintains the classification through its triggers; logs deliverable receipts and findings; makes or recommends effectiveness determinations; tracks actions to closure"],
+      ["Subcontracts and supply chain","Routes **every** statement of work through CM before release; incorporates the cited requirements and deliverables; administers notice periods and delivery terms; notifies CM of scope changes, source changes and award actions; executes the contractual actions arising from a determination"],
+      ["Systems and Design Engineering","Provides the technical content the flowdown depends on \u2014 source control drawings, specifications, technical data packages, interface definitions. **Approves supplier-proposed safety-critical, life-limited and special-handling designations** where the supplier holds design authority"],
+      ["Quality Assurance","Performs receiving verification; records nonconformances, escapes and findings against supplier deliverables; provides first article and source inspection results; supports the extent checks that follow a control failure"],
+      ["System Safety","Receives safety-relevant supplier findings and escapes into the safety data stream; concurs on dispositions affecting hazard controls; supports floor tailoring evaluations at the supplier tier"],
+      ["Program Management","Resources the flowdown and effectiveness work; approves award restrictions and other actions carrying schedule or cost consequence; escalates unresolved supplier CM performance"],
+      ["Independent CM and Safety Assurance","Evaluates a proposed equivalent control where a supplier or program wants to tailor a safety-floor requirement \u2014 independent of the program bearing the decision, which is the entire point of the role"],
+      ["Enterprise CM functional lead","Owns the work type taxonomy, the requirement matrix and the deliverable definitions, and maintains them as the requirement set or the floor register changes"],
+      ["The sub-tier supplier","Complies with or suitably tailors what is flowed; submits the required deliverables; flows requirements recursively to its own sub-tiers and returns their product data with traceability to next higher assemblies; participates in audits per its work-type role"]
+    ]),
+    S("Name the handoffs and you have named the failure modes.",
+      "A statement of work released without passing through CM. Designation authorship nobody stated, so engineering never approved what the supplier never proposed. An escape found by receiving that never reached the findings log. None of these is a hard judgement call \u2014 each is a handoff that had no owner."),
+    C("The two roles that must stay independent",[
+      "Where a safety-floor requirement is proposed for tailoring at the supplier tier, the evaluation is done by CM and Safety Assurance **independent of the program bearing the decision**, and the risk acceptance is signed at the authority the severity names.",
+      "A program evaluating its own proposed equivalent control is not an evaluation. It is the proposal, written twice."
+    ])
+  ], check:{
+    q:"A supplier holding design authority proposes which of its parts are safety-critical and life-limited. Who approves those designations?",
+    o:["CM, since CM maintains the traceability records they appear in",
+       "The supplier, since they hold design authority for the item",
+       "Systems or Design Engineering at your company, as the technical authority for the content the flowdown rests on",
+       "Quality Assurance, at receiving verification"],
+    a:2,
+    why:"Where the supplier holds design authority they **propose** the designations during design development; your company\u2019s engineering function approves them. CM states in the statement of work who proposes and who approves, and records the result \u2014 but does not make the technical judgement. Leave it unstated and each party waits for the other, which is how a life-limited part arrives with no assigned limit."
+  }},
+
+  {id:"M2-07", title:"Reading the matrix", body:[
     TABLE(["Marking","Means","What you do"],[
       ["R","Required","Impose as written, with its defined data deliverable"],
       ["T","Tailored","Impose with the tailoring documented. What the tailoring is gets recorded, not assumed"],
@@ -1225,7 +1254,7 @@ var MODULES = [
     why:"Mixed classifications take the union. R is more demanding than T, so R governs \u2014 and the requirement is imposed as written, with its deliverable."
   }},
 
-  {id:"M2-07", title:"What the matrix actually imposes", body:[
+  {id:"M2-08", title:"What the matrix actually imposes", body:[
     P("The markings tell you *how much* of a requirement applies. This is *what* the requirements are. A derivation walks these families in order, and each one produces something you can ask for at receipt."),
     TABLE(["Requirement family","What is imposed","What it produces"],[
       ["CM program and planning","The supplier operates CM against the flowed requirement set, and addresses recursive flowdown to its own sub-tiers wherever they exist","A full CM plan for full-development and software work; a tailored plan, or a CM section within the quality plan, where the supplier designs internals, acts as design agent, or performs repair"],
@@ -1251,7 +1280,80 @@ var MODULES = [
     why:"Who performs the build decides whether the reconciliation and traceability apparatus applies at all \u2014 and here nobody builds anything at the supplier, so there is no as-built to reconcile against and no delivered unit to trace. Change control does apply: they develop the design, so changes to it are proposed rather than made."
   }},
 
-  {id:"M2-08", title:"What a configuration audit is", body:[
+  {id:"M2-09", title:"What each work type gets \u2014 the design and build types", body:[
+    P("The families and the markings are the mechanism. This is the output: what a supplier of each type actually receives. Read the third column as carefully as the second \u2014 what is **absent** from a flowdown, and why, is the part people get wrong."),
+    TABLE(["Work type","What is imposed","What is absent, and why"],[
+      ["Build-to-print","Work only to current released data. Identification and marking. The part traceability record. Both reconciliation flowdowns \u2014 method and report. Variance requests before delivery. First article inspection. Status accounting tailored to as-built records. Process change notification where critical or special processes are identified in the data package","**No change proposals** \u2014 the supplier holds no design authority, so changes arise from company action or surface as variances. **No interface obligations** \u2014 the interfaces are defined in the data package they were given. **No CM plan** in most cases; the reconciliation method is imposed standalone instead"],
+      ["Source-controlled design and build","Nearly everything. A tailored CM plan, or a CM section within the quality plan. Change proposals for anything touching the baseline, form-fit-function-interface, qualification or company-controlled documentation. Variances. Identification, traceability, both reconciliation flowdowns, status accounting, engineering release discipline, interface participation, first article. Software CM **where embedded code exists**","Little. This is the type where the split of authority is the difficulty: they design the internals, so change control is real, but the characteristics and the interfaces are yours, so change proposals come to you"],
+      ["Design agent","Change proposals and release discipline above all \u2014 the technical data package **is** the product, so how they release and revise it is the thing being bought. Interfaces. Status accounting over the developmental configuration. Support for CM process audits","**No traceability record, no reconciliation, no first article** \u2014 they build nothing, so there is no as-built configuration at their end and no delivered unit to trace"],
+      ["Full CI development","The full set, as written: a full CM plan, change and variance control, identification and traceability, both reconciliation flowdowns, interfaces, release, status accounting, first article, and software CM where deliverable software or embedded code exists","Nothing of substance. This is the heaviest flowdown \u2014 the supplier holds design authority at its level and builds, so both of the two questions point at them"]
+    ]),
+    S("The absences are derived, not negotiated.",
+      "Every blank in a flowdown traces back to one of the two questions. If you cannot say which question produced an absence, you have not derived the set \u2014 you have copied one."),
+    C("The one that catches people",[
+      "A build-to-print supplier cannot propose changes, which sounds like less risk and is often read as less flowdown. It is not. It means every departure they encounter has only two honest exits \u2014 a variance request before delivery, or a change raised through your company \u2014 and if neither is imposed clearly, the third exit is the one you find in the hardware later.",
+      "**Imposing less on a supplier with no design authority is exactly when the variance discipline matters most.**"
+    ])
+  ], check:{
+    q:"Why does a design agent receive no part traceability record requirement and no reconciliation report requirement?",
+    o:["Because those requirements belong to the quality system rather than to CM",
+       "Because the deliverable is data, and the company performs the build \u2014 there is no as-built configuration at the supplier to trace or reconcile",
+       "Because design agents are typically small firms and the flowdown is proportioned to size",
+       "Because those requirements are imposed on the company\u2019s own manufacturing organisation instead"],
+    a:1,
+    why:"Who performs the build decides whether the traceability and reconciliation apparatus applies. Nothing is manufactured at a design agent, so there is no physical article to serialise and no as-built to compare against released design. What they do get is the discipline that fits what they produce: release control, change proposals, and status accounting over the developmental configuration."
+  }},
+
+  {id:"M2-10", title:"What each work type gets \u2014 the specialised types", body:[
+    P("Four types where the flowdown is narrow. Narrow is not the same as light \u2014 in each case one or two requirements carry nearly all the weight, and missing them is what goes wrong."),
+    TABLE(["Work type","What carries the weight","Notes"],[
+      ["Catalog item","**Change and discontinuance notification.** Notice of any product change or discontinuance, with effectivity, last-time-buy terms and alternates data, within the agreed notice period. Your company evaluates the impact through its own change process","Identification and traceability are tailored to what a vendor item can carry \u2014 vendor part identification, media and version marking, and pass-through of vendor life or safety data where the catalog item carries it. A vendor nonconformance is normally handled by receiving and withhold, with a variance where a company drawing is invoked"],
+      ["Software and firmware development","**Software CM in full:** version identification, developmental library control, a version description per release, and build reproducibility records \u2014 compiler, version, settings, build procedure and library and media identification, sufficient to rebuild the delivered load","Usually combined with source-controlled or full-development work rather than standing alone. When it is combined and nobody records the second work type, this whole column silently disappears from the statement of work"],
+      ["Repair and overhaul","**Retention of unit identifiers and consumed life through part-number changes**, plus retrofit incorporation records. Reconciliation is as-maintained against approved configuration rather than as-built against released design","Change control covers changes to approved repair schemes. First article applies to the first article of a repair where required. The traceability record is updated through repair and survives overhaul \u2014 the life consumed field keeps counting"],
+      ["Special process services","**Process change notification**, and working only to the current released process specification. No change to a frozen or approved process, planning, facility or tooling without notice and approval","There is no item design and no as-built configuration, so nearly everything else falls away. The single requirement that remains is the one that protects every part that has ever passed through that process"]
+    ]),
+    S("On a special process, one requirement stands between you and a fleet-wide question.",
+      "If a heat-treat house changes its cycle without notice, the question is not whether this delivery conforms. It is which units, over what period, were processed under a condition nobody assessed \u2014 and if the notification requirement was never imposed, nobody can bound the answer."),
+    P("Two of these four types are the ones most often missed at classification. A hardware procurement that quietly acquires firmware loses the entire software column. And a procurement that includes a special process performed in-house by the same supplier is frequently classified only as the hardware work \u2014 which drops the notification requirement on the process that was hardest to qualify.")
+  ], check:{
+    q:"A plating vendor processes parts you supply, to your process specification. They change their bath chemistry without telling anyone; the change is discovered four months later. What was the requirement that should have prevented this, and why does its absence matter beyond this delivery?",
+    o:["First article inspection \u2014 the change would have been caught on the next first article",
+       "Process change notification \u2014 without it, nobody can bound which units over what period were processed under an unassessed condition",
+       "The reconciliation report \u2014 the delta would have appeared in it",
+       "Status accounting \u2014 the process revision would have been recorded"],
+    a:1,
+    why:"Special process work produces no as-built configuration to reconcile and no item design to control, so the notification requirement is carrying almost the whole flowdown on its own. Its absence is not a missed record \u2014 it is the loss of the ability to scope an investigation across every unit processed since the change."
+  }},
+
+  {id:"M2-11", title:"The deliverables, and what each must contain", body:[
+    P("A requirement is cited with its deliverable or it is not cited. Here is what each deliverable definition actually fixes \u2014 and each one answers the same three questions: **what is in it, when it arrives, and what triggers it.**"),
+    TABLE(["Deliverable","Content","When"],[
+      ["Sub-supplier CM plan","How the supplier implements the flowed requirements: organisation, change control, release, status accounting, identification, and flowdown to their own sub-tiers","Once plus revisions; approved before the work it governs begins"],
+      ["Reconciliation process documentation","Data sources, comparison method, delta disposition, frequency, and the records the method produces","Once plus revisions; with the plan, or standalone where there is no plan"],
+      ["Reconciliation report","As-built against the released design revision; open deltas with disposition status; changes incorporated with effectivity; expressed in traceability-record identifiers","Per delivery or lot"],
+      ["Part traceability record","Per unit or lot: serial numbers; lot and batch numbers; life-limited designation **with the assigned limit and the life consumed at delivery**; safety-critical designation; special handling designations; traceability to the next higher assembly","Per delivery"],
+      ["Change proposal package","The change definition; the need for it; full impact data; a summary of testing validating any new concept or technology; and a revision notice for every affected document","Event-driven"],
+      ["Variance request","The departure described; affected units and lots by identifier; classification; cause; corrective action; and recurrence status","Event-driven, before delivery"],
+      ["Process change notification","Advance notice of any change to a frozen or approved process, planning, facility or tooling identified as critical \u2014 with no implementation before approval","Event-driven, within the agreed notice period"],
+      ["Status accounting report","Status of configuration documentation, changes and variances by item identifier; current and historical","Periodic, per the agreed terms"],
+      ["Software version description and build records","Version identification and contents; changes since the prior version; compiler, compiler version and settings; a build procedure sufficient to reproduce the build; library and media identification","Per software release"],
+      ["Audit plan and agenda, data package, minutes and closure","Scoped to the supplier\u2019s role. Minutes carry the required content and the action items, and are delivered within the agreed period after the audit","Triggered by audit designation"],
+      ["Change or discontinuance notice","For a vendor item: notice of product change or discontinuance with effectivity, last-time-buy terms and alternates data","Event-driven, per the agreed notice period"],
+      ["First article inspection report","Per the applicable standard or an agreed equivalent; re-accomplished on process, source or tooling change","First article, plus its triggers"]
+    ]),
+    S("Content, frequency or trigger, and submittal terms. A deliverable definition missing any one of the three is not enforceable at receipt.",
+      "\u201cSubmit a traceability record\u201d gives you nothing to reject. \u201cPer delivery, containing life consumed at delivery for life-limited items\u201d gives you a blank field you can point at.")
+  ], check:{
+    q:"A statement of work requires the supplier to \u201cmaintain configuration records and make them available on request.\u201d What is wrong with it as a cited requirement?",
+    o:["Nothing \u2014 it imposes the obligation clearly",
+       "It names no data deliverable with content, frequency and submittal terms, so there is nothing to review at receipt and nothing to find missing",
+       "It should have been imposed as a tailored requirement rather than as written",
+       "It duplicates the reconciliation report requirement"],
+    a:1,
+    why:"An obligation with no deliverable behind it produces nothing on a schedule and nothing to score. \u201cAvailable on request\u201d also inverts the status accounting test \u2014 records reconstructed on request rather than maintained is a named failure signal, and this wording invites exactly that."
+  }},
+
+  {id:"M2-12", title:"What a configuration audit is", body:[
     P("Two audits. They are asked at different moments, about different questions, and almost everything else about them follows from knowing which question is on the table."),
     CARDS([
       {h:"Functional configuration audit", b:"**Does the item do what it was required to do, and can you prove it?** The formal audit that verifies the item\u2019s tested performance against its approved functional and allocated documentation. It also confirms that specifications and interfaces are accurately and adequately defined, and that the change control system genuinely controls the processing and release of documentation. Prerequisite: the Acquirer has already approved the functional and allocated baselines for the item."},
@@ -1280,7 +1382,7 @@ var MODULES = [
     why:"The physical audit asks whether the documentation accurately describes what was built. That question only means something once the item has been shown to meet its requirements \u2014 otherwise you are confirming that the paperwork faithfully describes something nobody has established works."
   }},
 
-  {id:"M2-09", title:"Inside a functional configuration audit", body:[
+  {id:"M2-13", title:"Inside a functional configuration audit", body:[
     P("At bottom the functional audit is one question, asked over and over: **for this requirement, where is the evidence it was met?**"),
     STEPS([
       {h:"The opening briefing", b:"The design team briefs each audited item: an overview, test results and findings, requirements not met with proposed remedies, changes incorporated, tested and proposed, and the overall test effort including its problem areas. Opening with what did not work is part of the format, not a failure of it."},
@@ -1303,7 +1405,7 @@ var MODULES = [
     why:"Sampling exists to make a large requirement set auditable in the time available. It is not a random draw, and the requirements whose failure hurts most are the ones the audit least affords to miss. They go in the sample by rule, and the remaining sample is drawn around them."
   }},
 
-  {id:"M2-10", title:"Inside a physical configuration audit", body:[
+  {id:"M2-14", title:"Inside a physical configuration audit", body:[
     P("The physical audit takes one unit \u2014 an early production-representative unit, **selected jointly by the Acquirer and the Supplier**, not offered up by whoever is being audited \u2014 and asks whether the documentation describes it."),
     L(["**Reconcile the item to its documentation:** item, to drawings, to associated lists, to the parts list. Effectivity and next assembly. The accuracy of notes and references. The released documents those references point at.",
        "**Review a representative sample of drawings and model data with the matching manufacturing instructions**, confirming the instructions reflect the design detail and incorporate the authorised changes.",
@@ -1329,7 +1431,7 @@ var MODULES = [
     why:"Records comparing correctly to records tells you the paperwork is self-consistent. The failure mode that matters is as-built diverging from as-documented, and no amount of reading will surface it. Somebody has to look at the item."
   }},
 
-  {id:"M2-11", title:"Findings, closure, and certification", body:[
+  {id:"M2-15", title:"Findings, closure, and certification", body:[
     P("Nothing found at an audit exists until it is written down. Every discrepancy becomes an action item defining four things: the issue, the agreed closure plan, the responsible person, and the agreed suspense date. There is no such thing as a verbal finding."),
     TABLE(["Classification","What it covers"],[
       ["Major","Production definition documentation or design data incorrect or incomplete; a systematic breakdown of process control; clear non-adherence to workmanship standards; hardware or software not included in the build process; non-adherence to specification, interface or statement-of-work requirements; first article data missing or incomplete"],
@@ -1356,7 +1458,7 @@ var MODULES = [
     why:"The classification turns on systematic versus non-systematic, not on volume. A release process that fails to propagate change notices produces incorrect production definition documentation on purpose, so to speak \u2014 and would be a major finding on the strength of the mechanism even if it had surfaced on one drawing only."
   }},
 
-  {id:"M2-12", title:"Audit designation: how a CI earns an audit", body:[
+  {id:"M2-16", title:"Audit designation: how a CI earns an audit", body:[
     P("Audit obligations hinge on whether a CI is designated for audit. Designation is not a matter of taste, and it is not decided by the supplier\u2019s work type \u2014 it is assessed per CI, and it arrives from two directions."),
     CARDS([
       {h:"Contract designation", b:"The CI is named in the contract, the statement of work, or the CM plan as requiring audit. This includes **every Acquirer-controlled CI whose product baseline the Acquirer will establish** \u2014 because the physical audit is the event that establishes it. There is no baseline without the audit."},
@@ -1386,7 +1488,36 @@ var MODULES = [
     why:"One factor does not designate; two or more do. But \u201cnot designated\u201d is a recorded decision with a rationale, not a silence \u2014 and the assessment re-runs on trigger, so a second factor arriving later changes the answer without anyone having to remember to ask."
   }},
 
-  {id:"M2-13", title:"Conditionals, and the standing audit clause", body:[
+  {id:"M2-17", title:"What designation obliges: roles by work type", body:[
+    P("Designation decides **whether** an item is audited. The supplier\u2019s work type decides **what their part in it is** \u2014 and the gap between conducting an audit and supporting one is the difference between a substantial obligation and a modest one. Both have to be bought in advance."),
+    TABLE(["Work type","Role if the item is designated"],[
+      ["Build-to-print","**Supports** the physical audit on their build: facility access, as-built records, approved-parts evidence, and manufacturing instructions. They do not conduct \u2014 they hold no design authority and there is nothing at their end to audit against but the build"],
+      ["Source-controlled design and build","**Conducts** the item-level functional and physical audits at their own facility, substance in full"],
+      ["Design agent","**Data support:** the technical data package and the inputs to the requirements-to-test traceability matrix. There is no build at their end and no unit to examine"],
+      ["Full CI development","**Conducts** the item-level functional and physical audits at their facility, substance in full \u2014 the heaviest audit role, matching the heaviest flowdown"],
+      ["Catalog item","Generally not applicable"],
+      ["Software and firmware development","**Conducts** the software functional audit, and the witnessed build and installation verification against the version description \u2014 the live rebuild you met in the physical audit section"],
+      ["Repair and overhaul","Generally not applicable in its own right; their as-maintained records support audits of the parent item"],
+      ["Special process services","Not applicable \u2014 there is no item configuration to audit"]
+    ]),
+    S("Mixed classification takes the most demanding role, exactly as it takes the most demanding cell.",
+      "A supplier who designs and builds a unit **and** develops its embedded software conducts the hardware audits and the software audit and the witnessed build. That is a materially larger commitment than either alone, and it follows from a classification field."),
+    P("When designation does arrive, three things become due, each scoped to that role: the audit plan and agenda; the audit data package; and afterwards the minutes with the action items tracked to closure. None of that is a surprise if the standing clause was written \u2014 you notify, and you set dates."),
+    C("Preparation is a joint punch list, not a request",[
+      "The preparation tracker is shared with the supplier and worked as one list. Each row is a required input \u2014 an entry criterion, a pre-audit submittal, or a data package item \u2014 with a provider, a due date derived from the audit date, and a status. Rows that do not apply to that item or that role are marked as such and **kept**, so the record shows they were considered rather than forgotten.",
+      "**Entry criteria must all be complete before the audit convenes.** Readiness short of that on the day is a schedule conversation, not a footnote in the minutes \u2014 and holding that line is easier when the tracker has been visible to both sides for weeks."
+    ],"teal")
+  ], check:{
+    q:"A build-to-print supplier manufactures a CI that has just been designated for a physical configuration audit. What is their role?",
+    o:["Conduct the audit at their facility, since the article is built there",
+       "Support it on their build \u2014 facility access, as-built records, approved-parts evidence and manufacturing instructions",
+       "No role; the company conducts audits of items it designed",
+       "Conduct the functional audit only, with the company conducting the physical audit"],
+    a:1,
+    why:"The article is theirs but the design is not, so there is nothing at their end to audit the design against \u2014 they hold no design authority and produce no design documentation. What they do hold is the build and the evidence about it, which is exactly what the physical audit needs from them. Conducting the audit is the role of suppliers who design what they build."
+  }},
+
+  {id:"M2-18", title:"Conditionals, and the standing audit clause", body:[
     P("Resolve each conditional against its stated condition and record the basis. Software CM requirements are conditional on deliverable software or embedded code; process-change notification on identified critical or special processes; first article requirements on the applicable quality system criteria. Re-resolve any conditional when its condition changes."),
     P("Configuration audit obligations are conditional on the **CI\u2019s audit designation** \u2014 not on work type. Work type determines the supplier\u2019s *role* if the item is or becomes designated: conduct the audit at their facility, or support one with data and access."),
     S("Designation can arrive after award \u2014 introducing a new sub-supplier is itself a designation trigger.",
@@ -1409,7 +1540,7 @@ var MODULES = [
     why:"Deciding audit applicability once, at award, converts every post-award designation into a contract modification negotiated from an unfavourable position. The standing clause costs nothing now and buys the obligation before you need it."
   }},
 
-  {id:"M2-14", title:"Citing in the statement of work", body:[
+  {id:"M2-19", title:"Citing in the statement of work", body:[
     P("Each cited requirement identifies its data deliverable by reference to the deliverable definition \u2014 content, frequency or triggering event, and submittal terms. Beyond that, five things must be stated explicitly, because each is a known failure point."),
     STEPS([
       {h:"Designation authorship", b:"Who proposes and who approves safety-critical, life-limited and special-handling designations. Where the company holds design authority, designations are provided in the technical data and the supplier marks, records and reports against them. Where the supplier holds design authority, they propose them for company approval. Unstated, each party waits for the other."},
@@ -1429,7 +1560,31 @@ var MODULES = [
     why:"Unstated, each party assumes the other owns it. The failure is silent until a life-limited part arrives with a blank consumed-life field \u2014 at which point it can never be accurately tracked again, because the count starts from an unknown."
   }},
 
-  {id:"M2-15", title:"Two reconciliation deliverables, and the traceability record", body:[
+  {id:"M2-20", title:"Before release: the readiness check", body:[
+    P("One check, completed per statement of work or purchase order before release, attached to the classification record. It exists because every failure it catches is cheap now and expensive later."),
+    STEPS([
+      {h:"Classification", b:"Design authority and build responsibility determined, and the item type identified. **All applicable work types recorded, not only the dominant one.** The mixed-classification question asked out loud: does this supplier also develop software or firmware, or also hold any element of design authority? CI identifiers recorded where the procured item is or contains a designated CI. And where the supplier is an incumbent, their history reviewed \u2014 prior determinations, open findings, open actions."},
+      {h:"Derivation and conditional resolution", b:"The requirement set read from **every** applicable column, with the most demanding cell applied. Every conditional resolved and its basis recorded. Audit designation status determined. The standing conditional clause included where designation is possible \u2014 or audit requirements imposed outright where designation is already in effect. And every safety-floor requirement either imposed, or dispositioned through the floor gate with the disposition referenced."},
+      {h:"Citation completeness", b:"Every cited requirement carrying its deliverable, with content, frequency or trigger, and submittal terms. Designation authorship stated. Both reconciliation flowdowns imposed where the supplier builds. Part traceability content imposed in full, life limits and life consumed included. Recursive flowdown and the return of sub-tier data imposed wherever sub-tiers exist. Software CM imposed where deliverable software or embedded code exists. Change and variance control consistent with where design authority sits."},
+      {h:"Release", b:"CM signature applied before release, per the attestation scope defined in the program CM plan. The classification record complete, including signature and date. And the re-classification triggers communicated to subcontracts and program management \u2014 because they will see the triggers before CM does."}
+    ]),
+    S("The checklist is not a formality tax. Every line on it is a failure somebody has already had.",
+      "The dominant-work-type-only classification. The unresolved conditional. The requirement with no deliverable. The unstated designation authorship. Each has a section of this module behind it."),
+    C("When a statement of work is released without CM signature",[
+      "It happens. The response is defined, and its shape matters: the release is recorded as a **process finding against the release gate, not against an individual** \u2014 and the classification and derivation are then performed retroactively and reconciled against what was actually released.",
+      "Both halves are deliberate. A release path that can bypass CM will do it again next quarter no matter whose name was on this one, so the finding has to attach to the path. And the retroactive derivation is not paperwork \u2014 it is the only way to find out what you actually bought, and what is now missing from it."
+    ])
+  ], check:{
+    q:"A statement of work reaches a supplier without ever passing through CM review. What is the correct response?",
+    o:["Record it against the engineer or buyer who released it, and re-brief them",
+       "Record a process finding against the release gate, then perform the classification and derivation retroactively and reconcile them against what was actually released",
+       "Leave it \u2014 the work is under contract and the requirements cannot now be changed",
+       "Issue a modification imposing the standard requirement set, without classifying"],
+    a:1,
+    why:"The finding attaches to the gate because a bypassable release path is the actual defect \u2014 naming a person fixes this instance and nothing else. And the retroactive derivation is what tells you the gap: what should have been imposed, what was, and therefore which deliverables you will never receive unless the statement of work is modified. Imposing a standard set without classifying repeats the original error at speed."
+  }},
+
+  {id:"M2-21", title:"Two reconciliation deliverables, and the traceability record", body:[
     P("New engineers frequently treat the two reconciliation deliverables as one requirement. They are two, and imposing only one is a defined failure."),
     TABLE(["","Process documentation","Reconciliation report"],[
       ["What it is","The supplier\u2019s documented METHOD: data sources, comparison method, delta disposition, frequency, records produced","The recurring OUTPUT: as-built against released design revision, open deltas with disposition, changes incorporated with effectivity"],
@@ -1451,7 +1606,7 @@ var MODULES = [
     why:"The process documentation is capability evidence, submitted before reliance is placed on it. Without it you have a number without a method \u2014 and no basis for believing a clean report means anything."
   }},
 
-  {id:"M2-16", title:"Evidence accrues; it is not assembled", body:[
+  {id:"M2-22", title:"Evidence accrues; it is not assembled", body:[
     P("A determination reconstructed from memory a week before it is due is not a determination."),
     L(["Log every supplier data deliverable on receipt, and score it at review \u2014 accepted first pass, accepted with comment, or rejected \u2014 with defect codes for anything less than first pass.",
        "Log every finding and escape as it occurs.",
@@ -1482,7 +1637,7 @@ var MODULES = [
     why:"A bracket on two units is one delivery that went wrong. A report that cleared it as no-delta means the control that should catch such things does not operate \u2014 which puts every previous clean report in question."
   }},
 
-  {id:"M2-17", title:"The ten evidence streams", body:[
+  {id:"M2-23", title:"The ten evidence streams", body:[
     P("Accrued evidence is read stream by stream. Each has a shape when it is working and a signal when it is not, and the failure signals are worth memorising \u2014 they are what you are actually looking for when a deliverable lands on your desk."),
     TABLE(["Evidence stream","What effective looks like","The failure signal"],[
       ["CM plan adequacy","The plan implements the imposed requirement set, including recursive sub-tier flowdown, and is kept current through revisions","A plan silent on sub-tier flowdown \u2014 or never revised as the scope grew"],
@@ -1508,7 +1663,7 @@ var MODULES = [
     why:"Neither a deficiency nor a free pass. The stream is simply out of scope for that supplier. If the absence of those records is actually a problem, the fault is in what was flowed \u2014 which is a classification and derivation question to reopen, not something to hold against the supplier at determination."
   }},
 
-  {id:"M2-18", title:"Three determinations", body:[
+  {id:"M2-24", title:"Three determinations", body:[
     P("Determine effectiveness over the rolling accrued evidence, **against the requirement set actually imposed on that supplier.** A supplier is evaluated on what was flowed to it, not against a uniform standard. Streams that were not imposed are not evaluated."),
     STEPS([
       {h:"Effective", b:"The imposed requirements are being met. Routine surveillance continues."},
@@ -1535,7 +1690,7 @@ var MODULES = [
     why:"The first, second and fourth are defects in records or timeliness. A departure reaching delivery without a variance request means the mechanism that should have stopped it never ran \u2014 which supports Conditionally effective at best."
   }},
 
-  {id:"M2-19", title:"The actions ladder, and what follows", body:[
+  {id:"M2-25", title:"The actions ladder, and what follows", body:[
     P("A determination of less than effective is **an action-forcing event, not a filing event.** Select and record actions proportionate to the determination and to the safety relevance of the evidence."),
     STEPS([
       {h:"Increased surveillance", b:"And elevated deliverable review \u2014 full review rather than sampling."},
@@ -1561,7 +1716,7 @@ var MODULES = [
     why:"Corrective actions close on the corrective artifact, not on an assertion of completion. Where the finding indicates a control failure rather than an isolated error, the extent check across already-delivered units is part of closure, not an optional extra."
   }},
 
-  {id:"M2-20", title:"Recursion, and the floor at depth", body:[
+  {id:"M2-26", title:"Recursion, and the floor at depth", body:[
     S("A tier that cannot be seen through is a tier that is not controlled.",
       "Wherever a supplier has sub-tiers, the comply-or-suitably-tailor obligation flows again \u2014 and sub-tier product data, part numbers and serial numbers, returns upward with traceability to next higher assemblies."),
     P("This is why the sub-supplier CM plan must address sub-tier flowdown, and why a plan silent on it is a **named failure signal** rather than a missing detail. Your company does not contract with the lower tiers \u2014 the supplier does. What you impose is the recursive obligation, and what you verify is that they have discharged it."),
@@ -1646,7 +1801,28 @@ var MODULES = [
      {id:"e", q:"What audit outputs do you expect to reach your company, and on what timing? What in the statement of work made them yours to expect?"},
      {id:"f", q:"Which of the four findings tells you something about the supplier\u2019s CM process rather than about this unit, and what would you do with that beyond the audit?"}
    ]},
-  {id:"M2-E9", title:"Exercise 9 \u2014 Reading a situation",
+  {id:"M2-E9", title:"Exercise 9 \u2014 Writing the flowdown end to end",
+   scen:"A new procurement: a supplier will develop and build an environmental control unit under your source control drawing. You control form, fit, function, interface and qualification; they design the internals. The unit contains a controller running their own embedded firmware. They will subcontract the heat exchanger core to a specialist shop of their own, and they will send housings out for anodising to a process house under your process specification. The unit contains two life-limited components. The CI is not designated for configuration audit at award.",
+   parts:[
+     {id:"a", q:"Record the classification. Name every applicable work type and give the two answers that produced each one."},
+     {id:"b", q:"Derive the requirement set. Work through the families in order and say what is imposed, naming anything that is imposed because of the most-demanding-cell rule rather than the dominant type."},
+     {id:"c", q:"List the deliverables you will cite, with the frequency or trigger for each. Flag any where the content must be stated explicitly rather than left to the definition."},
+     {id:"d", q:"Resolve every conditional in this procurement and record the basis for each."},
+     {id:"e", q:"What do you write about configuration audit, and why? What would the supplier\u2019s role be if designation arrived after award?"},
+     {id:"f", q:"Two sub-tiers exist. What is imposed about them, and what has to come back up?"},
+     {id:"g", q:"Walk the readiness check and name anything in this scenario that a hurried classifier would most likely miss."}
+   ]},
+  {id:"M2-E10", title:"Exercise 10 \u2014 Audit roles across a supply chain",
+   scen:"Four suppliers each hold work on a designated CI or its components. A machine shop builds a housing to your released drawing. A supplier designs and builds a valve assembly under your source control drawing, including its embedded firmware. An engineering firm produced the technical data package for a structural fitting your company manufactures. A plating house anodises parts to your process specification. The parent CI has just been designated for both a functional and a physical audit.",
+   parts:[
+     {id:"a", q:"State each supplier\u2019s audit role, and say what makes it that role rather than another."},
+     {id:"b", q:"For the two suppliers who conduct audits, what deliverables become due and roughly when?"},
+     {id:"c", q:"The firmware supplier proposes to demonstrate the build from an archived binary rather than rebuilding during the audit. How do you answer, and on what principle?"},
+     {id:"d", q:"One supplier has no audit role at all. Does that mean nothing about them is verified? Explain what still applies and why."},
+     {id:"e", q:"The valve supplier\u2019s audit is internally initiated rather than Acquirer-chaired. Name one thing that may be simplified and one that may not."},
+     {id:"f", q:"Preparation begins six weeks out and two entry criteria are still open on the audit date. What is the correct handling, and what should have prevented the situation?"}
+   ]},
+  {id:"M2-E11", title:"Exercise 11 \u2014 Reading a situation",
    scen:"You inherit a supplier portfolio. You find: classification records for eleven of forty-three active statements of work; a receipt log last updated fourteen months ago; no findings log; three suppliers with determinations recorded as Effective, all dated the same day; and a fourth supplier with two safety-relevant escapes in the past year and no determination at all.",
    parts:[
      {id:"a", q:"Name each problem and say what it means for the determinations that exist."},
@@ -1839,7 +2015,7 @@ function viewStart(){
     "<dt>Module 1</dt><dd>Configuration identification \u2014 what a Configuration Item is, how one is selected, and how the identification is maintained. "+MODULES[0].sections.length+" sections, "+MODULES[0].exercises.length+" exercises.</dd>"+
     "<dt>Module 2</dt><dd>Sub-supplier CM requirements flowdown \u2014 what is imposed on a supplier, how it is imposed, and how you find out whether it worked. "+MODULES[1].sections.length+" sections, "+MODULES[1].exercises.length+" exercises.</dd>"+
     "<dt>Prerequisites</dt><dd>None. Module 2 assumes Module 1.</dd>"+
-    "<dt>Time</dt><dd>Allow around three hours for Module 1 and two for Module 2, plus the exercises. Very few people do this in one sitting, and it is not designed to be.</dd></dl>"+
+    "<dt>Time</dt><dd>Allow around three hours per module, plus the exercises. Very few people do this in one sitting, and it is not designed to be.</dd></dl>"+
     "<div class='callout'><div class='lab'>How your work is kept</div><p>"+save+"</p>"+
     "<p>When you are done, go to <strong>Review and send</strong>. It shows your score, gathers every answer into one record, and gives you the ways to send it.</p></div>"+
     "<div class='callout teal'><div class='lab'>Where are the document numbers?</div>"+
