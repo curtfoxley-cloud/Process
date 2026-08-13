@@ -288,7 +288,7 @@ var MODULES = [
       "Nearly everything else in this training follows from keeping those two questions apart."),
     C("Where this applies",[
       "The organisation's process covers hardware items, software items and firmware, at lower-tier incremental levels and at the system level, and it applies to audits held at the organisation's own facilities and at sub-supplier facilities alike.",
-      "Where a contract imposes differing requirements, the contract governs, and the deviation is recorded in the programme configuration management plan. Silence in a contract is not the same as a differing requirement \u2014 a point Section 7 of this module returns to."
+      "Where a contract imposes differing requirements, the contract governs, and the deviation is recorded in the programme configuration management plan. Silence in a contract is not the same as a differing requirement \u2014 a point section 8 of this module returns to."
     ],"teal")
   ], check:{
     q:"A production unit passes every acceptance test it is given. Months later a customer finds that one installed connector is a different part from the one on the released drawing. Which audit exists to catch that, and why?",
@@ -300,7 +300,44 @@ var MODULES = [
     why:"Passing tests tells you the unit performs. It does not tell you the unit matches its documentation, and those are two separate claims. The functional audit is tempting here because a wrong part sounds like it must affect performance \u2014 but that audit works from test evidence against requirements, not from hardware against drawings. Comparing the built article to the product documentation is exactly and only what the physical audit does."
   }},
 
-  {id:"A1-02", title:"The words you will meet", body:[
+  {id:"A1-02", title:"What a configuration item is, and why only some are audited", body:[
+    P("This training has been saying *item*. It is time to be precise about what one is, because two separate narrowings sit between \u201ceverything in the product\u201d and \u201ceverything that gets audited,\u201d and people collapse them constantly."),
+    P("A **configuration item** is something selected for separate management. It gets its own documentation, its own identifier, its own baselines and its own change control. Everything else in the product is managed inside the documentation of the configuration item it belongs to."),
+    P("Two tests decide it. First, an end-use function gate: an item with no end-use function \u2014 raw material, bulk commodity, a purely structural element with no defined functional role \u2014 is not a configuration item, and is controlled within its parent. Then the selection criteria. An item is designated a configuration item if it meets or affects any one of these:"),
+    L([
+      "It is **critical to the functioning** of the system.",
+      "Its **failure might cause serious injury, loss of life, or loss of primary system capability.**",
+      "Its **technology is complex and not well understood**, and is critical to the acquisition, operational or supportability goals of the programme.",
+      "It is **under control as designated by the Acquirer.**",
+      "It requires **separate type designation, versions or nomenclature.**",
+      "It is **critical or high risk** and its failure would have significant financial impact.",
+      "It requires **logistics elements** \u2014 provisioning lists, test equipment, technical manuals, tag-out procedures."
+    ]),
+    P("Software is designated as configuration items in its own right. Selection is made at the level where items are specified, contracted, accepted and supported: designate too high and you lose visibility of what is changing; designate too low and the change traffic becomes unmanageable. Some configuration items are controlled by the Acquirer \u2014 specified, baselined and controlled by them \u2014 and below that level the Supplier decides what to manage internally and how."),
+    P("Now the funnel, which is the point of this section."),
+    STEPS([
+      {h:"Everything in the product",b:"Parts, materials, processes, software, documentation. All of it is made, inspected and controlled. Most of it is not separately managed."},
+      {h:"Configuration items",b:"The subset selected against the criteria above. Each carries its own documentation, identifier, baselines and change control. A programme may have hundreds."},
+      {h:"Configuration items designated for audit",b:"A much smaller subset again, chosen by the designation assessment covered later in this module. A programme with hundreds of configuration items may audit a handful."}
+    ]),
+    S("Being a configuration item decides what is managed separately. Audit designation decides which of those get a discrete validation event.",
+      "Two different questions, answered by two different assessments, each with its own record."),
+    C("The two errors this produces",[
+      "**“It is a configuration item, so it will be audited.”** No. Most configuration items are never audited, and nothing is wrong with that.",
+      "**“It is not being audited, so it is not really controlled.”** Also no. Configuration items carry documentation, identifiers, baselines and change control whether or not an audit ever visits them.",
+      "Both errors come from treating one selection as if it were the other."
+    ])
+  ], check:{
+    q:"A programme has two hundred and forty configuration items. Eleven are designated for audit. A new engineer concludes that the other two hundred and twenty-nine are not really under configuration control. What is wrong with that conclusion?",
+    o:["Nothing \u2014 audit designation is what places an item under configuration control",
+       "Being a configuration item is what gives an item its own documentation, identifier, baselines and change control; audit designation decides only which of them receive a discrete validation event",
+       "The other items are controlled only where the Acquirer has designated them as Acquirer-controlled",
+       "The conclusion holds for hardware but not for software, which is always audited"],
+    a:1,
+    why:"The two selections are being collapsed into one. Selection as a configuration item is what puts an item under separate management, and it has already happened for all two hundred and forty. Acquirer control is a third and different distinction \u2014 it decides who baselines and controls the item, not whether it is controlled at all."
+  }},
+
+  {id:"A1-03", title:"The words you will meet", body:[
     P("Audits are described in a vocabulary that is precise and almost never explained. Learn these now and the rest of the training reads normally."),
     TABLE(["Term","What it means"],[
       ["The Acquirer","The customer buying the product. The Acquirer approves baselines, co-chairs audits, jointly selects the unit examined at the physical audit, and dispositions audit results."],
@@ -310,6 +347,7 @@ var MODULES = [
       ["Functional documentation","The system-level performance requirements and how they will be verified. It answers: what must the system as a whole do?"],
       ["Allocated documentation","Those requirements divided up and assigned to each item, together with its interfaces. It answers: what must this item do, given what the system must do?"],
       ["Product documentation","The released design \u2014 drawings, models, source code, detail specifications, acceptance requirements. It answers: how is this item actually made, and how is a unit accepted?"],
+      ["Status accounting","The record system holding, for every configuration item and every unit, what the approved configuration is and what was actually built, changed or repaired. It is also where the as-designed to as-built reconciliation is performed, at scale, on records."],
       ["Technical data package","The released product documentation delivered to whoever must build, inspect or support the item. A delivery of product documentation, not a fourth kind of requirement."],
       ["Performance specification","States what an item must achieve and leaves the design open."],
       ["Detail specification","States how the item is built \u2014 materials, dimensions, processes."],
@@ -330,7 +368,7 @@ var MODULES = [
     why:"Requirements divided up and assigned to individual items with their interfaces is the allocated set; the system-level statement above it is the functional set. The functional audit works against both. Product documentation is the released design \u2014 drawings, models, code \u2014 and that is what the physical audit compares hardware against. The technical data package is a delivery of product documentation, which is why it is not a separate answer."
   }},
 
-  {id:"A1-03", title:"Prerequisites, and why the order is not a convention", body:[
+  {id:"A1-04", title:"Prerequisites, and why the order is not a convention", body:[
     P("Each audit has a prerequisite, and in both cases the reason is structural rather than administrative."),
     STEPS([
       {h:"The functional audit needs approved baselines",b:"The functional and allocated documentation for the item or system must have been approved by the Acquirer before the audit. The audit compares tested performance against approved documentation. If the documentation is not approved, there is nothing stable to compare against \u2014 you would be auditing against a draft that can move underneath the finding."},
@@ -354,7 +392,7 @@ var MODULES = [
     why:"Acquirer approval is genuinely required for the plan and schedule, which is what makes the third option tempting \u2014 but approval does not make an out-of-order audit meaningful, and no approval creates a validated item where none exists. The product documentation is usually released well before this point, so that is not the obstacle either. The obstacle is that the physical audit has nothing to examine yet."
   }},
 
-  {id:"A1-04", title:"What the physical audit establishes", body:[
+  {id:"A1-05", title:"What the physical audit establishes", body:[
     P("The physical audit is not only a check. It is an event that causes something to exist."),
     P("On successful completion of the physical audit, and approval of the product specification, the Acquirer establishes the **product baseline** for the item. From that moment every subsequent change to the item runs through formal engineering change action against that baseline."),
     P("Before that moment there is no product baseline. Released drawings exist, and they are controlled \u2014 but a released design set the customer has not accepted as the definition of the item is not a baseline, and changes to it are not being measured against an agreed reference point."),
@@ -382,7 +420,7 @@ var MODULES = [
     why:"The first option is tempting because released drawings really do exist and really are controlled \u2014 work does not stop. But a released design set the Acquirer has not accepted as the definition of the item is not a product baseline, and the audit that would establish it is still owed. Work also does not halt waiting for the audit, which is why the third option overstates the effect."
   }},
 
-  {id:"A1-05", title:"Audits validate the machinery; they do not replace it", body:[
+  {id:"A1-06", title:"Audits validate the machinery; they do not replace it", body:[
     P("Configuration verification runs continuously, and it is much bigger than the audits. It is embedded in ordinary work across engineering, test, manufacturing and quality."),
     L([
       "**Functional verification** happens through the test programme \u2014 analyses, inspections, tests and demonstrations against requirements, every day, on everything.",
@@ -390,6 +428,11 @@ var MODULES = [
       "**As-designed to as-built reconciliation** happens at scale, on data for all items, through the status accounting system."
     ]),
     P("Against that, an audit is small and deliberate: a discrete validation conducted on designated items and, for the physical audit, on one representative unit and an agreed sample of documentation. Its purpose is to confirm that the machinery above is actually working, and to establish baselines. It is explicitly not the intent of an audit to verify every change individually."),
+    C("What the physical audit is actually testing",[
+      "Look closely at the third of those activities. The reconciliation compares what the approved configuration says the unit should be against what the **build records** say the unit is. Both sides of that comparison are records.",
+      "A reconciliation can therefore come out clean while the hardware is wrong, because nothing in it ever touched the hardware. It inherits every error that reached the build record.",
+      "**The physical audit is the point at which that comparison is tested against the article itself.** The reconciliation report for the audit unit is not evidence the audit accepts \u2014 it is the claim the audit is checking."
+    ],"teal"),
     P("The proportions matter. A programme may deliver forty units of an item; the physical audit examines one. A drawing package may run to hundreds of sheets; the audit reviews an agreed sample against the manufacturing instructions. A requirement set may run to hundreds of entries; the functional audit may walk a sample of them. Every one of those numbers is chosen so that the audit can judge the process \u2014 and none of them is chosen so that the audit can find every defect."),
     S("An audit is a check on the verification system, not a substitute for it.",
       "It samples the output of a process in order to judge the process."),
@@ -407,7 +450,7 @@ var MODULES = [
     why:"The third option sounds like good discipline and is close to a real rule about audit readiness, but it is not the reason this reasoning fails. The reason is one of coverage: continuous reconciliation looks at everything, and the audit looks at one unit and a sample in order to judge whether that continuous work is sound. Substituting the sample for the population removes the very thing the sample was meant to test."
   }},
 
-  {id:"A1-06", title:"Incremental, capstone, delta and combined audits", body:[
+  {id:"A1-07", title:"Incremental, capstone, delta and combined audits", body:[
     P("Audits are sequenced bottom-up. Lower-level items are audited first, then subsystems, then the system."),
     STEPS([
       {h:"Incremental audits",b:"Each designated lower-level item is audited in its own right, as it becomes ready. This is how a large programme audits anything at all \u2014 waiting for the whole system to be finished would put every audit at the end, where there is no time left to act on findings."},
@@ -433,7 +476,7 @@ var MODULES = [
     why:"Postponing everything is the tempting honest-looking answer, and it is the one that wastes the readiness of everything else while pushing findings later, where there is less time to act on them. Sampling the four out is worse: it removes them from the record entirely rather than leaving them visible and owed. Partial completion with a planned delta is the mechanism built for exactly this, and it keeps the incompleteness in writing."
   }},
 
-  {id:"A1-07", title:"Why these audits are not optional here", body:[
+  {id:"A1-08", title:"Why these audits are not optional here", body:[
     P("Most configuration management requirements arrive through the contract. A subset of them arrives twice \u2014 through the contract and, independently, through the organisation's safety management system, because those requirements act as barriers to severe safety events."),
     P("That subset is the **configuration management floor**. On safety-significant product lines, floor requirements are performed regardless of what the contract flows down. Several of them are audit requirements:"),
     L([
@@ -464,7 +507,7 @@ var MODULES = [
     why:"The first option is tempting because it is half-true: where a contract imposes a differing requirement, the contract does govern, and the deviation is recorded in the programme plan. But silence is not a differing requirement, and the floor obligation arrives through the safety management system as well as the contract. Recording a decision in a plan is not one of the three doors \u2014 it documents the choice without anyone accepting the consequence."
   }},
 
-  {id:"A1-08", title:"Audit designation: how an item earns an audit", body:[
+  {id:"A1-09", title:"Audit designation: how an item earns an audit", body:[
     P("Some items are audited because a contract says so. The rest are assessed, item by item, against a four-part question set. The assessment is completed at initial audit planning, again at every revision of the programme configuration management plan, and again on any trigger event."),
     STEPS([
       {h:"Part A \u2014 mandatory designation",b:"Is the item named in the contract, the statement of work or the configuration management plan as requiring an audit? Is it an Acquirer-controlled item whose product baseline the Acquirer will establish \u2014 which requires a physical audit, because that audit is the establishing event? Any yes designates the item, to the scope the contract sets. **The assessment then continues anyway**, because the remaining parts can widen that scope: adding a delta audit of open scope, or pulling an increment earlier."},
@@ -489,7 +532,7 @@ var MODULES = [
     why:"Recorded-and-monitored is the tempting answer because it is the correct handling of *one* risk factor \u2014 but there are two here: new design, and a new manufacturing facility. Two or more designate. Presumptive designation belongs to the safety part of the assessment, and all of those answers were no, so System Safety concurrence is not what is in play."
   }},
 
-  {id:"A1-09", title:"Worked examples \u2014 designation", body:[
+  {id:"A1-10", title:"Worked examples \u2014 designation", body:[
     P("Designation is a judgement, and judgements are learned from cases rather than from rules. Work through these before the exercises."),
     TABLE(["Candidate item","Outcome","Reasoning"],[
       ["Flight-control actuator, named in the statement of work as requiring both audits","Designated \u2014 both audits","Contract designation is decided at Part A. The assessment continues anyway: the actuator hosts a hazard risk control and its supplier is new to the programme, which may add a delta audit of open scope or pull its increment earlier. Contract scope is the starting point, not the answer."],
@@ -518,7 +561,7 @@ var MODULES = [
     why:"Being right about the threshold is not the same as being finished. The record is the point: a single factor is written down and watched, and the assessment is retained for items that were not designated, so the next factor lands on top of a documented one rather than in an empty file. System Safety concurrence is required for omissions where a *safety* question was answered yes, which is not this case."
   }},
 
-  {id:"A1-10", title:"Who does what", body:[
+  {id:"A1-11", title:"Who does what", body:[
     P("Audits rarely fail because someone exercised judgement badly. They fail because something needed on the day had no owner, and everyone assumed it belonged to someone else. Read this as a handoff map."),
     TABLE(["Role","What they carry"],[
       ["Configuration management","Owns the audit process. Prepares the plan and agenda, coordinates Acquirer approval, assembles and controls the data package, records the minutes, documents each non-compliance as a finding and tracks it to closure, prepares the summary report, and records results in status accounting."],
@@ -587,7 +630,8 @@ var MODULES = [
      {id:"b", q:"Two of these are designated for reasons that have nothing to do with risk factors. Which, and what does that tell you about how the assessment is structured?"},
      {id:"c", q:"For the item you did not designate, state exactly what is recorded and why the record matters."},
      {id:"d", q:"For item 2, is it true that nothing about it is verified? Explain."},
-     {id:"e", q:"For one of these five you do not have enough information to settle the disposition. Identify it, say what fact is missing, and name who you would ask."}
+     {id:"e", q:"For one of these five you do not have enough information to settle the disposition. Identify it, say what fact is missing, and name who you would ask."},
+     {id:"f", q:"A colleague reads your assessment and says \u201cso anything that is a configuration item gets audited.\u201d Correct them using these five, and say what each of the two selections actually decides."}
    ]},
 
   {id:"A1-E5", title:"Exercise 5 \u2014 Which audit would have caught it",
@@ -678,8 +722,10 @@ var MODULES = [
       {h:"The audit unit jointly selected with the Acquirer",b:"An early production-representative unit. Its serial numbers are identified, and the item and its detail parts are isolated so they are available for examination rather than in a queue somewhere."},
       {h:"Plan and agenda approved",b:"With the audit team and facilities confirmed."},
       {h:"Unencumbered access arranged",b:"To inspection, fabrication, production, assembly and test areas \u2014 with the tools, inspection equipment and test software available."},
-      {h:"Final draft detail specification available",b:"The product-level specification for the item."}
+      {h:"Final draft detail specification available",b:"The product-level specification for the item."},
+      {h:"The audit unit's build records complete and closed",b:"Every work order against the unit closed, and every non-conformance record raised against it dispositioned and closed. Status accounting is what demonstrates this, and it demonstrates it per unit \u2014 not for the item in general."}
     ]),
+    P("That last one follows directly from what the physical audit is for. An open work order is work still to be done to the article. An open non-conformance disposition is a decision still to be made about what the article *is*. While either is outstanding, the as-built configuration of the unit is not final, the reconciliation drawn from it is provisional, and the audit would be testing a comparison whose right-hand side can still move."),
     P("The word **isolated** in the third criterion is doing real work. Detail parts that have already been installed into a higher assembly cannot be examined. Parts sitting in a queue elsewhere in the building cannot be examined on the day. Isolating the item and its detail parts, and identifying the serial numbers in advance, is what makes the examination possible at all \u2014 and it is a manufacturing action with its own lead time, not an administrative note."),
     C("The two that get softened",[
       "**Joint selection.** If the Supplier chooses the unit alone, the Supplier has chosen the sample, and every conclusion drawn from it is a conclusion about a unit selected by the party being audited. The point is not suspicion; it is that a sample chosen by one side cannot support a joint finding.",
@@ -752,7 +798,7 @@ var MODULES = [
       ["Manufacture","Manufacturing instruction sheets, work instructions, installation procedures and machine data for the parts the Acquirer identifies. The agreed drawing and instruction sample, selected per the approved plan."],
       ["Parts control","The approved parts selection list, and the approved nomenclature and nameplates."],
       ["Acceptance evidence","The production acceptance test procedures and the associated test data for the audit unit."],
-      ["Reconciliation","The as-designed to as-built reconciliation report for the audit unit, with the change-incorporation reports from status accounting."],
+      ["Reconciliation","The as-designed to as-built reconciliation report for the audit unit, with the change-incorporation reports from status accounting, and the closure status of the unit's work orders and non-conformance records."],
       ["Part traceability","For the audit unit: serial and lot records, life-limited designations with their limits and life consumed, safety-critical and special-handling designations, and traceability to the next higher assembly."],
       ["Changes and variances","Approved and outstanding changes; changes made during test; required changes not completed; shortage lists; the review of undocumented design changes; variances applicable to this unit."],
       ["Unit differences","Identification of the differences between the physical audit unit and the unit or units used at the functional audit, **with the certification basis that those differences do not degrade functional characteristics**."],
@@ -791,13 +837,13 @@ var MODULES = [
     S("Readiness is computed from rows, not declared in a meeting.",
       "And an entry criterion open on the audit date is a schedule conversation, not a footnote.")
   ], check:{
-    q:"Three days before a physical audit, the tracker shows all data package items complete but one entry criterion \u2014 unencumbered access to the assembly area \u2014 still open, because a facility reorganisation is in progress. What is the correct handling?",
-    o:["Proceed and record the access limitation in the minutes as a constraint",
-       "Treat it as a schedule conversation now: an entry criterion open on the day means a precondition of the audit is not satisfied",
-       "Proceed, examining the unit and records in a conference room instead",
-       "Mark the row not applicable, since the reorganisation is outside the programme's control"],
+    q:"Three days before a physical audit, the tracker shows every data package row complete. Status accounting reports that the audit unit still carries two open work orders and one non-conformance record awaiting disposition. The programme proposes to convene as planned and close all three during the audit week. What is the correct handling?",
+    o:["Proceed \u2014 closing them during the audit week means they will be closed before the audit ends",
+       "Treat it as a schedule conversation now: until the build records are closed the unit's as-built configuration is not final, so the reconciliation the audit is there to test can still move",
+       "Proceed, and record the three open items in the minutes as constraints on the examination",
+       "Mark the rows not applicable, since the work is in hand and will complete"],
     a:1,
-    why:"Recording it as a constraint is the tempting answer because it feels transparent \u2014 but it converts an unmet precondition into a note, and the audit still proceeds without the access it required. Moving to a conference room is the same failure with a location attached. Marking it not applicable is worse: the not-applicable status is for items that genuinely do not apply, not for items that apply and are not ready."
+    why:"Closing them during the week sounds efficient and is the answer most people give, but it means the article changes while it is being examined \u2014 and every reconciliation drawn from it before the closures is provisional. Recording them as constraints converts an unmet precondition into a note. The not-applicable status is for rows that genuinely do not apply, never for rows that apply and are not ready."
   }},
 
   {id:"A2-08", title:"What both audits require, whoever is running them", body:[
@@ -893,7 +939,7 @@ var MODULES = [
       {h:"Reconcile the item to its documentation",b:"Item to drawings, to associated lists, to parts list \u2014 with effectivity and next assembly, and with the accuracy of notes, references and referenced released documents checked rather than assumed."},
       {h:"Review the agreed sample",b:"The sampled drawings and model data against the matching manufacturing instructions, confirming that the instructions reflect the design detail and incorporate the authorised changes. This is where documentation that is correct at the top and wrong at the bench is found."},
       {h:"Confirm the parts, then look at the parts",b:"Confirm compatibility with the approved parts selection list \u2014 and then **physically examine the item to confirm the proper parts are actually installed.** The parts, not the records about the parts."},
-      {h:"Verify change incorporation and reconcile the delta",b:"Confirm approved changes are incorporated, using status accounting reports and selective review, and reconcile and correct any difference between as-designed and as-built data for the unit."},
+      {h:"Verify change incorporation and reconcile the delta",b:"Confirm approved changes are incorporated, using status accounting reports and selective review, and reconcile and correct any difference between as-designed and as-built data for the unit. The reconciliation report for this unit arrives as a claim, not as evidence: the examination is what establishes whether it was right."},
       {h:"Identify and certify unit differences",b:"Between this unit and the unit used at the functional audit, with the certification that the differences do not degrade functional characteristics."},
       {h:"Review the awkward records",b:"Completed shortage lists and undocumented design changes; confirm no unapproved changes exist in the technical documentation and that every approved change is in the hardware."}
     ]),
@@ -950,7 +996,8 @@ var MODULES = [
      {id:"c", q:"The thermal requirements will not be verified until nine weeks from now, two weeks before the audit. What does that mean for the functional audit, and what do you plan for now rather than later?"},
      {id:"d", q:"The physical audit unit has not been chosen. Who chooses it, when does that need to happen relative to the audit date, and what makes a choice acceptable?"},
      {id:"e", q:"The firmware supplier will attend. What of theirs goes on the tracker, and what do you need them to have staged before the audit week?"},
-     {id:"f", q:"Two weeks out, readiness stands at ninety percent, with the shortfall entirely in data package rows. Two weeks later, readiness is ninety-five percent, with the shortfall entirely in entry criteria rows. Which situation is worse, and why?"}
+     {id:"f", q:"Two weeks out, readiness stands at ninety percent, with the shortfall entirely in data package rows. Two weeks later, readiness is ninety-five percent, with the shortfall entirely in entry criteria rows. Which situation is worse, and why?"},
+     {id:"g", q:"What has to be true of the audit unit's build records before the audit convenes, who demonstrates it, and what would you do if that evidence arrived showing one non-conformance still open?"}
    ]},
 
   {id:"A2-E2", title:"Exercise 2 \u2014 A functional audit with a third of the test programme incomplete",
@@ -1286,7 +1333,7 @@ var MODULES = [
    parts:[
      {id:"a", q:"Work the designation assessment and state the disposition, including who signs it and why."},
      {id:"b", q:"Plan the audits: which, in what order, where, and what would make a combined event defensible or indefensible here."},
-     {id:"c", q:"Build the preparation outline: the entry criteria for each audit with providers, and the three or four data package items you consider most at risk on this item specifically."},
+     {id:"c", q:"Build the preparation outline: the entry criteria for each audit with providers, what must be true of the audit unit\u2019s build records before it convenes, and the three or four data package items you consider most at risk on this item specifically."},
      {id:"d", q:"Describe what happens in the room for the physical audit, in the order it happens, and name the step that cannot be replaced by a record."},
      {id:"e", q:"The firmware build is attempted during the audit and fails. Walk the consequences through findings, certification, disposition and the product baseline."},
      {id:"f", q:"List the records that exist at the end, and say which of them a programme two years from now will actually need."},
