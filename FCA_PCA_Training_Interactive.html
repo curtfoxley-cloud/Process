@@ -532,7 +532,44 @@ var MODULES = [
     why:"Recorded-and-monitored is the tempting answer because it is the correct handling of *one* risk factor \u2014 but there are two here: new design, and a new manufacturing facility. Two or more designate. Presumptive designation belongs to the safety part of the assessment, and all of those answers were no, so System Safety concurrence is not what is in play."
   }},
 
-  {id:"A1-10", title:"Worked examples \u2014 designation", body:[
+  {id:"A1-10", title:"Answering the assessment: evidence, not opinion", body:[
+    P("The assessment is only as good as the answers put into it, and every question has a place its answer comes from. An assessment completed from memory in a meeting is a set of opinions with signatures on it."),
+    TABLE(["What the question asks","Where the answer comes from","Who holds it"],[
+      ["Named in the contract, statement of work or plan","The contract file and the programme configuration management plan","Contracts and configuration management"],
+      ["Acquirer-controlled, with the Acquirer establishing the product baseline","The item index and its control designations","Configuration management"],
+      ["Implements or hosts a hazard risk control","The hazard log, and the analyses behind it","System Safety"],
+      ["Selected because failure might cause serious injury, loss of life or loss of primary system capability","The item's selection record \u2014 the criteria assessment that made it a configuration item","Configuration management, with System Safety"],
+      ["Credible failure consequence in the top two severity bands","The pre-anchored severity where one is recorded; otherwise the programme risk matrix","System Safety"],
+      ["Safety-critical software, or firmware in a safety-critical device","The software criticality assessment","Software engineering with System Safety"],
+      ["Single point of failure for a safety-related function","Failure analyses","Systems Engineering"],
+      ["New or novel design rather than proven heritage","Design history and whatever evidence the heritage claim actually rests on","Design Engineering"],
+      ["Substantive design change since the last audit","Change records against the item since the last audit date","Configuration management"],
+      ["New or changed manufacturing source, process, facility or tooling","Process and tooling change records; the procurement record where the source moved","Manufacturing and supply chain"],
+      ["New or changed sub-tier supplier for the item or its critical components","Procurement records and the supplier classification log","Supply chain with configuration management"],
+      ["History of escapes, non-conformances, foreign-object findings or subcontractor disclosures","Quality and safety data for the item **and for its production line**","Quality Assurance"],
+      ["Findings of work not to approved data, or inaccurate or incomplete manufacturing data","Quality findings against the item or the line","Quality Assurance"],
+      ["Reconciliation health anomalies","Status accounting indicators: ageing as-designed to as-built differences, unincorporated-change backlog, serial and effectivity discrepancies","Configuration management"],
+      ["Never audited, or a prior audit with an open delta or unresolved actions","Audit records and the prior minutes","Configuration management"]
+    ]),
+    P("Read that table as a list of people to talk to before the assessment meeting, not during it. Most of these answers take a day to obtain and five minutes to guess."),
+    C("The answer that costs the most",[
+      "**A \u201cno\u201d that means \u201cnobody checked\u201d.** It is indistinguishable, on the form, from a no that somebody established. Both are a blank space where a hazard could have been.",
+      "\u201cI do not know yet\u201d is a legitimate interim state \u2014 provided it carries an owner and a date, and the assessment is not signed until it resolves. What is not legitimate is converting it silently into a no because the meeting needs to finish.",
+      "The same applies to a heritage claim. **Proven heritage is a claim about evidence**, and the evidence is the fielded history of that design in that application. A design that is unchanged but has never flown in this environment is not heritage; it is a new application of an old drawing."
+    ]),
+    S("A no that means nobody checked is the most expensive answer on the form.",
+      "It reads exactly like a no that somebody established, and only one of them is true.")
+  ], check:{
+    q:"At an assessment meeting, the question about escape and non-conformance history is answered no. Asked how that was established, the assessor says they have not seen anything come across their desk about this item. What is the correct handling?",
+    o:["Accept the no \u2014 the assessor is the person closest to the item",
+       "Treat it as unresolved: the answer comes from quality and safety data for the item and its production line, held by Quality Assurance, and until that has been looked at the answer is not yet a no",
+       "Record it as a yes, since the absence of evidence cannot be relied upon",
+       "Record the no and note the basis in the rationale, which is what the rationale field is for"],
+    a:1,
+    why:"Recording the no with its weak basis in the rationale is the tempting answer, because it looks honest and it does leave a trace. But the rationale field explains a determination; it does not substitute for making one, and downstream nobody re-reads it. Flipping to yes is equally wrong \u2014 it invents a finding. The answer is that this question has not yet been answered, and it has a named owner who can answer it."
+  }},
+
+  {id:"A1-11", title:"Worked examples \u2014 designation", body:[
     P("Designation is a judgement, and judgements are learned from cases rather than from rules. Work through these before the exercises."),
     TABLE(["Candidate item","Outcome","Reasoning"],[
       ["Flight-control actuator, named in the statement of work as requiring both audits","Designated \u2014 both audits","Contract designation is decided at Part A. The assessment continues anyway: the actuator hosts a hazard risk control and its supplier is new to the programme, which may add a delta audit of open scope or pull its increment earlier. Contract scope is the starting point, not the answer."],
@@ -561,7 +598,38 @@ var MODULES = [
     why:"Being right about the threshold is not the same as being finished. The record is the point: a single factor is written down and watched, and the assessment is retained for items that were not designated, so the next factor lands on top of a documented one rather than in an empty file. System Safety concurrence is required for omissions where a *safety* question was answered yes, which is not this case."
   }},
 
-  {id:"A1-11", title:"Who does what", body:[
+  {id:"A1-12", title:"More worked examples \u2014 the calls people get wrong", body:[
+    P("A second set, chosen because each one is regularly decided the wrong way. Cover the middle column and commit to an answer before reading across."),
+    TABLE(["Situation","Outcome","Reasoning"],[
+      ["Design unchanged from a fielded product, but new tooling and a new sub-tier source for a critical component","Designated","Two risk factors. Heritage is not a shield: it speaks to the design, and both factors here are about how the item is now made. The most common error is treating a heritage design as answering the whole assessment."],
+      ["Designated by contract for a functional audit only. Assessment finds an unincorporated-change backlog and no physical audit ever performed","Designated, with scope expanded beyond the contract","Contract designation set the scope at a functional audit. The assessment adds a physical audit, or at minimum a delta audit of open scope, and the expansion is recorded with its rationale. This is exactly what continuing past the mandatory part is for."],
+      ["Safety-critical software hosted in an item the Acquirer does not control","Presumptive designation","Safety criticality does not depend on who controls the item. Acquirer control makes a physical audit mandatory for a different reason; its absence removes that reason and nothing else. Omission still requires documented System Safety concurrence."],
+      ["Only factor is that the item has never been audited","Recorded and monitored","One factor. Worth saying plainly because \u201cnever audited\u201d feels like it should be decisive on its own, and it is not \u2014 it is one of eight."],
+      ["Two factors, one of which is a facility change made three years ago with a successful audit since","Recorded and monitored, not designated","Count factors as they stand now. An audit performed since the change is what closes that factor \u2014 that is what the audit was for. Counting historical factors that have already been discharged inflates every assessment and makes the threshold meaningless."],
+      ["No escapes against this item, but two safety-relevant escapes on the production line it shares with another item","Factor present","The history question covers the item **or its production line**. A shared line with escapes is evidence about the process this item goes through. Reading the question as item-only is the single most common way a genuine factor is missed."],
+      ["Three factors present, but the programme is in its final delivery lot and production ends in four months","Designated","The assessment has no \u201ctoo late\u201d answer. The disposition can be proportionate \u2014 a delta audit of open scope rather than a full pair of audits \u2014 but the decision not to perform a designated audit is a floor gate decision, not a scheduling one."],
+      ["The thing being assessed turns out not to be a configuration item at all","The assessment does not apply","It is controlled within its parent's documentation, and the real question is whether the parent is designated. Assessing a non-configuration item wastes effort and, worse, produces a record implying it was separately managed when it was not."]
+    ]),
+    C("\u201cIt is a heritage design, so the risk factors do not really apply.\u201d",[
+      "Heritage answers one question: is the design new or novel. It says nothing about tooling, sources, facilities, sub-tiers, escape history or reconciliation health.",
+      "Ask what has actually stayed the same. In most cases the drawing stayed the same and everything that turns the drawing into hardware moved."
+    ]),
+    C("\u201cWe will designate it next cycle if the second factor appears.\u201d",[
+      "That is the correct handling for one factor \u2014 and only if the first factor was genuinely recorded, so the second one lands on top of a documented one.",
+      "Where it goes wrong is when nothing was written down. The second factor then arrives at an assessment that starts from zero, is scored as a single factor, and the item is monitored again.",
+      "**Two consecutive single-factor assessments with no record between them is how an item is never designated.**"
+    ],"teal")
+  ], check:{
+    q:"An item has no escapes recorded against it. It is built on a line that has had two safety-relevant escapes in the past year, both on a different item. The assessor records the history question as no. Is that right?",
+    o:["Yes \u2014 the escapes are against a different item, so they are not history against this one",
+       "No \u2014 the question covers the item or its production line, and a line with recorded escapes is a factor for everything that goes through it",
+       "Yes, unless the two items share a common part number",
+       "No \u2014 any escape anywhere at the site is a factor for every item built there"],
+    a:1,
+    why:"The escapes really are against a different item, which is what makes the first answer feel safe. But the question was written to cover the production line precisely because escapes are usually evidence about a process rather than about a part. The last option overshoots in the other direction: the line the item is built on is the scope, not the whole site."
+  }},
+
+  {id:"A1-13", title:"Who does what", body:[
     P("Audits rarely fail because someone exercised judgement badly. They fail because something needed on the day had no owner, and everyone assumed it belonged to someone else. Read this as a handoff map."),
     TABLE(["Role","What they carry"],[
       ["Configuration management","Owns the audit process. Prepares the plan and agenda, coordinates Acquirer approval, assembles and controls the data package, records the minutes, documents each non-compliance as a finding and tracks it to closure, prepares the summary report, and records results in status accounting."],
@@ -642,6 +710,26 @@ var MODULES = [
      {id:"c", q:"For defect 3, name the specific audit requirement that exists because of this pattern, and the documented programme that anchors it."},
      {id:"d", q:"For defect 2, someone argues the functional audit could not have caught it because no requirement covered the behaviour. Is that a defence or a finding?"},
      {id:"e", q:"Choose the defect you consider most likely to recur at this organisation, and justify the choice using what you have been taught about why these audits sit on the floor."}
+   ]},
+  {id:"A1-E6", title:"Exercise 6 \u2014 Assessing with the evidence you do not have",
+   scen:"You are asked to complete designation assessments for three items by Friday. For the first, nobody can tell you whether it hosts a hazard risk control; the hazard log was revised last month and the revision has not been distributed. For the second, the design is described as heritage, but the heritage claim rests on a similar item flown in a different thermal environment. For the third, the assessor has answered no to escape history on the basis that nothing has been raised with them, and no to reconciliation health because they do not have access to the indicators.",
+   parts:[
+     {id:"a", q:"For each of the three, say what the honest state of the answer is right now and what it is not."},
+     {id:"b", q:"For each unresolved answer, name where it comes from and who holds it."},
+     {id:"c", q:"Friday arrives and two answers are still outstanding. What do you do, and what do you refuse to do?"},
+     {id:"d", q:"Take the heritage claim apart. What would have to be true for it to answer the question it is being used to answer?"},
+     {id:"e", q:"The third assessor's two answers are both no. Explain, to someone who thinks you are being pedantic, why those two answers are worse than a yes would be."},
+     {id:"f", q:"One of these three could be signed today with an honest disposition. Which, and what would the disposition say?"}
+   ]},
+  {id:"A1-E7", title:"Exercise 7 \u2014 Scope, not just yes or no",
+   scen:"A structural actuator is named in the statement of work as requiring a functional audit. Working the rest of the assessment you establish: it hosts a hazard risk control; its last audit was two years ago and closed with an open delta covering three requirements; a new sub-tier now supplies its bearings; the production line has a foreign-object finding from last quarter; and reconciliation indicators show an unincorporated-change backlog against it. The programme reads the statement of work, notes that a functional audit is already planned, and considers the assessment closed.",
+   parts:[
+     {id:"a", q:"State everything wrong with treating the contract designation as the end of the assessment here."},
+     {id:"b", q:"Work the full disposition. Name every audit or audit scope you would record, and the factor that produced each."},
+     {id:"c", q:"An open delta from the previous audit is sitting in this assessment. What does it contribute, and what would you expect to have happened to it before now?"},
+     {id:"d", q:"Who signs this assessment, and why is that set of signatures different from an assessment where every safety answer was no?"},
+     {id:"e", q:"The programme argues that expanding scope beyond the contract creates unfunded work. Answer that, and say what the correct route is if the expansion genuinely cannot be resourced."},
+     {id:"f", q:"Six months later the bearing supplier is replaced again. What happens, and what is the shortest honest answer to \u201cwe just did this\u201d?"}
    ]}
 
  ]
@@ -1209,37 +1297,131 @@ var MODULES = [
     why:"The two proposals arrive together and sound like one request for proportionality, which is the difficulty. Who chairs and who signs are arrangements around the audit. Whether the article is examined is the audit. The last option overcorrects: the ceremony genuinely may be simplified, and pretending otherwise makes the distinction impossible to teach or to hold."
   }},
 
-  {id:"A3-07", title:"Supplier-conducted and supplier-supported audits", body:[
-    P("Audit obligations attach to items designated for audit, not to categories of supplier. What the type of work determines is the **role** a supplier plays when the item it works on is designated."),
-    TABLE(["Type of work","Audit role when the item is designated"],[
-      ["Build-to-print","Supports the physical audit on its build: facility access, as-built records, approved-parts evidence and the manufacturing instructions actually used."],
-      ["Design and build under a source control drawing","Conducts the item-level functional and physical audits at its own facility. Substance in full."],
-      ["Full item development to specification","Conducts the item-level functional and physical audits at its own facility. Substance in full."],
-      ["Design agent","Provides data support: the technical data package and traceability matrix inputs. The build, and therefore the physical examination, sits elsewhere."],
-      ["Software or firmware development","Conducts the software functional audit and the witnessed build and installation verification against the version description."],
-      ["Commercial or catalogue item","Generally no audit role."],
-      ["Repair and overhaul","Generally no audit role, though the as-maintained records support audits of the parent item."],
-      ["Special process services","No audit role."]
+  {id:"A3-07", title:"Work types: how a supplier's audit role is decided", body:[
+    P("When an item is designated for audit and a supplier builds it, designs it, or writes its software, somebody has to say what that supplier is obliged to do. That obligation is not negotiated case by case. It is read off the **type of work** the supplier performs."),
+    P("Work type is settled by two questions, asked in this order:"),
+    STEPS([
+      {h:"Who holds design authority for the item?",b:"Your company, the supplier, or a vendor. This decides whether the supplier can change the design at all, and therefore whether they can be the activity that verifies it against requirements."},
+      {h:"Who performs the build?",b:"Your company, the supplier, or nobody \u2014 because some procurements deliver a design or a process rather than an article. This decides whether there is anything at the supplier for a physical examination to examine."}
     ]),
-    P("Where a supplier holds more than one type of work \u2014 a supplier who designs and builds a unit *and* writes its embedded firmware is the common case \u2014 the **most demanding role applies**. They conduct the item-level audits and the software functional audit and the witnessed build."),
-    C("Designation can arrive after award, which is why the clause exists",[
-      "Awarding work to a new supplier is itself a designation trigger, because a new source is a risk factor. Placing a subcontract can create the designation that imposes audit obligations on that same subcontract.",
-      "So every statement of work for an item where designation is possible carries a **standing conditional audit clause**: conduct or support obligations that take effect if and when the item is or becomes designated, with the audit deliverables named as triggered items.",
-      "Deciding audit applicability once, at proposal time, converts every later designation into a contract change negotiated from a weak position."
+    P("Those two answers produce the work type, and the work type produces the audit role."),
+    TABLE(["Type of work","Design authority / build","Audit role when the item is designated"],[
+      ["Build-to-print","Your company designs; the supplier builds to the released data package","Supports the physical audit on its build: facility access, as-built records, approved-parts evidence, and the manufacturing instructions actually used"],
+      ["Design and build under a source control drawing","Supplier designs the internals, your company controls form, fit, function, interface and qualification; supplier builds","Conducts the item-level functional and physical audits at its own facility, substance in full"],
+      ["Design agent","Supplier develops the design; your company builds. The deliverable is the data package","Data support: the technical data package and traceability matrix inputs. No physical examination role, because the build is not theirs"],
+      ["Full item development to specification","Supplier holds design authority at its level and builds","Conducts the item-level functional and physical audits at its own facility, substance in full. The heaviest flowdown of any type"],
+      ["Software or firmware development","Supplier develops deliverable software or embedded code","Conducts the software functional audit, and the witnessed build and installation verification against the version description"],
+      ["Commercial or catalogue item","Vendor holds the design; your company controls selection","Generally none. Version and media documentation and change or discontinuance notice still apply"],
+      ["Repair and overhaul","Supplier maintains fielded configuration","Generally none, though the as-maintained records support audits of the parent item"],
+      ["Special process services","Process-only work; no item design","None. Process change notification still applies"]
     ]),
-    S("What the supplier does is decided by the work. Whether they do it at all is decided by the item's designation.",
-      "Confusing those two is how a supplier ends up with no audit obligation on a designated item.")
+    P("Two rules govern the edges of that table, and both are routinely missed."),
+    L([
+      "**Mixed work takes the most demanding role, per obligation.** A supplier who designs and builds a unit under a source control drawing *and* writes its embedded firmware holds two types. They conduct the item-level audits **and** the software functional audit **and** the witnessed build. You do not pick the dominant type and apply it.",
+      "**No audit role never means no verification.** Reconciliation reports per delivery, part traceability records, first article inspection, status accounting and identification and marking all flow by work type regardless of whether any item is ever designated. A supplier with no audit role is still producing the reconciliation output that audits elsewhere sample."
+    ]),
+    S("The item's designation decides whether a supplier audit happens. The work type decides only what that supplier's part of it is.",
+      "Two different questions. Answering the first with the second is how a designated item ends up with no supplier obligation attached to it.")
   ], check:{
-    q:"A supplier designs and builds a valve assembly under your source control drawing and writes its embedded firmware. The valve is designated for both audits. What is their role?",
-    o:["They support the physical audit on their build; your company conducts both audits",
-       "They conduct the item-level functional and physical audits at their facility, and additionally conduct the software functional audit and the witnessed build and installation verification",
-       "They conduct the hardware audits; the firmware is covered by your company's system-level audit",
-       "They conduct whichever audits your company chooses to delegate to them"],
+    q:"A supplier designs and builds a pump under your source control drawing and also writes its embedded firmware. Your procurement lead classifies the engagement by its dominant activity \u2014 design and build \u2014 and sets the audit obligations from that alone. What has been lost?",
+    o:["Nothing \u2014 design and build is the more demanding of the two types, so it covers the software work",
+       "The software obligations: mixed work takes the most demanding role per obligation, so the software functional audit and the witnessed build and installation verification apply in addition to the item-level audits",
+       "Nothing, provided the firmware is delivered inside the pump rather than separately",
+       "The physical audit obligation, which does not apply to suppliers writing software"],
     a:1,
-    why:"Support rather than conduct is the build-to-print role, and this supplier holds design authority over the internals, so that is the wrong row. Where two types of work apply, the most demanding role in each column applies rather than the dominant one \u2014 which is why the firmware obligations sit with them too, and not absorbed into a system-level event. The role follows the work; it is not a delegation your company chooses."
+    why:"Design and build genuinely is the heavier engagement overall, which is what makes dominant-type classification feel reasonable. But the rule is applied obligation by obligation, not engagement by engagement: nothing in the design-and-build role produces a witnessed rebuild against a version description. Where the firmware physically sits makes no difference to who is obliged to verify it."
   }},
 
-  {id:"A3-08", title:"The record set, and what a good audit changes", body:[
+  {id:"A3-08", title:"When a supplier audit becomes due", body:[
+    P("Audit obligations attach to the designation of the item. They do not attach to a category of supplier, and they do not attach at a fixed moment. There are two ways they arrive."),
+    CARDS([
+      {h:"Designated at award", b:"The item is already designated when the work is placed. The audit requirements are imposed unconditionally in the statement of work and the audit deliverables are scheduled like any other deliverable."},
+      {h:"Designated later", b:"The item is not designated at award and becomes designated afterwards. This is the common case, and it is the one that goes wrong."}
+    ],2),
+    P("It goes wrong for a specific reason: **awarding the work is itself a designation trigger.** A new or changed sub-tier supplier for an item or its critical components is one of the risk factors. Placing a subcontract can therefore create the designation that imposes audit obligations on that same subcontract \u2014 obligations that did not exist when the statement of work was written a fortnight earlier."),
+    S("Deciding audit applicability once, at proposal time, converts every later designation into a contract change negotiated from the weakest position you will ever hold.",
+      "The supplier has the work, you need the obligation, and price discovery happens at that moment."),
+    P("The answer is a **standing conditional audit clause**: every statement of work for an item where designation is possible carries conduct or support obligations that take effect if and when the item is or becomes designated, with the audit deliverables named as triggered items. It costs nothing to carry and it removes the negotiation entirely."),
+    P("Beyond award, the assessment is re-run for the items a supplier builds on any of these:"),
+    L([
+      "A change of source, process, facility or tooling at that supplier.",
+      "A safety-relevant escape traceable to their work.",
+      "A reconciliation miss your company discovers in what they delivered.",
+      "An adverse configuration audit result.",
+      "A determination that the supplier's configuration management is ineffective \u2014 ineffectiveness and escape history are themselves designation factors for the items they build."
+    ]),
+    P("When designation does arrive, what becomes due depends on the role. A supplier who **conducts** owes the audit plan and agenda, the data package scoped to their audits, the minutes including the traceability matrix, and the finding records tracked to closure \u2014 minutes within sixty days as anywhere else. A supplier who **supports** owes facility access, as-built records, approved-parts evidence and the manufacturing instructions actually used on the build."),
+    C("One rule about how these are written",[
+      "**A requirement cited without its deliverable is unenforceable at receipt and unverifiable at audit.** \u201cSupport configuration audits as required\u201d obliges nobody to produce anything on any date.",
+      "Every audit obligation is cited with the thing that evidences it and the event that triggers it. That is what makes the conditional clause work rather than merely exist."
+    ])
+  ], check:{
+    q:"A statement of work is being written for a machined housing. The item is not designated for audit today, and the supplier is new to your company. The procurement lead proposes to leave audit requirements out and add them by contract change if designation ever happens. How do you answer?",
+    o:["Agree \u2014 imposing audit obligations on an undesignated item is unnecessary cost",
+       "The statement of work carries a standing conditional audit clause, because a new sub-tier source is itself a designation trigger \u2014 this award may create the designation, and adding the obligation afterwards is negotiated from the weakest position",
+       "Agree, provided the classification log records that audit applicability was considered",
+       "Impose the audit obligations unconditionally now, since designation is likely"],
+    a:1,
+    why:"Recording that the question was considered is genuinely good practice and is why the third option is tempting \u2014 but a record of a decision is not an obligation on the supplier. Imposing unconditionally overshoots: the obligations should attach to designation, not to a guess about it. The conditional clause costs nothing while the item stays undesignated and works instantly if that changes, including if this award is what changes it."
+  }},
+
+  {id:"A3-09", title:"Worked examples \u2014 supplier roles and triggers", body:[
+    P("Six procurements on one programme. Decide the work type, the role and the trigger position for each before reading across."),
+    TABLE(["Procurement","Role if the item is designated","Trigger position"],[
+      ["Machine shop building housings to your released drawings","Supports the physical audit on its build","New source. The award itself is a designation trigger for the parent item, so the statement of work carries the conditional clause even though nothing is designated today"],
+      ["Supplier designing and building a valve under your source control drawing, including its firmware","Conducts the item-level functional and physical audits, plus the software functional audit and the witnessed build","Mixed work. Both roles apply. If designated at award, the obligations are unconditional and the deliverables scheduled"],
+      ["Design house producing the data package for a fitting your company manufactures","Data support: data package and traceability matrix inputs","No build at the supplier, so no physical examination role. Their traceability matrix inputs still feed your functional audit, and their release discipline is the product"],
+      ["Catalogue power supply bought to a vendor item control drawing","Generally none","Change or discontinuance notice still applies, and a vendor change to the item is a trigger to reassess the parent"],
+      ["Plating house anodising to your process specification","None","Process change notification applies. A process change at this supplier is a designation trigger for every item that goes through it \u2014 which is usually more items than the buyer realises"],
+      ["Repair station overhauling fielded units","Generally none","As-maintained records support audits of the parent item; retrofit incorporation and consumed life have to survive the overhaul"]
+    ]),
+    C("\u201cWe are only build-to-print, so audits do not apply to us.\u201d",[
+      "Half right, and the half that is wrong is expensive. Build-to-print suppliers never *conduct* an audit. They do support the physical audit on their build, and support means unencumbered access to their floor, their as-built records, their evidence that the installed parts are the approved parts, and the manufacturing instructions their people actually used.",
+      "A supplier discovering that obligation on the day, from a statement of work that never mentioned it, is entitled to be unhappy about it."
+    ]),
+    C("\u201cThe item was not designated, so we did not cite audit obligations.\u201d",[
+      "This is the failure the conditional clause exists to prevent, and it usually surfaces the moment a source change or an escape re-runs the assessment.",
+      "Ask the second question too: were the reconciliation report, the part traceability record and the first article requirements cited? Those flow by work type regardless of designation, and a statement of work missing audit obligations is often missing those as well \u2014 which leaves nothing for an audit to sample even if one is later held.",
+      "**No audit designation is not the same statement as no verification flowdown.**"
+    ],"teal")
+  ], check:{
+    q:"Your company changes the anodising process specification used by a plating house that has no audit role of any kind. What follows for audit designation?",
+    o:["Nothing \u2014 the plating house has no audit role, so no audit consequence arises",
+       "The process change is a designation trigger for the items that go through that process, so their assessments are re-run \u2014 the supplier's own lack of an audit role is irrelevant to that",
+       "The plating house must now support the physical audit on the parts it processes",
+       "Only items already designated need reassessment, to see whether their scope should expand"],
+    a:1,
+    why:"The supplier having no audit role is true and is exactly the distraction: roles attach to suppliers, triggers attach to items. A changed process is a changed process for every item that passes through it. The last option is the near-miss \u2014 reassessment is not restricted to items already designated, since the whole point of a trigger is that it can designate something that was not."
+  }},
+
+  {id:"A3-10", title:"Running the audit at a supplier's facility", body:[
+    P("Where a supplier conducts the audit, the audit happens at their site, on their floor, with their people. Your company does not become a spectator."),
+    L([
+      "**Participate in planning, not just conduct.** Suppliers whose items are being audited prepare audit plans identifying their own requirements and responsibilities, and those plans are agreed rather than received.",
+      "**Share the preparation tracker as the joint punch list.** One list with providers and dates across two organisations, rather than two lists that meet on the audit date.",
+      "**Unencumbered access applies at their facility too**, and it is arranged through the subcontract rather than requested at the gate. Access that was never bought is access that can be declined.",
+      "**Their people must be able to discuss technical detail.** A supplier who fields presenters reading slides has not met the obligation, however good the slides are.",
+      "**Recursion downward.** Their own sub-tiers receive the requirements too, and their product data comes back with traceability to the next higher assembly."
+    ]),
+    P("Where the audit is initiated internally rather than chaired by the Acquirer, the ceremony may be simplified at the supplier exactly as it may at your own facility \u2014 internal co-chair, internal certification. The substance is performed in full: the requirements-to-test reconciliation and its traceability matrix, the as-built examination with approved-parts verification, the unit-difference certification, and the documented non-compliances."),
+    P("Then the part people forget: **what comes back, and what you do with it.** The plan and agenda, the data package scoped to their role, the minutes with the traceability matrix, the finding records with closure evidence. Check the receipt against what was actually cited in the statement of work \u2014 not against what you assumed it said."),
+    S("Findings from a supplier's audit are evidence about that supplier's configuration management, not only about the item they built.",
+      "They feed the effectiveness determination, and they re-run the designation assessment for everything else that supplier builds for you."),
+    C("The loop, closed",[
+      "An adverse audit result is a trigger for an effectiveness determination. A determination of ineffectiveness is a designation factor for the supplier's other items. Those items are reassessed, and some of them will now designate.",
+      "That is the mechanism working as intended: one audit at one supplier changes what gets audited across their whole scope of supply, without anybody having to argue about it from scratch."
+    ])
+  ], check:{
+    q:"A supplier conducts the physical audit on their designated item. Findings include a systematic break between change approval and the release of manufacturing instructions. The item's findings are closed and certified. That supplier builds four other items for you, none designated. What follows?",
+    o:["Nothing further \u2014 the findings were closed and certified on the item they were raised against",
+       "The adverse result triggers an effectiveness determination, and supplier ineffectiveness and escape history are designation factors, so the assessments for the other four items are re-run",
+       "The other four items are designated automatically, since the finding was systematic",
+       "The other four are monitored, but reassessment waits for the next configuration management plan revision"],
+    a:1,
+    why:"Closing the findings correctly on the audited item is necessary and is what makes the first answer feel complete. But a systematic finding is a measurement of that supplier's process, and the process is the same one building the other four. Reassessment is not automatic designation \u2014 it re-runs the assessment, which may or may not designate \u2014 and it does not wait for the next plan revision, because an adverse audit result is a trigger in its own right."
+  }},
+
+  {id:"A3-11", title:"The record set, and what a good audit changes", body:[
     P("Eight records come out of an audit programme. Learning them gives you a filing system for everything in this training."),
     TABLE(["Record","What it carries"],[
       ["Designation assessments","For every item evaluated, designated or not, with rationale and signatures. Retained for the life of the programme."],
@@ -1338,6 +1520,27 @@ var MODULES = [
      {id:"e", q:"The firmware build is attempted during the audit and fails. Walk the consequences through findings, certification, disposition and the product baseline."},
      {id:"f", q:"List the records that exist at the end, and say which of them a programme two years from now will actually need."},
      {id:"g", q:"Name the one fact in this scenario you would most want confirmed before starting, who holds it, and what you would do if it did not arrive in time."}
+   ]},
+  {id:"A3-E7", title:"Exercise 7 \u2014 Four procurements, four sets of obligations",
+   scen:"You are reviewing four statements of work before release. (1) A supplier will build brackets to your released drawings; they are new to your company. (2) A supplier will develop a cooling unit to your performance specification, holding design authority at their level, and will write its embedded control software. (3) An engineering firm will produce the data package for a fitting your company will manufacture. (4) A heat-treat house will process parts to your process specification. None of the four items is designated for audit today.",
+   parts:[
+     {id:"a", q:"For each, state the work type, the audit role if the item is designated, and what you would cite in the statement of work about audits."},
+     {id:"b", q:"One of these four engagements holds more than one work type. Identify it and state every obligation that follows, naming any that come from the second type rather than the first."},
+     {id:"c", q:"None of the items is designated today. Explain, for procurement (1) specifically, why that is not a reason to stay silent on audits."},
+     {id:"d", q:"Two of these suppliers will never conduct or support an audit. What configuration management deliverables do they still owe, and why do those matter to an audit held somewhere else?"},
+     {id:"e", q:"For each supplier who could conduct an audit, name the deliverables that become due when designation arrives, and what triggers them."},
+     {id:"f", q:"Name one fact you would need about procurement (3) before you could finalise its obligations, and who you would ask."}
+   ]},
+  {id:"A3-E8", title:"Exercise 8 \u2014 Designation arrives eight months late",
+   scen:"Eight months ago your company placed a subcontract for an actuator with a supplier who designs and builds it under a source control drawing. The statement of work says nothing about configuration audits; the item was not designated at the time. Since then: the supplier moved final assembly to a second facility, a foreign-object finding was raised against the actuator line, and the hazard log was revised so that the actuator now hosts a hazard risk control. The item has just been designated for both audits. First delivery is in five months. The supplier's response is that audits are not in their scope of work and would be a priced change.",
+   parts:[
+     {id:"a", q:"Work the designation and say which factors were present at award, which arrived later, and which one the award itself created."},
+     {id:"b", q:"The supplier is right that audits are not in their statement of work. What does that cost you now, in practical terms?"},
+     {id:"c", q:"What should the statement of work have carried at award, and what would the position be today if it had?"},
+     {id:"d", q:"State this supplier's role now that the item is designated, and everything that becomes due from them."},
+     {id:"e", q:"Five months to first delivery. Work backwards and say what has to happen when, and what you would tell the programme about the delivery date."},
+     {id:"f", q:"The supplier also builds three other items for you under similar subcontracts. What do you do about those, today, and on what basis?"},
+     {id:"g", q:"Which single fact in this scenario would you most want confirmed before committing to a plan, and who holds it?"}
    ]}
 
  ]
