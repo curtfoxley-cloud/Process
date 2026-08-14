@@ -1,0 +1,91 @@
+# Configuration Audit (FCA/PCA) Interactive Training — handover note
+
+One self-contained HTML file. No build step, no dependencies, no network calls. Opens from a file share or a local copy.
+
+**Before sharing it:** open the file in a text editor, find `var CONFIG` near the top of the script, and set `trainerEmail`. Everything works without it, but the mail option stays hidden and the results page shows a setup note instead.
+
+The `<style>` block, HTML shell and engine are reused verbatim from the existing configuration management onboarding tool. Only `CONFIG`, `MODULES` and a few identifiers changed: record prefix `CAT-`, a separate browser-storage key so the two tools cannot overwrite each other's saved progress, retargeted download filenames, and a start page rewritten so that every count and every module description is derived from `MODULES` rather than typed. Adding or removing a section changes the start page, the rail, the score and the record with no other edit.
+
+---
+
+## Section inventory
+
+**Module 1 — What a configuration audit is** (13 sections, 7 exercises) — the two audits; configuration items and the two narrowings; vocabulary; prerequisites and order; what the physical audit establishes; audits validate the machinery; incremental, capstone and delta; why these are not optional; the designation assessment; answering it with evidence; two sets of worked designation examples; roles.
+
+**Module 2 — Preparing for the audit** (8 sections, 3 exercises) — planning and lead times; entry criteria for each audit; both data packages; the traceability matrix; the preparation tracker as a joint punch list; common obligations and minutes discipline.
+
+**Module 3 — Conducting the audit** (8 sections, 5 exercises)
+
+| | |
+|---|---|
+| A3-01 | Conducting the functional audit |
+| A3-02 | Software in the functional audit |
+| A3-03 | Conducting the physical audit |
+| A3-04 | What the physical examination compares — part one (checks 1–9) |
+| A3-05 | What the physical examination compares — part two (checks 10–18) |
+| A3-06 | Worked example — one unit through the check set |
+| A3-07 | Software in the physical audit |
+| A3-08 | The final system-level audit: what it is scoped to |
+
+**Module 4 — Findings, closure and the record** (12 sections, 8 exercises) — findings and action items; major versus minor; worked classification examples; the minutes; closure, certification and disposition; **what the audit is required to produce**; ceremony and substance; supplier work types; when a supplier audit becomes due; supplier worked examples; running an audit at a supplier facility; the record set.
+
+Totals: **41 sections, 41 checks, 23 exercises, 140 written exercise parts, 47 pages.**
+
+The single preparing-and-conducting module was split in two at this revision. Module 2 was heading for sixteen sections and roughly three hours; four modules of eight to thirteen sections sit better against how people actually work through this. The engine derives every count, so no other change was needed.
+
+---
+
+## Verification performed
+
+- **Data integrity.** Every section has a check; every check has exactly four options, an in-range answer index and a non-empty explanation; all section and exercise IDs unique and sequential; every exercise part ID unique within its exercise; no section carries more than one statement block.
+- **Render.** Every content block in every section was rendered through the real `block()` function, and every page through the real page renderers. No empty output, no `undefined` reaching the page.
+- **Taught before tested.** Every check and every one of the 93 exercise parts was audited against the content that precedes it, first by an automated term-coverage pass and then by reading the flagged items. Four were corrected as a result: the sixty-day minutes publication rule now appears in Module 2 where its check uses it, rather than only in Module 3; the staged build environment is named in the physical audit data package, which an explanation in the software section relies on; the cost of the tanker programme's escapes is stated where the anchor is taught, because a Module 2 exercise asks for it; and one explanation was reworded to avoid a term first defined a section later.
+- **No banned references.** The visible content was grepped for document numbers, data item codes, clause and section references, appendix letters, floor requirement identifiers, barrier identifiers, tracker row identifiers, supplier work type codes, and standard names. Zero hits. EIA-649-1A appears exactly once, as the spec permits. The header and engine are clean too.
+- **Storage blocked.** The whole tool was executed with `localStorage` throwing on every call. It detects unavailability once, degrades to in-memory state, navigates, records answers and generates a complete record.
+- **Record generation.** Every exercise question and its answer appear in both the plain-text and the downloadable HTML record, generated by iterating `MODULES`.
+- **Derived counts.** Start page, rail and score all compute from `MODULES`; no count is typed anywhere.
+- **Syntax.** The script block passes a standalone JavaScript syntax check.
+- **Table styling.** No first-column cell is ten characters or fewer, so nothing is unintentionally styled as a code.
+
+All of the above was re-run after the two content changes described below, with the same results.
+
+Mobile behaviour, keyboard navigation, focus rings, `aria-current` and reduced-motion handling are inherited unchanged from the source tool's stylesheet.
+
+---
+
+## Deliberately left out
+
+- **All acronyms and data-item codes**, converted to plain language throughout, per the spec. The audits themselves are named in words; the three-letter forms appear nowhere.
+- **The audit checklist appendices as forms.** The entry criteria, data package contents and designation questions are all taught, but as content rather than as reproduced checklists. A trainee who needs the actual form gets it from the trainer.
+- **Lead times as exact per-row values.** Taught as bands — entry criteria forty-five to sixty days, data package items around twenty-one, logistics inside two weeks — because the underlying values are tunable per programme and would date the training.
+- **Tool-specific and system-specific detail.** The source process is tool-agnostic and the training follows it.
+- **The wider floor mechanics.** The floor gate, its three dispositions and the severity anchoring are taught only to the depth needed to explain why these audits are not tailorable in silence. Coverage measurement, the compliance matrix and the blameless transition are the planning process's subject, not this one's.
+- **Supplier requirement and deliverable identifiers.** The flowdown matrix numbers its requirement rows and its data deliverables, and names its work types by code. Neither appears in the training: work types are named in words, and deliverables are described by what they contain. The matrix's column-by-column requirement set is also out of scope — the training teaches the audit rows and the principle that non-audit rows flow regardless of designation, not the whole matrix.
+- **Configuration identification beyond selection.** A1-02 teaches the end-use function gate, the full set of selection criteria, level of selection and the Acquirer-controlled distinction, because audit scope is unreadable without them. Identifier assignment, the interface register, the item index and baseline maintenance are the identification process's subject, not this one's.
+
+---
+
+## Judgement calls where the source was ambiguous
+
+1. **Section count and ordering.** The source is organised by process clause; the spec asked for a teaching order. Content was reordered to run what an audit is → when one is required → how to prepare → how to conduct → how to close, and the common-obligations material was placed between preparation and conduct, where it reads naturally and where its minutes discipline lands before the two conduct sections.
+2. **"One risk factor" handling.** The source says two or more designate, and otherwise requires a documented rationale for not designating. This is taught as *recorded and monitored*, which is what the rationale requirement amounts to in practice, and it is used as a distractor in two checks because it is the most common near-miss answer.
+3. **Roles.** The source's role table does not list software, logistics or system safety, but the preparation trackers assign items to all three and the designation record requires a safety signature. They are included in the roles map, with responsibilities drawn from those two places rather than invented.
+4. **Firmware.** Treated as software for audit purposes throughout — the source scopes firmware in but does not always separate it. Where the distinction matters, the training says "software or firmware".
+5. **Certification wording.** The source gives certification outcomes and Acquirer dispositions as two separate sets. They are taught as two separate acts by two different parties, because trainees routinely collapse them into one.
+6. **Build-record closure as a physical audit entry criterion — a departure from the source, and worth acting on.** The training now teaches that a unit's work orders must be closed and its non-conformance records dispositioned and closed before the physical audit convenes, demonstrated per unit by status accounting. **The source process document does not state this as an entry criterion.** It is implied around the edges — shortage lists, changes made during test, required changes not completed — but never as a precondition. The reasoning is sound: an open work order is work still to be done to the article and an open non-conformance disposition is a decision still to be made about what the article is, so the reconciliation drawn from that unit is provisional and the audit would be testing a comparison that can still move. Because the training and the process document now differ on a precondition, **the process document should be updated to match**, or this content revisited. It is taught in A2-03, reinforced in the physical audit data package, and it is what the A2-07 check now tests.
+
+7. **What the physical audit is testing, stated explicitly.** The source frames audits as confirming that the continuous verification machinery works. A1-06 now says the sharper version: the at-scale reconciliation compares the approved configuration against the build records, so both sides of it are records and it inherits every error that reached the build record. The physical audit is the one point where that comparison is tested against the article, which is why the reconciliation report for the audit unit arrives as a claim under test rather than as evidence. This is an interpretation of the source, not a quotation of it, but it is the interpretation that makes the entry criterion above follow rather than feel arbitrary.
+
+8. **Supplier audit content is drawn from the flowdown material, not the audit process document.** The audit process document says only that sub-suppliers participate in planning and conduct and prepare their own audit plans. Everything about work types, roles by type, the most-demanding-cell rule, the standing conditional clause and the trigger set comes from the sub-supplier flowdown process and its matrix. Where the two sources overlap they agree; where the flowdown material is more specific, it was followed. If those documents are revised on different cycles, this is the seam to check.
+
+9. **The physical audit check set is taught in the process instruction's numbering.** Checks 1 to 18 appear in A3-04 and A3-05 in the same order and numbering as the process instruction, so a trainee can move between the two without translating. **This is a maintenance seam:** renumber or reorder the checks in the instruction and these two sections must follow, along with the worked example in A3-06 and the exercise that walks a unit through them. If the instruction's numbering is likely to churn, consider teaching the checks by name only and dropping the numbers.
+
+10. **The system-level scoping section teaches a misinterpretation rather than a case.** A3-08 presents "system-level means everything in the system" as a likely misreading with its consequences — the two responses it produces, an attempt at the whole bill of materials or a percentage sample of installation drawings, and why both end with no designated item audited and interfaces examined as visible hardware. It is written as risk rather than history, and identifies no programme.
+
+11. **The exercise on records that will not survive** assumes the reader can infer that a missing Acquirer signature is ambiguous between "not yet obtained" and "never sought". The source does not address this; it is posed as an open question rather than as having a single right answer.
+
+---
+
+## Suggested trainer use
+
+The exercises are the assessment. The section checks exist to keep attention honest and to score first-attempt understanding, and the results page frames wrong answers as what to cover in the review session rather than as a fail list. A trainee sending their record produces the scores, the revisit list, and every written answer in one file.
