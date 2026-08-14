@@ -1069,7 +1069,7 @@ var MODULES = [
       {h:"Identify and certify unit differences",b:"Between this unit and the unit used at the functional audit, with the certification that the differences do not degrade functional characteristics."},
       {h:"Review the awkward records",b:"Completed shortage lists and undocumented design changes; confirm no unapproved changes exist in the technical documentation and that every approved change is in the hardware."}
     ]),
-    P("Those six steps are the shape of the examination. The next two sections give its content \u2014 the eighteen checks the audit team performs, what each compares against what, and what a finding looks like in each."),
+    P("Those six steps are the shape of the examination. The next two sections give its content \u2014 the checks the audit team performs, what each compares against what, and what a finding looks like in each."),
     S("A record can agree perfectly with the design while the hardware does not. That gap is the entire reason this audit exists.",
       "Which is why the step is examine the item, and not review the record of the item."),
     C("The anchor, stated plainly",[
@@ -1091,17 +1091,17 @@ var MODULES = [
     P("There is one failure this check set exists to prevent, and it is worth naming before the checks themselves. A team under time pressure will reduce the examination to the comparison that is easiest to make: the part number on the product definition data against the part number on the article. That comparison establishes **identity**. It says the article is nominally the thing the data names. It says nothing about whether the article conforms to what that data requires."),
     S("Matching part numbers establishes identity. Every other check exists because identity is not conformity.",
       "An article can carry the right part number and be wrong in a dozen recorded ways."),
-    P("The checks group by what is being compared. Part one covers the first nine."),
+    P("The checks group by what is being compared. Part one covers the first group; the rest follow in the next section."),
     TABLE(["Check","What is compared","What a finding looks like"],[
-      ["1. Product definition data alignment","The article against the correct revision of its product definition data for its effectivity. Note that a part number does not itself carry a revision \u2014 the data defining the part does, and a change requiring a different part produces a different part number","The article does not conform to the governing revision; or the governing revision cannot be established from the article and its records without inference"],
-      ["2. Serialisation and traceability","Serial, batch, lot and heat numbers physically on the article, against the traceability requirements **and** against the as-built records. Identifiers are never re-used and never revised. For life-limited items: designation, assigned limit and life consumed at delivery. For shelf-life materials: cure or expiry evidence","Any of the three sources disagreeing \u2014 two of three agreeing is a finding, not a pass. A life-limited part delivered with no consumed-life record, which can then never be scheduled for removal"],
-      ["3. Child item reconciliation","Every child item on the as-designed data, against the completed and closed build records \u2014 work orders and non-conformance record dispositions","A child item on the as-designed data with no entry in the build record. Treat absence in the record as the finding; do not resolve it by looking at the article and concluding the part must be there"],
-      ["4. Change incorporation","All approved change commitments applicable at the milestone and effectivity, and any temporary redlines or flight changes, against the physical unit","An approved change not incorporated; a change incorporated that was not approved; a temporary marking whose status nobody can establish"],
-      ["5. Non-conformance and variance adjudication","Every non-conformance raised against the unit, against the adjudication its classification requires","Adjudication by an authority below the classification; an unresolved non-conformance open against the item at audit"],
-      ["6. Interface and workmanship","Dimensions, critical interfaces, connector pin assignments, harness routing, bonding, surface finishes, coatings and torque stripe application, against the engineering data","A non-conforming feature \u2014 or a conforming feature whose inspection record disagrees with the article, which is evidence about the inspection system rather than about the part"],
-      ["7. Nameplate and marking","Part markings, serial plates, warning labels and unique identification, against the marking instructions in the product definition data","Inaccuracy, and equally: illegibility, impermanence, or the correct marking in the wrong location"],
-      ["8. Installed software and firmware","The load, version, part number and checksum in each programmable device, against the version description produced by the witnessed build \u2014 not against a value transcribed into a drawing","A checksum matching a drawing but not the version description; a device that cannot be read back and has no witnessed load record"],
-      ["9. Build record and buy-off","The traveler, inspection logs and test records, against the operations the data requires","A missing or invalid buy-off; a stamp applied without the authority to apply it"]
+      ["Product definition data alignment","The article against the correct revision of its product definition data for its effectivity. Note that a part number does not itself carry a revision \u2014 the data defining the part does, and a change requiring a different part produces a different part number","The article does not conform to the governing revision; or the governing revision cannot be established from the article and its records without inference"],
+      ["Serialisation and traceability","Serial, batch, lot and heat numbers physically on the article, against the traceability requirements **and** against the as-built records. Identifiers are never re-used and never revised. For life-limited items: designation, assigned limit and life consumed at delivery. For shelf-life materials: cure or expiry evidence","Any of the three sources disagreeing \u2014 two of three agreeing is a finding, not a pass. A life-limited part delivered with no consumed-life record, which can then never be scheduled for removal"],
+      ["Child item reconciliation","Every child item on the as-designed data, against the completed and closed build records \u2014 work orders and non-conformance record dispositions","A child item on the as-designed data with no entry in the build record. Treat absence in the record as the finding; do not resolve it by looking at the article and concluding the part must be there"],
+      ["Change incorporation","All approved change commitments applicable at the milestone and effectivity, and any temporary redlines or flight changes, against the physical unit","An approved change not incorporated; a change incorporated that was not approved; a temporary marking whose status nobody can establish"],
+      ["Non-conformance and variance adjudication","Every non-conformance raised against the unit, against the adjudication its classification requires","Adjudication by an authority below the classification; an unresolved non-conformance open against the item at audit"],
+      ["Interface and workmanship","Dimensions, critical interfaces, connector pin assignments, harness routing, bonding, surface finishes, coatings and torque stripe application, against the engineering data","A non-conforming feature \u2014 or a conforming feature whose inspection record disagrees with the article, which is evidence about the inspection system rather than about the part"],
+      ["Nameplate and marking","Part markings, serial plates, warning labels and unique identification, against the marking instructions in the product definition data","Inaccuracy, and equally: illegibility, impermanence, or the correct marking in the wrong location"],
+      ["Installed software and firmware","The load, version, part number and checksum in each programmable device, against the version description produced by the witnessed build \u2014 not against a value transcribed into a drawing","A checksum matching a drawing but not the version description; a device that cannot be read back and has no witnessed load record"],
+      ["Build record and buy-off","The traveler, inspection logs and test records, against the operations the data requires","A missing or invalid buy-off; a stamp applied without the authority to apply it"]
     ]),
     C("How much of each",[
       "Some checks are performed at one hundred percent and others against a sample defined in the approved audit plan. The plan sets the sizes, because they belong to the item rather than to a general rule.",
@@ -1115,37 +1115,37 @@ var MODULES = [
        "That the article conforms, provided the product definition data was at the current revision",
        "Nothing at all, since part number comparison has no value"],
     a:1,
-    why:"The third option is the closest miss and worth sitting with: adding revision currency to a part number check makes it a better identity check, and it is still an identity check. Conformity is established by the other seventeen comparisons \u2014 traceability, child item reconciliation, change incorporation, materials, instructions. Part number matching is not worthless either; it is simply the first check and not the set."
+    why:"The third option is the closest miss and worth sitting with: adding revision currency to a part number check makes it a better identity check, and it is still an identity check. Conformity is established by the other comparisons in the set \u2014 traceability, child item reconciliation, change incorporation, materials, instructions. Part number matching is not worthless either; it is simply the first check and not the set."
   }},
 
   {id:"A3-05", title:"What the physical examination compares \u2014 part two", body:[
-    P("The remaining nine checks. Several of these are the ones most often absent from a physical audit that otherwise looks thorough, and two of them are configuration management floor requirements."),
+    P("The remaining checks. Several of these are the ones most often absent from a physical audit that otherwise looks thorough, and two of them are configuration management floor requirements."),
     TABLE(["Check","What is compared","What a finding looks like"],[
-      ["10. Differences from the functional audit unit","The unit being audited against the unit or units used for functional verification, with certification that the differences do not degrade functional characteristics","Any unidentified difference. Identification alone is not sufficient \u2014 the certification is the deliverable. This is a floor requirement"],
-      ["11. Instructions against design data","The sampled product definition data, against the manufacturing and work instructions actually used to build this unit","An instruction reflecting a superseded revision, or omitting design detail. Check 9 asks whether the traveler was followed. This asks whether the traveler was **right**"],
-      ["12. Zone foreign object debris","The zone or area in which the item is embodied, against its closeout records \u2014 where the item is embodied at the time of the audit","An area closed with no recorded closeout inspection. Where the item is not embodied, the check is recorded as not applicable rather than omitted"],
-      ["13. Part approval, clearance and qualification","The part types installed, against their approval, clearance and qualification records","A part matching the drawing that was never approved for use; a part de-listed after the data was released, through obsolescence, source disqualification or counterfeit alert"],
-      ["14. Certification and plan status","The certification status of the item and its parts, and the status of the certification plan items applicable at this milestone","An open plan item nobody can identify, or a certification credit resting on a superseded configuration. An open item at this milestone is not automatically a finding"],
-      ["15. Material and process conformance","Three links: the material specification in the product definition data, against the material note on the as-built record, against the **material certification for the heat or lot number**. Special processes carry process certification in place of the material certificate","A break anywhere in the chain. A two-link check catches a build record that disagrees with the design; only the third link catches a build record that faithfully records what was ordered when what was delivered differed"],
-      ["16. Next higher assembly traceability","The item's traceability records, resolving upward to the next higher assembly","No upward link, leaving the question of where else articles from this lot went unanswerable. Where the next higher item is a conceptual collector with no physical assembly above it, that fact and its rationale are recorded and the trace resolves to the highest physical installation"],
-      ["17. Sub-supplier end items","Completion of inspection and test of sub-supplier end items at point of manufacture, traceable to the articles installed in this unit","An installed supplier item with no supporting record; first article results present but incomplete for a newly sourced part"],
-      ["18. Spares released before the audit","Spares and repair parts provisioned before the audit, against the configuration this audit is establishing","A pre-audit release built to a configuration the audit supersedes, with the difference neither identified nor dispositioned. Those articles are already in a store or in the field"]
+      ["Differences from the functional audit unit","The unit being audited against the unit or units used for functional verification, with certification that the differences do not degrade functional characteristics","Any unidentified difference. Identification alone is not sufficient \u2014 the certification is the deliverable. This is a floor requirement"],
+      ["Instructions against design data","The sampled product definition data, against the manufacturing and work instructions actually used to build this unit","An instruction reflecting a superseded revision, or omitting design detail. The build record and buy-off check asks whether the traveler was followed. This asks whether the traveler was **right**"],
+      ["Zone foreign object debris","The zone or area in which the item is embodied, against its closeout records \u2014 where the item is embodied at the time of the audit","An area closed with no recorded closeout inspection. Where the item is not embodied, the check is recorded as not applicable rather than omitted"],
+      ["Part approval, clearance and qualification","The part types installed, against their approval, clearance and qualification records","A part matching the drawing that was never approved for use; a part de-listed after the data was released, through obsolescence, source disqualification or counterfeit alert"],
+      ["Certification and plan status","The certification status of the item and its parts, and the status of the certification plan items applicable at this milestone","An open plan item nobody can identify, or a certification credit resting on a superseded configuration. An open item at this milestone is not automatically a finding"],
+      ["Material and process conformance","Three links: the material specification in the product definition data, against the material note on the as-built record, against the **material certification for the heat or lot number**. Special processes carry process certification in place of the material certificate","A break anywhere in the chain. A two-link check catches a build record that disagrees with the design; only the third link catches a build record that faithfully records what was ordered when what was delivered differed"],
+      ["Next higher assembly traceability","The item's traceability records, resolving upward to the next higher assembly","No upward link, leaving the question of where else articles from this lot went unanswerable. Where the next higher item is a conceptual collector with no physical assembly above it, that fact and its rationale are recorded and the trace resolves to the highest physical installation"],
+      ["Sub-supplier end items","Completion of inspection and test of sub-supplier end items at point of manufacture, traceable to the articles installed in this unit","An installed supplier item with no supporting record; first article results present but incomplete for a newly sourced part"],
+      ["Spares released before the audit","Spares and repair parts provisioned before the audit, against the configuration this audit is establishing","A pre-audit release built to a configuration the audit supersedes, with the difference neither identified nor dispositioned. Those articles are already in a store or in the field"]
     ]),
     S("A physical audit cannot verify material by inspection. It verifies an evidence chain, and its findings are breaks in that chain.",
       "The same is true of certification, qualification and process conformance."),
     C("Three of these are anchored in events",[
-      "**Check 10** exists because of repeated escapes between development, early production and full-rate production articles on the tanker programme \u2014 delivery halts and rework in the hundreds of millions.",
-      "**Check 12** exists because tools, rags and debris were repeatedly found inside delivered aircraft on the same programme.",
-      "**Check 15** exists because a replacement thrust reverser wear strip was made of titanium alloy rather than the specified stainless steel. It fell onto a runway, a departing aircraft ran over it, and the resulting tyre debris ruptured a fuel tank. One hundred and thirteen people died. The as-installed configuration no longer matched approved design, and no downstream party could detect the discrepancy from the records."
+      "**The functional audit unit difference check** exists because of repeated escapes between development, early production and full-rate production articles on the tanker programme \u2014 delivery halts and rework in the hundreds of millions.",
+      "**The zone foreign object debris check** exists because tools, rags and debris were repeatedly found inside delivered aircraft on the same programme.",
+      "**The material and process conformance check** exists because a replacement thrust reverser wear strip was made of titanium alloy rather than the specified stainless steel. It fell onto a runway, a departing aircraft ran over it, and the resulting tyre debris ruptured a fuel tank. One hundred and thirteen people died. The as-installed configuration no longer matched approved design, and no downstream party could detect the discrepancy from the records."
     ],"teal")
   ], check:{
     q:"A unit is built exactly as its work instructions require, every operation is stamped by an authorised inspector, and every part number matches. The work instructions were written against a revision of the design data that has since been superseded. Which check catches this?",
-    o:["Check 1, because the article does not match the current product definition data",
-       "Check 11, comparing the sampled design data against the instructions actually used \u2014 checks 1 and 9 both pass on this unit",
-       "Check 9, because the build record is defective",
-       "Check 5, because the departure from current data is a non-conformance"],
+    o:["The product definition data alignment check, because the article does not match the current data",
+       "The instructions against design data check \u2014 the alignment and buy-off checks both pass on this unit",
+       "The build record and buy-off check, because the build record is defective",
+       "The non-conformance adjudication check, because a departure from current data is a non-conformance"],
     a:1,
-    why:"Check 9 passes because the traveler was followed faithfully and stamped correctly \u2014 nothing about the buy-off is defective. Check 1 can pass too, where the superseded revision did not change the part number, which is common. Nothing has been raised as a non-conformance, so check 5 has nothing to adjudicate. The gap is between the design data and the instructions, and only a check that compares those two directly can see it."
+    why:"The buy-off check passes because the traveler was followed faithfully and stamped correctly \u2014 nothing about it is defective. The alignment check can pass too, where the superseded revision did not change the part number, which is common. Nothing has been raised as a non-conformance, so that check has nothing to adjudicate. The gap is between the design data and the instructions, and only a check that compares those two directly can see it."
   }},
 
   {id:"A3-06", title:"Worked example \u2014 one unit through the check set", body:[
@@ -1157,13 +1157,13 @@ var MODULES = [
       "**Not a defect.** One certification plan item applicable to the item is open at this milestone, identified, with its status recorded."
     ]),
     TABLE(["Check","Defect A","Defect B","Defect C"],[
-      ["1. Product definition data alignment","Passes \u2014 part numbers agree","Passes \u2014 the revision did not change the part number","Passes"],
-      ["2. Serialisation and traceability","Passes \u2014 the unit's identifiers are correct","Passes","**Passes** \u2014 the heat number on the article and on the record agree"],
-      ["3. Child item reconciliation","**Finds it** \u2014 as-designed items with no build record entry","Passes","Passes"],
-      ["6. Interface and workmanship","Passes \u2014 the joint appears complete","Passes","Passes"],
-      ["9. Build record and buy-off","Passes \u2014 every operation stamped by an authorised inspector","**Passes** \u2014 the traveler was followed faithfully","Passes"],
-      ["11. Instructions against design data","Passes","**Finds it** \u2014 instructions built to a superseded revision","Passes"],
-      ["15. Material and process conformance","Passes","Passes","**Finds it** \u2014 the third link, certificate against specification"]
+      ["Product definition data alignment","Passes \u2014 part numbers agree","Passes \u2014 the revision did not change the part number","Passes"],
+      ["Serialisation and traceability","Passes \u2014 the unit's identifiers are correct","Passes","**Passes** \u2014 the heat number on the article and on the record agree"],
+      ["Child item reconciliation","**Finds it** \u2014 as-designed items with no build record entry","Passes","Passes"],
+      ["Interface and workmanship","Passes \u2014 the joint appears complete","Passes","Passes"],
+      ["Build record and buy-off","Passes \u2014 every operation stamped by an authorised inspector","**Passes** \u2014 the traveler was followed faithfully","Passes"],
+      ["Instructions against design data","Passes","**Finds it** \u2014 instructions built to a superseded revision","Passes"],
+      ["Material and process conformance","Passes","Passes","**Finds it** \u2014 the third link, certificate against specification"]
     ]),
     P("Three observations from that table, in order of how uncomfortable they are."),
     L([
@@ -1174,7 +1174,7 @@ var MODULES = [
     S("Each of these three defects was found by exactly one check. That is the argument for the whole set, made without a single appeal to thoroughness.",
       "A shortened check set is not a faster audit. It is a different audit, with defined blind spots."),
     C("The open certification item",[
-      "Not a finding at this milestone. It is identified, its status is recorded, and check 14 is satisfied by knowing what it is and where it stands.",
+      "Not a finding at this milestone. It is identified, its status is recorded, and the certification and plan status check is satisfied by knowing what it is and where it stands.",
       "It would be a finding if nobody could identify it, or if a certification credit for this item rested on a configuration other than the one audited."
     ])
   ], check:{
@@ -1282,7 +1282,7 @@ var MODULES = [
      {id:"a", q:"For each of the five, name the check that finds it and say which checks it passes."},
      {id:"b", q:"Two of these five would survive an audit that compared part numbers only. Identify them and explain what that tells you about part number comparison."},
      {id:"c", q:"For finding 1, a colleague proposes closing it by inspecting the joint and confirming the sealant is present. Answer them."},
-     {id:"d", q:"Classify each of the five as major or minor, with the reasoning that produced the classification."},
+     {id:"d", q:"Three of these five were established from records rather than from looking at the article. Identify them, and say what that tells you about how much of a physical audit is a records exercise."},
      {id:"e", q:"Finding 5 passed the traceability check cleanly. Explain to the audit team why that check was performed correctly and still did not help."},
      {id:"f", q:"The item is embodied at the time of the audit. Which check applies because of that, and what would you record if it were not embodied?"},
      {id:"g", q:"Which single finding would you escalate first, and on what basis \u2014 not which is most serious for this unit, but which tells you most about the line?"}
@@ -1440,7 +1440,7 @@ var MODULES = [
   {id:"A4-06", title:"What the audit is required to produce", body:[
     P("The checks are not the deliverable. Nine things come out of an audit, and a team that recognises only the first four will produce a record that is missing the parts an Acquirer and a later programme actually rely on."),
     STEPS([
-      {h:"Findings",b:"Every non-compliance identified, documented by configuration management, provided to the Acquirer for action, and evaluated for the action it requires. Documenting each non-compliance and providing it is a floor requirement in its own right \u2014 the same cluster as the obligation to conduct the audit at all."},
+      {h:"Findings",b:"Every non-compliance identified by any check, documented by configuration management, provided to the Acquirer for action, and evaluated for the action it requires. Documenting each non-compliance and providing it is a floor requirement in its own right \u2014 the same cluster as the obligation to conduct the audit at all."},
       {h:"Action items",b:"Each with its issue, agreed closure plan, responsible individual and agreed suspense date."},
       {h:"Minutes, as an evidence package",b:"Alongside proceedings, attendees and the identification of everything examined with revision levels: the complete product drawings and associated lists package with the manufacturing instruction sheets; completed inspection reports for the selected drawings and their associated instructions; records of the configuration baselines for comparison against the change control and release system, including interim releases of spares provisioned before the audit; confirmation that inspection and test of sub-supplier end items was completed at point of manufacture; and the parts selection list supporting the installed-parts examination."},
       {h:"Rectification records",b:"Evidence that findings and action items have been closed, with post-audit actions completed as assigned."},
@@ -1454,7 +1454,7 @@ var MODULES = [
       "Which is why the detailed report waits for the Acquirer to verify, rather than for the programme to assert."),
     C("The checklist package",[
       "The summary report requirement describes discrepancy information as deriving from the **audit checklist package**. The standard therefore presumes such a package exists.",
-      "The eighteen physical audit checks are that package. Writing them down is not an addition to the process \u2014 it is producing the thing the reporting requirement already assumes."
+      "The physical audit check set taught in Module 3 is that package. Writing it down is not an addition to the process \u2014 it is producing the thing the reporting requirement already assumes."
     ],"teal")
   ], check:{
     q:"An audit closes. Findings were documented and provided, action items are tracked, minutes are issued, and a single summary report is prepared once the programme confirms all action items are complete. What is missing?",
