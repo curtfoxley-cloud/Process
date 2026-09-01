@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EIA-649-1A CI Identification Tool</title>
+<style>
+  :root {
+    --bg: #0b0e14;
+    --surface: #111520;
+    --border: #1e2a42;
+    --accent: #00d4ff;
+    --accent2: #ff6b35;
+    --warn: #ffd166;
+    --success: #06d6a0;
+    --danger: #ef476f;
+    --text: #c8d6f0;
+    --text-dim: #5a7299;
+    --text-bright: #e8f0ff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .container { max-width: 860px; margin: 0 auto; padding: 40px 24px 80px; position: relative; z-index: 1; }
+  .header { border-left: 3px solid var(--accent); padding-left: 20px; margin-bottom: 40px; }
+  .header .label { font-size: 11px; letter-spacing: 3px; color: var(--accent); text-transform: uppercase; margin-bottom: 6px; font-weight: 600; }
+  .header h1 { font-size: clamp(26px, 5vw, 44px); font-weight: 800; color: var(--text-bright); line-height: 1.1; letter-spacing: 1px; text-transform: uppercase; }
+  .header p { margin-top: 10px; color: var(--text-dim); font-size: 14px; max-width: 520px; }
+  .def-card { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent2); padding: 18px 22px; margin-bottom: 36px; }
+  .def-card .def-label { font-size: 10px; letter-spacing: 2px; color: var(--accent2); text-transform: uppercase; margin-bottom: 8px; font-weight: 700; }
+  .def-card p { font-size: 13.5px; color: var(--text); line-height: 1.75; }
+  .step-indicator { display: flex; align-items: center; gap: 8px; margin-bottom: 28px; font-size: 12px; color: var(--text-dim); }
+  .step-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); transition: background 0.3s; flex-shrink: 0; }
+  .step-dot.active { background: var(--accent); }
+  .step-dot.done { background: var(--success); }
+  .question-card { background: var(--surface); border: 1px solid var(--border); padding: 28px; animation: slideIn 0.25s ease; }
+  @keyframes slideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .question-header { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 18px; }
+  .q-num { font-size: 10px; color: var(--accent); background: rgba(0,212,255,0.08); border: 1px solid rgba(0,212,255,0.2); padding: 4px 9px; white-space: nowrap; margin-top: 4px; letter-spacing: 1px; font-weight: 700; flex-shrink: 0; }
+  .question-text { font-size: 20px; font-weight: 700; color: var(--text-bright); line-height: 1.3; }
+  .question-sub { font-size: 13px; color: var(--text-dim); margin-top: 8px; line-height: 1.7; padding: 10px 14px; background: rgba(255,255,255,0.02); border-left: 2px solid var(--border); }
+  .criterion-ref { font-size: 11px; color: var(--accent2); background: rgba(255,107,53,0.08); border: 1px solid rgba(255,107,53,0.2); padding: 3px 8px; display: inline-block; margin-top: 12px; font-weight: 600; letter-spacing: 1px; }
+  .answer-buttons { display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap; align-items: center; }
+  .btn { font-size: 14px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 11px 28px; border: none; cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 7px; font-family: inherit; }
+  .btn-yes { background: rgba(6,214,160,0.12); color: var(--success); border: 1px solid rgba(6,214,160,0.35); }
+  .btn-yes:hover { background: rgba(6,214,160,0.22); border-color: var(--success); transform: translateY(-1px); }
+  .btn-no { background: rgba(239,71,111,0.1); color: var(--danger); border: 1px solid rgba(239,71,111,0.3); }
+  .btn-no:hover { background: rgba(239,71,111,0.2); border-color: var(--danger); transform: translateY(-1px); }
+  .btn-back { background: transparent; color: var(--text-dim); border: 1px solid var(--border); margin-left: auto; font-size: 12px; padding: 9px 18px; }
+  .btn-back:hover { color: var(--text); border-color: var(--text-dim); }
+  .btn-reset { background: transparent; color: var(--text-dim); border: 1px solid var(--border); font-size: 12px; padding: 9px 18px; }
+  .btn-reset:hover { color: var(--accent); border-color: var(--accent); }
+  .progress-bar { height: 2px; background: var(--border); margin-bottom: 28px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--success)); transition: width 0.4s ease; }
+  .result-card { padding: 30px; animation: slideIn 0.3s ease; }
+  .result-ci { background: rgba(6,214,160,0.05); border: 1px solid rgba(6,214,160,0.3); border-top: 3px solid var(--success); }
+  .result-no-ci { background: rgba(239,71,111,0.05); border: 1px solid rgba(239,71,111,0.25); border-top: 3px solid var(--danger); }
+  .result-consider { background: rgba(255,209,102,0.05); border: 1px solid rgba(255,209,102,0.25); border-top: 3px solid var(--warn); }
+  .result-badge { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; padding: 4px 12px; display: inline-block; margin-bottom: 14px; font-weight: 700; }
+  .badge-ci { background: rgba(6,214,160,0.15); color: var(--success); }
+  .badge-no-ci { background: rgba(239,71,111,0.15); color: var(--danger); }
+  .badge-consider { background: rgba(255,209,102,0.15); color: var(--warn); }
+  .result-title { font-size: 30px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; color: var(--text-bright); }
+  .result-desc { color: var(--text); font-size: 14px; line-height: 1.8; margin-bottom: 18px; }
+  .triggered-list { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .tl-label { font-size: 10px; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 10px; font-weight: 700; }
+  .triggered-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 13px; color: var(--text); }
+  .triggered-item:last-child { border-bottom: none; }
+  .ti-ref { font-size: 10px; color: var(--accent2); background: rgba(255,107,53,0.1); padding: 2px 7px; white-space: nowrap; margin-top: 2px; font-weight: 700; letter-spacing: 1px; flex-shrink: 0; }
+  .next-steps { margin-top: 20px; padding: 16px 18px; background: rgba(0,212,255,0.04); border: 1px solid rgba(0,212,255,0.15); }
+  .ns-label { font-size: 10px; letter-spacing: 2px; color: var(--accent); text-transform: uppercase; margin-bottom: 10px; font-weight: 700; }
+  .next-steps ul { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+  .next-steps li { font-size: 13px; color: var(--text); padding-left: 18px; position: relative; line-height: 1.6; }
+  .next-steps li::before { content: '>'; position: absolute; left: 0; color: var(--accent); font-weight: 700; }
+  .result-actions { display: flex; gap: 12px; margin-top: 22px; flex-wrap: wrap; }
+  .answers-trail { margin-bottom: 18px; display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+  .trail-label { font-size: 10px; color: var(--text-dim); letter-spacing: 1px; text-transform: uppercase; margin-right: 4px; }
+  .trail-item { font-size: 10px; padding: 3px 8px; font-weight: 700; letter-spacing: 1px; }
+  .trail-yes { background: rgba(6,214,160,0.1); color: var(--success); border: 1px solid rgba(6,214,160,0.2); }
+  .trail-no { background: rgba(239,71,111,0.1); color: var(--danger); border: 1px solid rgba(239,71,111,0.2); }
+  .footer-note { margin-top: 40px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--border); font-size: 12px; color: var(--text-dim); line-height: 1.7; }
+  @media (max-width: 600px) { .btn-back { margin-left: 0; } .question-header { flex-direction: column; gap: 8px; } }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="label">EIA-649-1A &middot; Section 3.2.1 &middot; Decision Tool</div>
+    <h1>CI Identification<br>Assessment</h1>
+    <p>Determine whether your item should be designated as a Configuration Item (CI) per defense standard EIA-649-1A.</p>
+  </div>
+  <div class="def-card">
+    <div class="def-label">Definition: Configuration Item (CI) &middot; &sect;2.3</div>
+    <p>Any hardware, software, firmware or aggregation that <strong>satisfies an end use function</strong> and is designated by the Acquirer for separate configuration control. That control includes establishing the CI's requirements and verifying that the CI's configuration meets the requirements and that its configuration documentation accurately describes its configuration.</p>
+  </div>
+  <div id="tool-area"></div>
+  <div class="footer-note">
+    <strong>Reference:</strong> EIA-649-1A, &sect;3.2.1 Configuration Item Selection. The Supplier shall select and submit potential CIs for Acquirer review and selection concurrence. Final CI designation authority rests with the Acquirer. This tool is a decision aid only and does not substitute for engineering judgment or contractual requirements.
+  </div>
+</div>
+<script>
+var Q = [
+  { id:'end-use',          num:'Q1 / PREREQUISITE', text:'Does this item satisfy a system end-use function?',                                                                       sub:'An item must perform a defined function within the system to qualify as a CI candidate. Raw materials and bulk commodities do not. Be careful with small parts. A fitting, a bushing or a fastener that carries an external criticality designation, such as a critical safety item or a fracture critical part, does satisfy this gate. The designation is itself evidence that the part performs a function with system-level consequence. If you conclude such an item fails this gate, obtain System Safety concurrence in writing.',                                                                         ref:'EIA-649-1A \u00a73.2.1(2)',   yesGoto:'critical-function', noResult:'no-ci-no-function' },
+  { id:'critical-function', num:'Q2 / CRITERION A',  text:'Is this item critical to the functioning of the system?',                                                                 sub:'Would the system fail to perform its primary mission if this item malfunctions or is unavailable?',                                                                                                                                                                         ref:'EIA-649-1A \u00a73.2.1(2a)', yesGoto:'safety',           noGoto:'safety' },
+  { id:'safety',            num:'Q3 / CRITERION B',  text:'Could failure of this item result in serious injury, loss of life, or loss of primary system capability?',               sub:'Consider both direct failure modes and cascading effects. Safety-critical items require stringent configuration control regardless of complexity.',                                                                                                                              ref:'EIA-649-1A \u00a73.2.1(2b)', yesGoto:'technology',           noGoto:'technology' },
+  { id:'technology',        num:'Q4 / CRITERION C',  text:'Is this item\'s technology complex, not well-known, AND critical to meeting acquisition, operational, or supportability goals?', sub:'All three conditions must apply: (1) complex technology, (2) not widely understood or proven, and (3) critical to mission or program objectives.',                                                                                                                      ref:'EIA-649-1A \u00a73.2.1(2c)', yesGoto:'gov-control',           noGoto:'gov-control' },
+  { id:'gov-control',       num:'Q5 / CRITERION D',  text:'Has the Acquirer specifically designated this item for government control?',                                               sub:'The Acquirer may designate items for separate CM regardless of other criteria. This is typically driven by programmatic, security, export control, or oversight requirements.',                                                                                                ref:'EIA-649-1A \u00a73.2.1(2d)', yesGoto:'separate-versions',           noGoto:'separate-versions' },
+  { id:'separate-versions', num:'Q6 / CRITERION E',  text:'Does this item require separate designated versions or nomenclatures?',                                                    sub:'For example: multiple variants, models, or configurations that must be independently tracked and controlled across a product family or over the product life cycle.',                                                                                                       ref:'EIA-649-1A \u00a73.2.1(2e)', yesGoto:'financial-risk',           noGoto:'financial-risk' },
+  { id:'financial-risk',    num:'Q7 / CRITERION F',  text:'Is this item critical or high risk, where failure would have significant financial impact?',                               sub:'Consider replacement cost, schedule impact, program-level consequences, re-qualification burden, and supply chain vulnerability.',                                                                                                                                      ref:'EIA-649-1A \u00a73.2.1(2f)', yesGoto:'logistics',           noGoto:'logistics' },
+  { id:'logistics',         num:'Q8 / CRITERION G',  text:'Does this item require dedicated logistics support elements?',                                                             sub:'Includes: supply support lists (APL/AEL/ACL), special test equipment, technical manuals, Planned Maintenance System documentation (MIP/MRC), Danger/Caution Tag-Out requirements, or National Stock Number (NSN) assignment.',                                              ref:'EIA-649-1A \u00a73.2.1(2g)', yesGoto:'software',           noGoto:'software' }
+,
+  { id:'software',        num:'Q9 / SOFTWARE RULE',  text:'Is this item computer software or firmware?',
+    sub:'Computer software is designated as a Computer Software Configuration Item by rule, independent of the criteria above. Firmware follows the control arrangement rather than the technology: where the code and its device are controlled together on a single altered item drawing, one part number represents the device with the code in it.',
+    ref:'Software CI rule', yesGoto:'FINISH', noGoto:'FINISH' }
+];
+
+var CL = {
+  'critical-function': { ref:'\u00a73.2.1(2a)', text:'Critical to system functioning' },
+  'safety':            { ref:'\u00a73.2.1(2b)', text:'Failure could cause injury, death, or loss of primary capability' },
+  'technology':        { ref:'\u00a73.2.1(2c)', text:'Complex, not well-known, mission-critical technology' },
+  'gov-control':       { ref:'\u00a73.2.1(2d)', text:'Under government control, Acquirer designated' },
+  'separate-versions': { ref:'\u00a73.2.1(2e)', text:'Requires separate designated versions or nomenclatures' },
+  'financial-risk':    { ref:'\u00a73.2.1(2f)', text:'Critical/high risk with significant financial impact on failure' },
+  'logistics':         { ref:'\u00a73.2.1(2g)', text:'Requires logistics support elements (APL/AEL/ACL/TM/PMS/NSN/Tag-Out)' }
+};
+
+var R = {
+  'no-ci-no-function': {
+    type:'no-ci', badge:'\u2715 Not a CI Candidate', title:'CI Designation Not Applicable',
+    desc:'This item does not satisfy a system end-use function and therefore does not meet the fundamental prerequisite for CI designation under EIA-649-1A. Items that are purely structural, raw materials, bulk commodities, or have no defined functional role in the system are not designated as CIs.',
+    next:['Document the rationale that this item has no system end-use function','Confirm this item will be controlled under a higher-level CI (parent assembly)','Revisit if the item\'s role in the system changes during design evolution']
+  },
+  'no-ci-consider': {
+    type:'consider', badge:'\u25c8 No Designation Required', title:'CI Designation Not Required',
+    desc:'This item did not trigger any of the selection criteria. It is not designated as a CI. That is not a finding that the item is uncontrolled. Items that are not CIs are controlled within the configuration documentation of their parent CI. Record the rationale, because a determination nobody wrote down cannot be defended later, and re-run the screen when the facts move.', next:['Document assessment results and submit to Acquirer for concurrence per \u00a73.2.1(1)','Ensure this item is captured within a parent CI\'s configuration documentation','Reassess if the item\'s risk profile, mission criticality, or logistics needs change','Check whether program-specific requirements impose additional CI selection criteria']
+  },
+  'ci-yes': {
+    type:'ci', badge:'\u25b2 CI Designation Required', title:'Designate as a CI',
+    desc:'This item meets one or more criteria for CI designation. Every criterion that applied is listed below, and all of them are recorded. The designation survives if one underlying fact later changes, which is why the screen runs to the end rather than stopping at the first yes. Configuration Management owns the selection. The Supplier submits the proposed CI to the Acquirer for review and concurrence, and final designation authority for Acquirer-controlled CIs rests with the Acquirer.',
+    next:['Record every criterion that applied, with the rationale for each','Obtain System Safety concurrence where any safety criterion was answered yes','Obtain RM&SH concurrence where the determination rests on failure modes, criticality analysis, or a life limit','Place the CI in the CI hierarchy and record its control tier: Acquirer-controlled, company-internal, or supplier-relationship','Assign the CI identifier including the design activity code','Determine the record structure: serial number where continued service depends on the individual unit, or lot and batch where lot acceptance is sufficient','Record safety-critical, life-limited and special handling designations, and state which authorship case applies','Determine the configuration documentation and the applicable baseline','Submit the proposed CI to the Acquirer for review and concurrence','Incorporate the CI into the status accounting system']
+  }
+};
+
+var S = { qIdx:0, history:[], triggered:[] };
+
+function idxById(id) { for(var i=0;i<Q.length;i++) if(Q[i].id===id) return i; return 0; }
+
+function trail() {
+  if(!S.history.length) return '';
+  var h='<div class="answers-trail"><span class="trail-label">Path:</span>';
+  for(var i=0;i<S.history.length;i++) h+='<span class="trail-item trail-'+S.history[i].a+'">'+S.history[i].a.toUpperCase()+'</span>';
+  return h+'</div>';
+}
+
+function render() {
+  var q=Q[S.qIdx], total=Q.length, pct=(S.qIdx/total)*100;
+  var dots=''; for(var i=0;i<total;i++) dots+='<div class="step-dot '+(i<S.qIdx?'done':i===S.qIdx?'active':'')+'"></div>';
+  var back=S.history.length?'<button class="btn btn-back" onclick="goBack()">&larr; Back</button>':'';
+  document.getElementById('tool-area').innerHTML=
+    '<div class="progress-bar"><div class="progress-fill" style="width:'+pct+'%"></div></div>'+
+    '<div class="step-indicator">'+dots+'<span style="margin-left:8px">Question '+(S.qIdx+1)+' of '+total+'</span></div>'+
+    trail()+
+    '<div class="question-card">'+
+      '<div class="question-header"><div class="q-num">'+q.num+'</div><div class="question-text">'+q.text+'</div></div>'+
+      '<div class="question-sub">'+q.sub+'</div>'+
+      '<div class="criterion-ref">'+q.ref+'</div>'+
+      '<div class="answer-buttons">'+
+        '<button class="btn btn-yes" onclick="answer(\'yes\')">&#10003; Yes</button>'+
+        '<button class="btn btn-no" onclick="answer(\'no\')">&#10007; No</button>'+
+        back+
+      '</div>'+
+    '</div>';
+}
+
+function answer(ans) {
+  var q=Q[S.qIdx];
+  S.history.push({id:q.id,a:ans});
+  if(ans==='yes') {
+    if(q.id!=='end-use') S.triggered.push(q.id);
+    if(q.yesResult) { showResult(q.yesResult); return; } if(q.yesGoto==='FINISH') { finish(); return; }
+    S.qIdx=idxById(q.yesGoto);
+  } else {
+    if(q.noResult) { showResult(q.noResult); return; } if(q.noGoto==='FINISH') { finish(); return; }
+    S.qIdx=idxById(q.noGoto);
+  }
+  render();
+}
+
+function finish() { showResult(S.triggered.length ? 'ci-yes' : 'no-ci-consider'); }
+    function goBack() {
+  if(!S.history.length) return;
+  var last=S.history.pop();
+  S.triggered=S.triggered.filter(function(c){return c!==last.id;});
+  S.qIdx=idxById(last.id);
+  render();
+}
+
+function goBackFromResult() {
+  if(!S.history.length) return;
+  var last=S.history.pop();
+  S.triggered=S.triggered.filter(function(c){return c!==last.id;});
+  S.qIdx=idxById(last.id);
+  render();
+}
+
+function showResult(key) {
+  var r=R[key];
+  var tc=r.type==='ci'?'result-ci':r.type==='no-ci'?'result-no-ci':'result-consider';
+  var bc=r.type==='ci'?'badge-ci':r.type==='no-ci'?'badge-no-ci':'badge-consider';
+  var trig='';
+  if(S.triggered.length && r.type==='ci') {
+    trig='<div class="triggered-list"><div class="tl-label">Triggered Criteria</div>';
+    for(var i=0;i<S.triggered.length;i++) { var c=CL[S.triggered[i]]; trig+='<div class="triggered-item"><div class="ti-ref">'+c.ref+'</div><div>'+c.text+'</div></div>'; }
+    trig+='</div>';
+  }
+  var steps=''; for(var j=0;j<r.next.length;j++) steps+='<li>'+r.next[j]+'</li>';
+  var back=S.history.length?'<button class="btn btn-back" onclick="goBackFromResult()">&larr; Revise Last Answer</button>':'';
+  document.getElementById('tool-area').innerHTML=
+    '<div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>'+
+    trail()+
+    '<div class="result-card '+tc+'">'+
+      '<div class="result-badge '+bc+'">'+r.badge+'</div>'+
+      '<div class="result-title">'+r.title+'</div>'+
+      '<div class="result-desc">'+r.desc+'</div>'+
+      trig+
+      '<div class="next-steps"><div class="ns-label">Recommended Next Steps</div><ul>'+steps+'</ul></div>'+
+      '<div class="result-actions"><button class="btn btn-reset" onclick="reset()">&#8635; New Assessment</button>'+back+'</div>'+
+    '</div>';
+}
+
+function reset() { S={qIdx:0,history:[],triggered:[]}; render(); }
+render();
+</script>
+</body>
+</html>
