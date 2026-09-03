@@ -379,7 +379,7 @@ var TAG_COLORS={"Program":"#144F7A","PLM Division":"#385907","SMS":"#BF6B42","Ho
 var state={
   version:3,
   owner:"",
-  settings:{weekStart:1,trackPeriod:true,periodHours:80,periodDays:14,periodAnchor:""},
+  settings:{weekStart:5,trackPeriod:true,periodHours:80,periodDays:14,periodAnchor:""},
   projects:[],
   entries:[],
   wins:[],
@@ -453,6 +453,8 @@ function payPeriodFor(dateISO){
 
 var MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 var DOW=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+var DOW2=["Su","Mo","Tu","We","Th","Fr","Sa"];
+var DOWFULL=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 function prettyDate(s){ var d=parseISO(s); return DOW[d.getDay()]+" "+d.getDate()+" "+MON[d.getMonth()]; }
 function periodLabel(){
   var r=range(),a=parseISO(r[0]),b=parseISO(r[1]);
@@ -602,6 +604,13 @@ function stackedDaily(){
   var max=Math.ceil(Math.max.apply(null,totals.concat([1]))*1.08*2)/2;
   var W=560,H=230,L=30,R=8,T=10,B=26,pw=W-L-R,ph=H-T-B;
   var n=days.length, slot=pw/n, bw=Math.min(30,slot*0.66), g="";
+  if(view!=="month"){
+    days.forEach(function(d,i){
+      var w=parseISO(d).getDay();
+      if(w===0||w===6)
+        g+='<rect x="'+(L+slot*i)+'" y="'+T+'" width="'+slot+'" height="'+ph+'" fill="#E3E9E4"/>';
+    });
+  }
   [0,max/2,max].forEach(function(v){
     var y=T+ph-(v/max)*ph;
     g+='<line x1="'+L+'" y1="'+y+'" x2="'+(W-R)+'" y2="'+y+'" stroke="#D2DAD4"/>';
@@ -614,7 +623,7 @@ function stackedDaily(){
       g+='<rect x="'+x+'" y="'+yb+'" width="'+bw+'" height="'+Math.max(.5,hgt)+'" fill="'+seg.c+'" rx="1">'+
          '<title>'+esc(prettyDate(d))+' · '+esc(seg.n)+': '+fmtH(seg.v)+'</title></rect>';
     });
-    var lbl = view==="month" ? ((n>20&&i%3!==0)?"":String(parseISO(d).getDate())) : DOW[parseISO(d).getDay()].charAt(0);
+    var lbl = view==="month" ? ((n>20&&i%3!==0)?"":String(parseISO(d).getDate())) : DOW2[parseISO(d).getDay()];
     if(lbl) g+='<text x="'+(x+bw/2)+'" y="'+(H-9)+'" text-anchor="middle" font-size="10" fill="#5E6E68" font-family="inherit">'+lbl+'</text>';
     if(totals[i]>0&&n<=14)
       g+='<text x="'+(x+bw/2)+'" y="'+(T+ph-(totals[i]/max)*ph-4)+'" text-anchor="middle" font-size="10" fill="#14231F" font-family="inherit">'+fmt(totals[i])+'</text>';
@@ -722,8 +731,8 @@ function render(){
   renderBoard(r);
   renderPies();
   renderTagPies();
-  $("#dailyNote").textContent = view==="day" ? "Seven days ending on the selected date."
-    : "Stacked by project. The dashed line is your daily target.";
+  $("#dailyNote").textContent = (view==="day" ? "Seven days ending on the selected date."
+    : "Stacked by project.")+(view==="month"?"":" Shaded columns are the weekend.");
   $("#chartDaily").innerHTML=stackedDaily();
   $("#chartRank").innerHTML=rankBars();
   $("#rankNote").textContent="Ranked by hours in the selected "+viewWord()+" — "+periodLabel().title+".";
@@ -1024,7 +1033,7 @@ function loadFile(text){
   }).filter(function(w){ return w.text; }):[];
   var ds=d.settings||{};
   state.settings={
-    weekStart: ds.weekStart===0?0:1,
+    weekStart: (typeof ds.weekStart==="number"&&ds.weekStart>=0&&ds.weekStart<=6)?ds.weekStart:5,
     trackPeriod: ds.trackPeriod!==false,
     periodHours: (typeof ds.periodHours==="number")?ds.periodHours:80,
     periodDays: (typeof ds.periodDays==="number")?ds.periodDays:14,
@@ -1137,8 +1146,8 @@ function settingsModal(){
   var s=state.settings;
   openModal('<h2>Settings</h2>'+
     '<div class="mrow"><div class="c"><label for="sWeek">Week starts on</label><select id="sWeek">'+
-      '<option value="1"'+(s.weekStart===1?" selected":"")+'>Monday</option>'+
-      '<option value="0"'+(s.weekStart===0?" selected":"")+'>Sunday</option></select></div>'+
+      DOWFULL.map(function(d,i){ return '<option value="'+i+'"'+(s.weekStart===i?" selected":"")+'>'+d+'</option>'; }).join("")+
+      '</select></div>'+
       '<div class="c"><label for="sTrack">Pay period total</label><select id="sTrack">'+
         '<option value="1"'+(s.trackPeriod?" selected":"")+'>Track it</option>'+
         '<option value="0"'+(!s.trackPeriod?" selected":"")+'>Don\'t track it</option></select></div></div>'+
@@ -1224,7 +1233,8 @@ document.addEventListener("click",function(ev){
     markDirty(); closeModal(); render(); return;
   }
   if(el.id==="sSave"){
-    state.settings.weekStart=parseInt($("#sWeek").value,10);
+    var ws=parseInt($("#sWeek").value,10);
+    state.settings.weekStart=(ws>=0&&ws<=6)?ws:5;
     state.settings.trackPeriod=$("#sTrack").value==="1";
     state.settings.periodHours=Math.max(0,parseFloat($("#sHours").value)||0);
     state.settings.periodDays=Math.max(1,parseInt($("#sLen").value,10)||14);
