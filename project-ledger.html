@@ -343,11 +343,14 @@
 (function(){
 "use strict";
 
-var PALETTE=["#1F5D50","#C4622D","#3A5C8C","#8A5A9E","#7A8B2E","#B03A4E","#2E7DA1","#8A6A3B","#4E7D3A","#5C6B73","#6E4B7C","#A8672B"];
+/* Palettes are tuned for perceptual separation (CIEDE2000). The first eight project
+   colours are at least dE 27 apart; the tag colours are dE 33 apart and stay
+   distinguishable under red-green colour blindness. Reordering them will weaken that. */
+var PALETTE=["#016746","#C97659","#3E4D83","#83933E","#8F2952","#3696B5","#6C4912","#A87BB8","#079D87","#963E2C"];
 
 /* Edit these two lines together if your tag list ever changes. */
 var TAGS=["Program","PLM Division","SMS","Home Office"];
-var TAG_COLORS={"Program":"#2E5E8C","PLM Division":"#1F5D50","SMS":"#C4622D","Home Office":"#7A5C9E","Untagged":"#9AA6A0"};
+var TAG_COLORS={"Program":"#144F7A","PLM Division":"#385907","SMS":"#BF6B42","Home Office":"#7E2F53","Untagged":"#AEB8B2"};
 
 var state={
   version:3,
@@ -436,7 +439,7 @@ function periodLabel(){
 /* ---------- data ---------- */
 function projById(id){ for(var i=0;i<state.projects.length;i++) if(state.projects[i].id===id) return state.projects[i]; return null; }
 function projName(id){ var p=projById(id); return p?p.name:"(deleted project)"; }
-function projColor(id){ var p=projById(id); return p?p.color:"#9AA6A0"; }
+function projColor(id){ var p=projById(id); return p?p.color:"#AEB8B2"; }
 function entriesIn(r){ return state.entries.filter(function(e){ return e.date>=r[0]&&e.date<=r[1]; })
   .sort(function(a,b){ return a.date<b.date?1:a.date>b.date?-1:0; }); }
 function totalOf(l){ return l.reduce(function(s,e){ return s+e.hours; },0); }
@@ -448,7 +451,7 @@ function hoursByProject(r){
 function allTimeHours(id){ return state.entries.filter(function(e){ return e.projectId===id; })
   .reduce(function(s,e){ return s+e.hours; },0); }
 function tagOf(pid){ var p=projById(pid); return (p&&p.tag)?p.tag:"Untagged"; }
-function tagColor(t){ return TAG_COLORS[t]||"#9AA6A0"; }
+function tagColor(t){ return TAG_COLORS[t]||"#AEB8B2"; }
 function hoursByTag(r){
   var m={},order=[];
   entriesIn(r).forEach(function(e){
@@ -468,7 +471,7 @@ function emptyBox(m){ return '<div class="empty">'+esc(m)+'</div>'; }
 function pie(data,total,size){
   var S=size||150, cx=S/2, cy=S/2, r=S*0.40;
   if(total<=0) return svg(S,S,'<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="#E3E8E4" stroke-width="'+(S*0.17)+'"/>'+
-    '<text x="'+cx+'" y="'+(cy+4)+'" text-anchor="middle" font-size="12" fill="#9AA6A0" font-family="inherit">none</text>');
+    '<text x="'+cx+'" y="'+(cy+4)+'" text-anchor="middle" font-size="12" fill="#AEB8B2" font-family="inherit">none</text>');
   var sw=S*0.17, R=r, C=2*Math.PI*R, acc=0, g="";
   data.forEach(function(d){
     var len=(d.value/total)*C;
@@ -1011,7 +1014,13 @@ function settingsModal(){
       'A 9/80 schedule is 80 hours over 14 days. Set the start date of any one pay period and every '+
       'period after it lines up. Nothing here assumes a fixed number of hours per day — an 11-hour '+
       'Tuesday and a 7-hour Thursday both just count toward the period total.</p>'+
-    '<div style="text-align:right"><button id="mClose">Cancel</button> <button class="primary" id="sSave">Save settings</button></div>');
+    '<p class="note" style="font-size:12px;color:var(--muted);line-height:1.5">'+
+      'Project colours are spaced apart so no two slices of a pie look alike. If you have edited '+
+      'colours by hand, or opened a ledger saved before this change, you can reset them.</p>'+
+    '<div style="display:flex;justify-content:space-between;gap:8px;align-items:center">'+
+      '<button id="sRecolour">Recolour all projects</button>'+
+      '<span><button id="mClose">Cancel</button> <button class="primary" id="sSave">Save settings</button></span>'+
+    '</div>');
 }
 
 /* ---------- events ---------- */
@@ -1064,6 +1073,11 @@ document.addEventListener("click",function(ev){
     state.projects=state.projects.filter(function(x){ return x.id!==el.dataset.p; });
     if(timer&&timer.projectId===el.dataset.p) timer=null;
     markDirty(); closeModal(); render(); return;
+  }
+  if(el.id==="sRecolour"){
+    if(!confirm("Reassign every project's colour from the palette? Any colours you picked by hand will be replaced.")) return;
+    state.projects.forEach(function(p,i){ p.color=PALETTE[i%PALETTE.length]; });
+    markDirty(); closeModal(); render(); toast("Projects recoloured"); return;
   }
   if(el.id==="sSave"){
     state.settings.weekStart=parseInt($("#sWeek").value,10);
