@@ -60,6 +60,15 @@
   .filters input[type=search]{flex:1 1 220px;min-width:150px}
   .filters .chk{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted);margin:0}
   .filters .chk input{width:auto}
+  .grouphead{display:flex;align-items:center;gap:8px;margin:18px 0 9px;font-size:12px;font-weight:600;color:var(--muted)}
+  .grouphead:first-child{margin-top:0}
+  .grouphead .rule{flex:1;height:1px;background:var(--rule)}
+  .grouphead .n{font-weight:400}
+  .fig.name{flex:1 1 230px;min-width:190px;max-width:330px}
+  .fig.name .v{font-size:16px;line-height:1.3;white-space:normal;overflow-wrap:anywhere;padding-top:5px}
+  .sortbtn{background:none;border:0;padding:0;font:inherit;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer}
+  .sortbtn:hover{color:var(--ink);border-color:transparent}
+  .sortbtn.on{color:var(--ink)}
   .board{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:12px}
   .pcard{background:var(--tint,var(--surface));border:1px solid var(--rule);border-radius:var(--radius);padding:12px 13px;display:flex;flex-direction:column;gap:8px}
   .pcard h3{font-size:15px;font-weight:600;margin:0;line-height:1.25}
@@ -226,10 +235,15 @@
     <div class="filters">
       <input type="search" id="fSearch" placeholder="Filter by name or person">
       <select id="fTag"></select>
+      <select id="fSort">
+        <option value="hours">Sort by hours</option>
+        <option value="tag">Group by tag</option>
+        <option value="name">Sort by name</option>
+      </select>
       <label class="chk"><input type="checkbox" id="fHours"> Only projects with hours</label>
       <button class="quiet" id="fClear">Clear</button>
     </div>
-    <div class="board" id="board"></div>
+    <div id="board"></div>
     <div id="stash"></div>
 
     <div class="entrybar">
@@ -280,7 +294,7 @@
 
     <div class="panel">
       <h2>Project totals</h2>
-      <p class="note">Ranked by hours logged in this period.</p>
+      <p class="note" id="rankNote"></p>
       <div id="chartRank"></div>
     </div>
 
@@ -312,7 +326,7 @@
 
     <div class="panel">
       <h2>Collaboration</h2>
-      <p class="note">Hours on projects you shared with each person this period.</p>
+      <p class="note">Your own hours on projects each person is named on. This is not time they worked.</p>
       <div id="people"></div>
     </div>
 
@@ -372,7 +386,8 @@ var state={
   reportNote:""
 };
 var view="week", anchor=new Date(), editingId=null, editingWin=null, timer=null, dirty=false;
-var filters={text:"",tag:"",hours:false};
+var filters={text:"",tag:"",hours:false,sort:"hours"};
+var summarySort={key:"hours",dir:-1};
 
 /* ---------- utils ---------- */
 function $(s){ return document.querySelector(s); }
@@ -560,6 +575,7 @@ function renderTagPies(){
       ' <span class="h num">'+fmt(d.value)+' h · '+Math.round(d.value/mt*100)+'% of '+esc(periodLabelFor("month"))+'</span></li>';
   }).join(""):"";
 }
+function viewWord(){ return view==="day"?"day":view==="week"?"week":"month"; }
 function periodLabelFor(v){
   var r=rangeFor(v,anchor),a=parseISO(r[0]),b=parseISO(r[1]);
   if(v==="day") return a.getDate()+" "+MON[a.getMonth()];
@@ -710,6 +726,7 @@ function render(){
     : "Stacked by project. The dashed line is your daily target.";
   $("#chartDaily").innerHTML=stackedDaily();
   $("#chartRank").innerHTML=rankBars();
+  $("#rankNote").textContent="Ranked by hours in the selected "+viewWord()+" — "+periodLabel().title+".";
   renderPayPeriod();
   renderSummary(list,total,r);
   renderPeople(r);
@@ -733,9 +750,10 @@ function renderFigures(list,total,r){
   ];
   var pp=payPeriodFor(iso(anchor));
   if(pp) figs.push({k:"Pay period so far",v:fmt(totalOf(entriesIn(pp)))+" of "+fmt(state.settings.periodHours)});
-  figs.push({k:"Biggest project",v:top?(projName(top.id).length>18?projName(top.id).slice(0,17)+"…":projName(top.id)):"—"});
+  var bp=top?projName(top.id):"—";
+  figs.push({k:"Biggest project",v:(bp.length>52?bp.slice(0,51)+"…":bp),cls:"name"});
   $("#figures").innerHTML=figs.map(function(f){
-    return '<div class="fig"><div class="v num">'+esc(f.v)+'</div><div class="k">'+esc(f.k)+'</div></div>';
+    return '<div class="fig '+(f.cls||"")+'"><div class="v num">'+esc(f.v)+'</div><div class="k">'+esc(f.k)+'</div></div>';
   }).join("");
 }
 
@@ -791,15 +809,34 @@ function renderBoard(r){
   var allActive=state.projects.filter(function(p){ return p.status==="active"; });
   var active=allActive.filter(matches).sort(sortP);
   var rest=state.projects.filter(function(p){ return p.status!=="active"&&matches(p); }).sort(sortP);
+  if(filters.sort==="name") active.sort(function(a,b){ return a.name.localeCompare(b.name); });
   var filtering=!!(q||filters.tag||filters.hours);
   $("#boardTitle").textContent="Active projects";
   $("#boardHint").textContent = filtering
     ? "Showing "+active.length+" of "+allActive.length
     : (allActive.length ? allActive.length+" active · hours for "+(view==="day"?"the selected day":view==="week"?"this week":"this month") : "");
-  $("#board").innerHTML = active.length ? active.map(function(p){ return card(p,r); }).join("")
-    : '<div class="empty" style="grid-column:1/-1">'+
+
+  var html;
+  if(!active.length){
+    html='<div class="board"><div class="empty" style="grid-column:1/-1">'+
       (filtering?"No projects match this filter."
-                :"No active projects. Use <strong>New project</strong> to add one.")+'</div>';
+                :"No active projects. Use <strong>New project</strong> to add one.")+'</div></div>';
+  } else if(filters.sort==="tag"){
+    var groups=TAGS.concat([""]);
+    html=groups.map(function(t){
+      var inTag=active.filter(function(p){ return (p.tag||"")===t; });
+      if(!inTag.length) return "";
+      var label=t||"Untagged", col=t?TAG_COLORS[t]:TAG_COLORS.Untagged;
+      var hrsIn=inTag.reduce(function(s,p){ return s+(hrs[p.id]?hrs[p.id][0]:0); },0);
+      return '<div class="grouphead"><span class="swatch" style="background:'+col+'"></span>'+
+        esc(label)+' <span class="n">'+inTag.length+' project'+(inTag.length>1?"s":"")+
+        (hrsIn>0?' · '+fmt(hrsIn)+' h':'')+'</span><span class="rule"></span></div>'+
+        '<div class="board">'+inTag.map(function(p){ return card(p,r); }).join("")+'</div>';
+    }).join("");
+  } else {
+    html='<div class="board">'+active.map(function(p){ return card(p,r); }).join("")+'</div>';
+  }
+  $("#board").innerHTML=html;
   $("#stash").innerHTML = rest.length
     ? '<details class="stash"><summary>'+rest.length+' completed or archived project'+(rest.length>1?"s":"")+
       ' — hours stay in your reports</summary><div class="board">'+rest.map(function(p){ return card(p,r); }).join("")+'</div></details>'
@@ -809,27 +846,55 @@ function renderBoard(r){
     TAGS.map(function(t){ return '<option value="'+esc(t)+'">'+esc(t)+'</option>'; }).join("")+
     '<option value="__none">Untagged</option>';
   sel.value=cur||"";
+  $("#fSort").value=filters.sort;
 }
 
 function renderSummary(list,total,r){
   var agg=hoursByProject(r);
   $("#summaryNote").textContent = agg.length
-    ? "Hours in this period, with lifetime totals for context."
-    : "Nothing logged in this period.";
-  if(!agg.length){ $("#projectSummary").innerHTML=emptyBox("No hours logged in this period."); return; }
+    ? "Hours in the selected "+viewWord()+" ("+periodLabel().title+"), with lifetime totals for context."
+    : "Nothing logged in the selected "+viewWord()+".";
+  if(!agg.length){ $("#projectSummary").innerHTML=emptyBox("No hours logged in the selected "+viewWord()+"."); return; }
+
+  var rows=agg.map(function(d){
+    var p=projById(d.id);
+    return {id:d.id, name:projName(d.id), tag:(p&&p.tag)||"",
+            people:((p&&p.people)||[]).filter(Boolean).join(", "),
+            status:p?p.status:"", hours:d.value, all:allTimeHours(d.id)};
+  });
+  var k=summarySort.key, dir=summarySort.dir;
+  rows.sort(function(a,b){
+    var c=0;
+    if(k==="name") c=a.name.localeCompare(b.name);
+    else if(k==="tag"){
+      var ai=a.tag?TAGS.indexOf(a.tag):99, bi=b.tag?TAGS.indexOf(b.tag):99;
+      c = ai!==bi ? ai-bi : a.name.localeCompare(b.name);
+    }
+    else if(k==="status") c=String(a.status).localeCompare(String(b.status));
+    else if(k==="all") c=a.all-b.all;
+    else c=a.hours-b.hours;              // hours and share rank identically
+    if(c===0) c=a.hours-b.hours;
+    return c*dir;
+  });
+  function th(key,label,cls){
+    var on=k===key;
+    return '<th'+(cls?' class="'+cls+'"':'')+'><button class="sortbtn'+(on?" on":"")+'" data-sort="'+key+'">'+
+      esc(label)+(on?(dir<0?" \u25BE":" \u25B4"):"")+'</button></th>';
+  }
   $("#projectSummary").innerHTML=
-    '<table><thead><tr><th>Project</th><th>Tag</th><th>Collaborating with</th><th>Status</th>'+
-    '<th class="r">Hours</th><th class="r">Share</th><th class="r">All time</th></tr></thead><tbody>'+
-    agg.map(function(d){
-      var p=projById(d.id);
+    '<table><thead><tr>'+th("name","Project")+th("tag","Tag")+
+    '<th>Collaborating with</th>'+th("status","Status")+
+    th("hours","Hours","r")+th("share","Share","r")+th("all","All time","r")+
+    '</tr></thead><tbody>'+
+    rows.map(function(d){
       return '<tr><td><div class="pname"><span class="swatch" style="background:'+projColor(d.id)+'"></span>'+
-        esc(projName(d.id))+'</div></td>'+
-        '<td>'+(p&&p.tag?'<span class="tagchip" style="background:'+tint(tagColor(p.tag),0.16)+';color:'+tagColor(p.tag)+'">'+esc(p.tag)+'</span>':'—')+'</td>'+
-        '<td>'+esc(((p&&p.people)||[]).filter(Boolean).join(", ")||"—")+'</td>'+
-        '<td>'+esc(p?(p.status==="active"?"Active":p.status==="complete"?"Complete":"Archived"):"—")+'</td>'+
-        '<td class="r num">'+fmt(d.value)+'</td>'+
-        '<td class="r num">'+Math.round(d.value/total*100)+'%</td>'+
-        '<td class="r num">'+fmt(allTimeHours(d.id))+'</td></tr>';
+        esc(d.name)+'</div></td>'+
+        '<td>'+(d.tag?'<span class="tagchip" style="background:'+tint(tagColor(d.tag),0.16)+';color:'+tagColor(d.tag)+'">'+esc(d.tag)+'</span>':'—')+'</td>'+
+        '<td>'+esc(d.people||"—")+'</td>'+
+        '<td>'+esc(d.status==="active"?"Active":d.status==="complete"?"Complete":d.status?"Archived":"—")+'</td>'+
+        '<td class="r num">'+fmt(d.hours)+'</td>'+
+        '<td class="r num">'+Math.round(d.hours/total*100)+'%</td>'+
+        '<td class="r num">'+fmt(d.all)+'</td></tr>';
     }).join("")+
     '<tr><td colspan="4"><strong>Total</strong></td><td class="r num"><strong>'+fmt(total)+'</strong></td><td class="r">100%</td><td></td></tr>'+
     '</tbody></table>';
@@ -845,10 +910,11 @@ function renderPeople(r){
     });
   });
   var names=Object.keys(m).sort(function(a,b){ return m[b].h-m[a].h; });
-  if(!names.length){ $("#people").innerHTML=emptyBox("No collaborators listed on projects with hours this period."); return; }
-  $("#people").innerHTML='<table><tbody>'+names.map(function(n){
-    return '<tr><td>'+esc(n)+'</td><td class="r num">'+fmt(m[n].h)+' h</td>'+
-      '<td class="r" style="color:var(--muted);font-size:12.5px">'+m[n].n+' project'+(m[n].n>1?"s":"")+'</td></tr>';
+  if(!names.length){ $("#people").innerHTML=emptyBox("No collaborators named on projects with hours in the selected "+viewWord()+"."); return; }
+  $("#people").innerHTML='<table><thead><tr><th>Person</th><th class="r">My hours</th>'+
+    '<th class="r">Shared projects</th></tr></thead><tbody>'+names.map(function(n){
+    return '<tr><td>'+esc(n)+'</td><td class="r num">'+fmt(m[n].h)+'</td>'+
+      '<td class="r num" style="color:var(--muted)">'+m[n].n+'</td></tr>';
   }).join("")+'</tbody></table>';
 }
 
@@ -872,7 +938,7 @@ function renderWins(r){
 }
 
 function renderEntries(list){
-  $("#entryCount").textContent=list.length+(list.length===1?" entry":" entries")+" in this period.";
+  $("#entryCount").textContent=list.length+(list.length===1?" entry":" entries")+" in the selected "+viewWord()+".";
   if(!list.length){ $("#entryTable").innerHTML=emptyBox("Nothing logged yet."); return; }
   $("#entryTable").innerHTML='<table><thead><tr><th>Date</th><th>Project</th><th class="r">Hours</th><th>Detail</th>'+
     '<th class="r no-print">Edit</th></tr></thead><tbody>'+list.map(function(e){
@@ -1110,8 +1176,15 @@ document.addEventListener("click",function(ev){
   }
   if(el.id==="today"){ anchor=new Date(); render(); return; }
 
+  if(el.classList.contains("sortbtn")){
+    var key=el.dataset.sort;
+    if(summarySort.key===key) summarySort.dir=-summarySort.dir;
+    else summarySort={key:key,dir:(key==="name"||key==="tag"||key==="status")?1:-1};
+    renderSummary(entriesIn(range()),totalOf(entriesIn(range())),range());
+    return;
+  }
   if(el.id==="fClear"){
-    filters={text:"",tag:"",hours:false};
+    filters={text:"",tag:"",hours:false,sort:filters.sort};
     $("#fSearch").value=""; $("#fHours").checked=false;
     renderBoard(range()); return;
   }
@@ -1222,6 +1295,7 @@ document.addEventListener("input",function(ev){
 document.addEventListener("change",function(ev){
   if(ev.target.id==="fTag"){ filters.tag=ev.target.value; renderBoard(range()); }
   if(ev.target.id==="fHours"){ filters.hours=ev.target.checked; renderBoard(range()); }
+  if(ev.target.id==="fSort"){ filters.sort=ev.target.value; renderBoard(range()); }
 });
 $("#scrim").addEventListener("click",function(ev){ if(ev.target===$("#scrim")) closeModal(); });
 document.addEventListener("keydown",function(ev){
