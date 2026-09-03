@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Project Ledger</title>
+<style>
+  :root{
+    --paper:#EDF0EC;
+    --surface:#FFFFFF;
+    --ink:#14231F;
+    --muted:#5E6E68;
+    --rule:#D2DAD4;
+    --rule-strong:#A9B6AF;
+    --accent:#1F5D50;
+    --warn:#9A3B2E;
+    --radius:5px;
+    --font:"Avenir Next","Segoe UI",Inter,system-ui,-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+  .num{font-variant-numeric:tabular-nums}
+  .wrap{max-width:1100px;margin:0 auto;padding:22px 20px 90px}
+
+  .mast{display:flex;flex-wrap:wrap;gap:12px;align-items:baseline;justify-content:space-between;padding-bottom:10px;border-bottom:2px solid var(--ink)}
+  .mast h1{font-size:17px;font-weight:600;margin:0}
+  .mast h1 span{color:var(--muted);font-weight:400}
+  .toolbar{display:flex;flex-wrap:wrap;gap:6px}
+
+  button{font:inherit;font-size:13px;color:var(--ink);background:var(--surface);border:1px solid var(--rule-strong);border-radius:var(--radius);padding:5px 10px;cursor:pointer}
+  button:hover{border-color:var(--ink)}
+  button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  button.primary:hover{background:#17493F}
+  button.quiet{border-color:transparent;background:transparent;color:var(--muted);padding:4px 6px}
+  button.quiet:hover{color:var(--ink);border-color:var(--rule)}
+  button.danger{color:var(--warn)}
+  input,select,textarea{font:inherit;font-size:14px;color:var(--ink);background:var(--surface);border:1px solid var(--rule-strong);border-radius:var(--radius);padding:5px 8px}
+  textarea{line-height:1.45}
+  label{font-size:12px;color:var(--muted);display:block;margin-bottom:3px}
+
+  .period{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;padding:14px 0 12px;border-bottom:1px solid var(--rule)}
+  .scope{display:flex;border:1px solid var(--rule-strong);border-radius:var(--radius);overflow:hidden}
+  .scope button{border:0;border-right:1px solid var(--rule-strong);border-radius:0;padding:5px 16px}
+  .scope button:last-child{border-right:0}
+  .scope button[aria-pressed="true"]{background:var(--ink);color:#fff}
+  .nav{display:flex;align-items:baseline;gap:10px}
+  .nav .title{font-size:20px;font-weight:600}
+  .nav .sub{font-size:13px;color:var(--muted)}
+
+  .figures{display:flex;flex-wrap:wrap;gap:0 34px;padding:12px 0;border-bottom:1px solid var(--rule)}
+  .fig .v{font-size:22px;font-weight:600;letter-spacing:-.01em}
+  .fig .k{font-size:12px;color:var(--muted)}
+
+  /* project board */
+  .boardhead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:20px 0 10px}
+  .boardhead h2{font-size:14px;font-weight:600;margin:0}
+  .board{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:12px}
+  .pcard{background:var(--tint,var(--surface));border:1px solid var(--rule);border-radius:var(--radius);padding:12px 13px;display:flex;flex-direction:column;gap:8px}
+  .pcard h3{font-size:15px;font-weight:600;margin:0;line-height:1.25}
+  .ptop{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;
+        border-bottom:3px solid var(--c,var(--accent));padding-bottom:6px}
+  .pcard.done .ptop{border-bottom-style:dashed;border-bottom-width:2px}
+  .pill{font-size:11px;color:var(--muted);border:1px solid var(--rule);border-radius:9px;padding:1px 7px;white-space:nowrap;flex:none;background:#fff}
+  .pill.on{color:var(--accent);border-color:var(--accent)}
+  .pmeta{font-size:12px;color:var(--muted);min-height:1.4em;display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center}
+  .pmeta b{font-weight:500;color:var(--ink)}
+  .tagchip{font-size:11.5px;font-weight:500;border-radius:3px;padding:1px 7px;white-space:nowrap}
+  .phours{display:flex;align-items:baseline;gap:8px}
+  .phours .big{font-size:24px;font-weight:600;letter-spacing:-.02em}
+  .phours .sm{font-size:12px;color:var(--muted)}
+  .padd{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+  .padd button{padding:5px 9px}
+  .padd .hour{flex:1 1 auto;min-width:74px}
+  .prow2{display:flex;gap:2px;flex-wrap:wrap;border-top:1px solid var(--rule);padding-top:6px;margin-top:2px}
+  .prow2 button{font-size:12px}
+  .running{color:var(--accent);font-weight:600}
+
+  .entrybar{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;background:var(--surface);border:1px solid var(--rule);border-radius:var(--radius);padding:12px;margin:16px 0 0}
+  .entrybar .f{flex:0 0 auto}
+  .entrybar .f.grow{flex:1 1 190px;min-width:150px}
+  .entrybar input[type=text],.entrybar select{width:100%}
+  .hint{font-size:12px;color:var(--muted);margin-top:6px;flex-basis:100%}
+
+  .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:18px}
+  .panel{background:var(--surface);border:1px solid var(--rule);border-radius:var(--radius);padding:14px}
+  .panel h2{font-size:13px;font-weight:600;margin:0 0 2px}
+  .panel p.note{font-size:12px;color:var(--muted);margin:0 0 10px}
+  .panel.wide{grid-column:1/-1}
+  svg{display:block;width:100%;height:auto}
+  .empty{color:var(--muted);font-size:13px;padding:20px 0;text-align:center}
+
+  .ident{display:flex;flex-direction:column;gap:3px}
+  #owner{border:0;border-bottom:1px solid var(--rule-strong);border-radius:0;background:transparent;
+         padding:2px 0;font-size:14px;width:210px}
+  #owner:focus{border-bottom-color:var(--accent)}
+  #owner::placeholder{color:var(--rule-strong)}
+
+  .pies{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .pies.two{grid-template-columns:repeat(2,1fr);max-width:520px}
+  .pie{text-align:center}
+  .pie .cap{font-size:12px;color:var(--muted);margin-top:2px}
+  .legend{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:4px 16px}
+  .legend li{display:flex;align-items:center;gap:6px;font-size:12.5px}
+  .swatch{width:9px;height:9px;border-radius:2px;flex:none}
+  .legend .h{color:var(--muted)}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th{text-align:left;font-size:12px;font-weight:600;color:var(--muted);padding:0 8px 6px 0;border-bottom:1px solid var(--rule-strong)}
+  td{padding:6px 8px 6px 0;border-bottom:1px solid var(--rule);vertical-align:top}
+  tr:last-child td{border-bottom:0}
+  td.r,th.r{text-align:right;padding-right:0}
+  .pname{display:flex;align-items:center;gap:8px}
+  .rowacts{display:flex;gap:2px;justify-content:flex-end}
+
+  /* wins */
+  .winform{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-bottom:12px}
+  .winform .g{flex:1 1 260px}
+  .winform textarea{width:100%;resize:vertical}
+  .win{border-bottom:1px solid var(--rule);padding:9px 0;display:flex;gap:10px;align-items:flex-start}
+  .win:last-child{border-bottom:0}
+  .win .body{flex:1}
+  .win .txt{white-space:pre-wrap}
+  .win .tag{font-size:12px;color:var(--muted);margin-top:2px;display:flex;align-items:center;gap:6px}
+
+  details.help{margin-top:26px;font-size:13px;color:var(--muted)}
+  details.help summary{cursor:pointer;color:var(--ink)}
+  details.help ul{margin:8px 0;padding-left:18px;line-height:1.6}
+  details.stash summary{cursor:pointer;font-size:13px;color:var(--muted);margin:18px 0 8px}
+
+  .scrim{position:fixed;inset:0;background:rgba(20,35,31,.42);display:none;align-items:center;justify-content:center;padding:18px;z-index:50}
+  .scrim.open{display:flex}
+  .modal{background:var(--surface);border-radius:6px;padding:18px;width:min(560px,100%);max-height:88vh;overflow:auto;box-shadow:0 12px 40px rgba(20,35,31,.28)}
+  .modal h2{margin:0 0 12px;font-size:15px}
+  .mrow{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+  .mrow .c{flex:1 1 150px}
+  .mrow .c input,.mrow .c select{width:100%}
+
+  .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:#fff;font-size:13px;padding:7px 10px 7px 14px;border-radius:var(--radius);opacity:0;pointer-events:none;transition:opacity .18s;z-index:60;display:flex;align-items:center;gap:10px}
+  .toast.show{opacity:1;pointer-events:auto}
+  .toast button{background:transparent;border:1px solid rgba(255,255,255,.45);color:#fff;font-size:12px;padding:3px 8px}
+  .toast button:hover{border-color:#fff}
+
+  .printhead{display:none}
+  @media (max-width:760px){
+    .grid{grid-template-columns:1fr}
+    .board{grid-template-columns:1fr}
+    .pies,.pies.two{grid-template-columns:1fr}
+    .nav .title{font-size:18px}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+  @media print{
+    @page{margin:14mm}
+    body{background:#fff;font-size:11pt}
+    .wrap{max-width:none;padding:0}
+    .no-print{display:none!important}
+    .printhead{display:block;border-bottom:2px solid var(--ink);padding-bottom:8px;margin-bottom:12px}
+    .printhead .t{font-size:15pt;font-weight:600}
+    .printhead .s{font-size:10pt;color:var(--muted)}
+    .panel{border:1px solid var(--rule);break-inside:avoid;page-break-inside:avoid}
+    .grid{gap:10px}
+    tr,.fig,.win{break-inside:avoid}
+    .pies{grid-template-columns:repeat(3,1fr)}
+    .pies.two{grid-template-columns:repeat(2,1fr)}
+    *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    #reportNotePrint{white-space:pre-wrap;font-size:10.5pt}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="printhead">
+    <div class="t" id="phTitle">Project time report</div>
+    <div class="s" id="phSub"></div>
+  </div>
+
+  <header class="mast no-print">
+    <div class="ident">
+      <h1>Project Ledger <span id="fileState">— unsaved</span></h1>
+      <input id="owner" type="text" placeholder="Your name" autocomplete="name"
+             aria-label="Your name, shown on printed and copied reports">
+    </div>
+    <div class="toolbar">
+      <button class="primary" id="btnNew">New project</button>
+      <button id="btnSettings">Settings</button>
+      <button id="btnImport">Open file</button>
+      <button id="btnCopy">Copy summary</button>
+      <button id="btnCsv">Export CSV</button>
+      <button id="btnPrint">Save PDF</button>
+      <button id="btnSave">Save file</button>
+      <input type="file" id="fileInput" accept="application/json,.json" hidden>
+    </div>
+  </header>
+
+  <div class="period no-print">
+    <div class="nav">
+      <button class="quiet" id="prev" aria-label="Previous period">&larr;</button>
+      <div>
+        <div class="title" id="periodTitle">—</div>
+        <div class="sub" id="periodSub"></div>
+      </div>
+      <button class="quiet" id="next" aria-label="Next period">&rarr;</button>
+      <button class="quiet" id="today">Today</button>
+    </div>
+    <div class="scope" role="group" aria-label="Reporting period">
+      <button data-view="day" aria-pressed="false">Day</button>
+      <button data-view="week" aria-pressed="true">Week</button>
+      <button data-view="month" aria-pressed="false">Month</button>
+    </div>
+  </div>
+
+  <div class="figures" id="figures"></div>
+
+  <div class="no-print">
+    <div class="boardhead">
+      <h2 id="boardTitle">Active projects</h2>
+      <span class="pill" id="boardHint"></span>
+    </div>
+    <div class="board" id="board"></div>
+    <div id="stash"></div>
+
+    <div class="entrybar">
+      <div class="f grow">
+        <label for="eProject">Project</label>
+        <select id="eProject"></select>
+      </div>
+      <div class="f">
+        <label for="eDate">Date</label>
+        <input type="date" id="eDate">
+      </div>
+      <div class="f">
+        <label for="eHours">Time</label>
+        <input type="text" id="eHours" style="width:88px" placeholder="1.5 or 1:30">
+      </div>
+      <div class="f grow">
+        <label for="eNote">What you did</label>
+        <input type="text" id="eNote" placeholder="Optional — shows in the report">
+      </div>
+      <div class="f">
+        <button class="primary" id="eAdd">Log time</button>
+        <button id="eCancel" style="display:none">Cancel</button>
+      </div>
+      <div class="hint" id="entryHint">For backdating or adding detail. Accepts 1.5, 90m, 1:30, or 1h30.</div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="panel wide">
+      <h2>Share of hours by project</h2>
+      <p class="note" id="pieNote"></p>
+      <div class="pies" id="pies"></div>
+      <ul class="legend" id="pieLegend"></ul>
+    </div>
+
+    <div class="panel wide">
+      <h2>Share of hours by tag</h2>
+      <p class="note" id="tagNote"></p>
+      <div class="pies two" id="tagPies"></div>
+      <ul class="legend" id="tagLegend"></ul>
+    </div>
+
+    <div class="panel">
+      <h2>Hours by day</h2>
+      <p class="note" id="dailyNote"></p>
+      <div id="chartDaily"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Project totals</h2>
+      <p class="note">Ranked by hours logged in this period.</p>
+      <div id="chartRank"></div>
+    </div>
+
+    <div class="panel wide" id="winsPanel">
+      <h2 id="winsTitle">Weekly wins</h2>
+      <p class="note no-print">What went well. Link a win to a project if it belongs to one — these print with the report.</p>
+      <div class="winform no-print">
+        <div class="g">
+          <label for="wText">The win</label>
+          <textarea id="wText" rows="2" placeholder="Cut the intake turnaround from 5 days to 1 — Ana's team is now self-serving."></textarea>
+        </div>
+        <div style="flex:0 1 200px">
+          <label for="wProject">Related project</label>
+          <select id="wProject" style="width:100%"></select>
+        </div>
+        <div>
+          <button class="primary" id="wAdd">Add win</button>
+          <button id="wCancel" style="display:none">Cancel</button>
+        </div>
+      </div>
+      <div id="winList"></div>
+    </div>
+
+    <div class="panel wide">
+      <h2>Project summary</h2>
+      <p class="note" id="summaryNote"></p>
+      <div id="projectSummary"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Collaboration</h2>
+      <p class="note">Hours on projects you shared with each person this period.</p>
+      <div id="people"></div>
+    </div>
+
+    <div class="panel" id="ppPanel">
+      <h2>Pay period</h2>
+      <p class="note" id="ppNote"></p>
+      <div id="chartPP"></div>
+    </div>
+
+    <div class="panel wide">
+      <h2>Entries</h2>
+      <p class="note" id="entryCount"></p>
+      <div id="entryTable"></div>
+    </div>
+
+    <div class="panel wide">
+      <h2>Notes for the report</h2>
+      <p class="note no-print">Context a list of hours misses — blockers, tradeoffs, what got deferred.</p>
+      <textarea id="reportNote" class="no-print" rows="3" style="width:100%" placeholder="Two days lost to the vendor outage; the reporting rebuild slipped a week as a result."></textarea>
+      <div id="reportNotePrint"></div>
+    </div>
+  </div>
+
+  <details class="help no-print">
+    <summary>How saving works</summary>
+    <ul>
+      <li><strong>Save file</strong> downloads everything as a <code>.json</code> file; <strong>Open file</strong> loads it back. Nothing is kept in the browser, so save before closing the tab — you'll get a warning if you have unsaved changes.</li>
+      <li><strong>Save PDF</strong> opens the print dialog; pick "Save as PDF" as the destination. It prints the period on screen, charts and wins included.</li>
+      <li><strong>Copy summary</strong> puts a plain-text version on your clipboard for pasting into email or chat.</li>
+    </ul>
+  </details>
+</div>
+
+<div class="scrim" id="scrim"><div class="modal" id="modal" role="dialog" aria-modal="true"></div></div>
+<div class="toast" id="toast"><span id="toastMsg"></span><button id="toastUndo" style="display:none">Undo</button></div>
+
+<script>
+(function(){
+"use strict";
+
+var PALETTE=["#1F5D50","#C4622D","#3A5C8C","#8A5A9E","#7A8B2E","#B03A4E","#2E7DA1","#8A6A3B","#4E7D3A","#5C6B73","#6E4B7C","#A8672B"];
+
+/* Edit these two lines together if your tag list ever changes. */
+var TAGS=["Program","PLM Division","SMS","Home Office"];
+var TAG_COLORS={"Program":"#2E5E8C","PLM Division":"#1F5D50","SMS":"#C4622D","Home Office":"#7A5C9E","Untagged":"#9AA6A0"};
+
+var state={
+  version:3,
+  owner:"",
+  settings:{weekStart:1,trackPeriod:true,periodHours:80,periodDays:14,periodAnchor:""},
+  projects:[],
+  entries:[],
+  wins:[],
+  reportNote:""
+};
+var view="week", anchor=new Date(), editingId=null, editingWin=null, timer=null, dirty=false;
+
+/* ---------- utils ---------- */
+function $(s){ return document.querySelector(s); }
+function uid(){ return Math.random().toString(36).slice(2,10); }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){
+  return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
+function iso(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function parseISO(s){ var p=String(s).split("-").map(Number); return new Date(p[0],p[1]-1,p[2]); }
+function addDays(d,n){ var x=new Date(d.getTime()); x.setDate(x.getDate()+n); return x; }
+function fmt(h){ if(!h) return "0"; return String(Math.round(h*100)/100); }
+function tint(hex,a){
+  var h=String(hex||"#1F5D50").replace("#","");
+  if(h.length===3) h=h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+  if(!/^[0-9a-fA-F]{6}$/.test(h)) h="1F5D50";
+  var n=parseInt(h,16), r=(n>>16)&255, g=(n>>8)&255, b=n&255;
+  return "rgb("+Math.round(255+(r-255)*a)+","+Math.round(255+(g-255)*a)+","+Math.round(255+(b-255)*a)+")";
+}
+function fmtH(h){ return fmt(h)+" h"; }
+function markDirty(){ dirty=true; $("#fileState").textContent="— unsaved changes"; }
+
+var undoFn=null;
+function toast(msg,undo){
+  $("#toastMsg").textContent=msg;
+  undoFn=undo||null;
+  $("#toastUndo").style.display=undo?"":"none";
+  var t=$("#toast"); t.classList.add("show");
+  clearTimeout(toast._t);
+  toast._t=setTimeout(function(){ t.classList.remove("show"); undoFn=null; }, undo?5000:1900);
+}
+
+function parseHours(str){
+  var s=String(str||"").trim().toLowerCase().replace(/\s+/g,""), m;
+  if(!s) return NaN;
+  if((m=s.match(/^(\d+):([0-5]?\d)$/)))     return +m[1]+(+m[2])/60;
+  if((m=s.match(/^(\d+)h([0-5]?\d)m?$/)))   return +m[1]+(+m[2])/60;
+  if((m=s.match(/^(\d*\.?\d+)h$/)))         return +m[1];
+  if((m=s.match(/^(\d*\.?\d+)m(in)?$/)))    return +m[1]/60;
+  if((m=s.match(/^(\d*\.?\d+)$/)))          return +m[1];
+  return NaN;
+}
+function startOfWeek(d){
+  var ws=state.settings.weekStart;
+  var x=new Date(d.getFullYear(),d.getMonth(),d.getDate());
+  return addDays(x,-((x.getDay()-ws+7)%7));
+}
+function rangeFor(v,a){
+  if(v==="day") return [iso(a),iso(a)];
+  if(v==="week"){ var s=startOfWeek(a); return [iso(s),iso(addDays(s,6))]; }
+  return [iso(new Date(a.getFullYear(),a.getMonth(),1)), iso(new Date(a.getFullYear(),a.getMonth()+1,0))];
+}
+function range(){ return rangeFor(view,anchor); }
+function chartWindow(){ return view==="day" ? [iso(addDays(anchor,-6)),iso(anchor)] : range(); }
+function daysIn(r){ var out=[],d=parseISO(r[0]),e=parseISO(r[1]); while(d<=e){ out.push(iso(d)); d=addDays(d,1);} return out; }
+function dayNum(s){ var p=String(s).split("-").map(Number); return Math.floor(Date.UTC(p[0],p[1]-1,p[2])/86400000); }
+function payPeriodFor(dateISO){
+  var s=state.settings;
+  if(!s.trackPeriod||!s.periodAnchor) return null;
+  var len=Math.max(1,parseInt(s.periodDays,10)||14);
+  var idx=Math.floor((dayNum(dateISO)-dayNum(s.periodAnchor))/len);
+  var start=addDays(parseISO(s.periodAnchor),idx*len);
+  return [iso(start),iso(addDays(start,len-1))];
+}
+
+var MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+var DOW=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+function prettyDate(s){ var d=parseISO(s); return DOW[d.getDay()]+" "+d.getDate()+" "+MON[d.getMonth()]; }
+function periodLabel(){
+  var r=range(),a=parseISO(r[0]),b=parseISO(r[1]);
+  if(view==="day") return {title:DOW[a.getDay()]+", "+a.getDate()+" "+MON[a.getMonth()]+" "+a.getFullYear(),sub:""};
+  if(view==="week") return {title:a.getDate()+" "+MON[a.getMonth()]+" – "+b.getDate()+" "+MON[b.getMonth()]+" "+b.getFullYear(),
+                            sub:"Week beginning "+DOW[a.getDay()]};
+  return {title:MON[a.getMonth()]+" "+a.getFullYear(),sub:b.getDate()+" days"};
+}
+
+/* ---------- data ---------- */
+function projById(id){ for(var i=0;i<state.projects.length;i++) if(state.projects[i].id===id) return state.projects[i]; return null; }
+function projName(id){ var p=projById(id); return p?p.name:"(deleted project)"; }
+function projColor(id){ var p=projById(id); return p?p.color:"#9AA6A0"; }
+function entriesIn(r){ return state.entries.filter(function(e){ return e.date>=r[0]&&e.date<=r[1]; })
+  .sort(function(a,b){ return a.date<b.date?1:a.date>b.date?-1:0; }); }
+function totalOf(l){ return l.reduce(function(s,e){ return s+e.hours; },0); }
+function hoursByProject(r){
+  var l=entriesIn(r), m={}, order=[];
+  l.forEach(function(e){ if(!(e.projectId in m)){ m[e.projectId]=0; order.push(e.projectId); } m[e.projectId]+=e.hours; });
+  return order.map(function(k){ return {id:k,value:m[k]}; }).sort(function(a,b){ return b.value-a.value; });
+}
+function allTimeHours(id){ return state.entries.filter(function(e){ return e.projectId===id; })
+  .reduce(function(s,e){ return s+e.hours; },0); }
+function tagOf(pid){ var p=projById(pid); return (p&&p.tag)?p.tag:"Untagged"; }
+function tagColor(t){ return TAG_COLORS[t]||"#9AA6A0"; }
+function hoursByTag(r){
+  var m={},order=[];
+  entriesIn(r).forEach(function(e){
+    var t=tagOf(e.projectId);
+    if(!(t in m)){ m[t]=0; order.push(t); }
+    m[t]+=e.hours;
+  });
+  return order.map(function(k){ return {tag:k,value:m[k]}; }).sort(function(a,b){ return b.value-a.value; });
+}
+function winsIn(r){ return state.wins.filter(function(w){ return w.date>=r[0]&&w.date<=r[1]; })
+  .sort(function(a,b){ return a.date<b.date?1:-1; }); }
+
+/* ---------- charts ---------- */
+function svg(w,h,inner){ return '<svg viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="xMidYMid meet" role="img">'+inner+'</svg>'; }
+function emptyBox(m){ return '<div class="empty">'+esc(m)+'</div>'; }
+
+function pie(data,total,size){
+  var S=size||150, cx=S/2, cy=S/2, r=S*0.40;
+  if(total<=0) return svg(S,S,'<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="#E3E8E4" stroke-width="'+(S*0.17)+'"/>'+
+    '<text x="'+cx+'" y="'+(cy+4)+'" text-anchor="middle" font-size="12" fill="#9AA6A0" font-family="inherit">none</text>');
+  var sw=S*0.17, R=r, C=2*Math.PI*R, acc=0, g="";
+  data.forEach(function(d){
+    var len=(d.value/total)*C;
+    var gap=data.length>1?Math.min(2,len*0.14):0;
+    g+='<circle cx="'+cx+'" cy="'+cy+'" r="'+R+'" fill="none" stroke="'+d.color+'" stroke-width="'+sw+
+       '" stroke-dasharray="'+Math.max(0,len-gap)+' '+(C-Math.max(0,len-gap))+'" stroke-dashoffset="'+(-acc)+
+       '" transform="rotate(-90 '+cx+' '+cy+')"><title>'+esc(d.label)+': '+fmtH(d.value)+' ('+Math.round(d.value/total*100)+'%)</title></circle>';
+    acc+=len;
+  });
+  g+='<text x="'+cx+'" y="'+(cy+2)+'" text-anchor="middle" font-size="'+(S*0.16)+'" font-weight="600" fill="#14231F" font-family="inherit">'+fmt(total)+'</text>';
+  g+='<text x="'+cx+'" y="'+(cy+S*0.14)+'" text-anchor="middle" font-size="'+(S*0.075)+'" fill="#5E6E68" font-family="inherit">hours</text>';
+  return svg(S,S,g);
+}
+
+function renderPies(){
+  var specs=[["day","Day"],["week","Week"],["month","Month"]];
+  var html="", monthOrder=null;
+  specs.forEach(function(sp){
+    var r=rangeFor(sp[0],anchor), agg=hoursByProject(r), tot=totalOf(entriesIn(r));
+    var data=agg.map(function(d){ return {label:projName(d.id),value:d.value,color:projColor(d.id)}; });
+    if(sp[0]==="month") monthOrder=agg;
+    var lab=periodLabelFor(sp[0]);
+    html+='<div class="pie">'+pie(data,tot,150)+'<div class="cap">'+esc(sp[1])+' · '+esc(lab)+'</div></div>';
+  });
+  $("#pies").innerHTML=html;
+  var lp=periodLabelFor("month");
+  $("#pieNote").textContent="Day, week and month containing "+prettyDate(iso(anchor))+".";
+  var mt=totalOf(entriesIn(rangeFor("month",anchor)));
+  $("#pieLegend").innerHTML = (monthOrder&&monthOrder.length) ? monthOrder.slice(0,12).map(function(d){
+    return '<li><span class="swatch" style="background:'+projColor(d.id)+'"></span>'+esc(projName(d.id))+
+      ' <span class="h num">'+fmt(d.value)+' h · '+Math.round(d.value/mt*100)+'% of '+esc(lp)+'</span></li>';
+  }).join("") : "";
+}
+function renderTagPies(){
+  var html="", monthAgg=null;
+  [["week","Week"],["month","Month"]].forEach(function(sp){
+    var r=rangeFor(sp[0],anchor), agg=hoursByTag(r), tot=totalOf(entriesIn(r));
+    if(sp[0]==="month") monthAgg=agg;
+    var data=agg.map(function(d){ return {label:d.tag,value:d.value,color:tagColor(d.tag)}; });
+    html+='<div class="pie">'+pie(data,tot,150)+'<div class="cap">'+sp[1]+' · '+esc(periodLabelFor(sp[0]))+'</div></div>';
+  });
+  $("#tagPies").innerHTML=html;
+  $("#tagNote").textContent="Hours across "+TAGS.slice(0,-1).join(", ")+" and "+TAGS[TAGS.length-1]+".";
+  var mt=totalOf(entriesIn(rangeFor("month",anchor)));
+  $("#tagLegend").innerHTML=(monthAgg&&monthAgg.length)?monthAgg.map(function(d){
+    return '<li><span class="swatch" style="background:'+tagColor(d.tag)+'"></span>'+esc(d.tag)+
+      ' <span class="h num">'+fmt(d.value)+' h · '+Math.round(d.value/mt*100)+'% of '+esc(periodLabelFor("month"))+'</span></li>';
+  }).join(""):"";
+}
+function periodLabelFor(v){
+  var r=rangeFor(v,anchor),a=parseISO(r[0]),b=parseISO(r[1]);
+  if(v==="day") return a.getDate()+" "+MON[a.getMonth()];
+  if(v==="week") return a.getDate()+" "+MON[a.getMonth()]+"–"+b.getDate()+" "+MON[b.getMonth()];
+  return MON[a.getMonth()]+" "+a.getFullYear();
+}
+
+function stackedDaily(){
+  var win=chartWindow(), days=daysIn(win), list=entriesIn(win);
+  if(!list.length) return emptyBox("No hours logged in this window.");
+  var order=hoursByProject(win).map(function(d){ return d.id; });
+  var byDay={}; days.forEach(function(d){ byDay[d]=[]; });
+  days.forEach(function(d){
+    order.forEach(function(pid){
+      var v=list.filter(function(e){ return e.date===d&&e.projectId===pid; }).reduce(function(s,e){ return s+e.hours; },0);
+      if(v>0) byDay[d].push({pid:pid,v:v});
+    });
+  });
+  var totals=days.map(function(d){ return byDay[d].reduce(function(s,x){ return s+x.v; },0); });
+  var max=Math.ceil(Math.max.apply(null,totals.concat([1]))*1.08*2)/2;
+  var W=560,H=230,L=30,R=8,T=10,B=26,pw=W-L-R,ph=H-T-B;
+  var n=days.length, slot=pw/n, bw=Math.min(30,slot*0.66), g="";
+  [0,max/2,max].forEach(function(v){
+    var y=T+ph-(v/max)*ph;
+    g+='<line x1="'+L+'" y1="'+y+'" x2="'+(W-R)+'" y2="'+y+'" stroke="#D2DAD4"/>';
+    g+='<text x="'+(L-6)+'" y="'+(y+4)+'" text-anchor="end" font-size="10" fill="#5E6E68" font-family="inherit">'+fmt(v)+'</text>';
+  });
+  days.forEach(function(d,i){
+    var x=L+slot*i+(slot-bw)/2, yb=T+ph;
+    byDay[d].forEach(function(seg){
+      var hgt=(seg.v/max)*ph; yb-=hgt;
+      g+='<rect x="'+x+'" y="'+yb+'" width="'+bw+'" height="'+Math.max(.5,hgt)+'" fill="'+projColor(seg.pid)+'" rx="1">'+
+         '<title>'+esc(prettyDate(d))+' · '+esc(projName(seg.pid))+': '+fmtH(seg.v)+'</title></rect>';
+    });
+    var lbl = view==="month" ? ((n>20&&i%3!==0)?"":String(parseISO(d).getDate())) : DOW[parseISO(d).getDay()].charAt(0);
+    if(lbl) g+='<text x="'+(x+bw/2)+'" y="'+(H-9)+'" text-anchor="middle" font-size="10" fill="#5E6E68" font-family="inherit">'+lbl+'</text>';
+    if(totals[i]>0&&n<=14)
+      g+='<text x="'+(x+bw/2)+'" y="'+(T+ph-(totals[i]/max)*ph-4)+'" text-anchor="middle" font-size="10" fill="#14231F" font-family="inherit">'+fmt(totals[i])+'</text>';
+  });
+  return svg(W,H,g);
+}
+
+function rankBars(){
+  var r=range(), agg=hoursByProject(r), total=totalOf(entriesIn(r));
+  if(!agg.length) return emptyBox("Log some hours to see project totals.");
+  agg=agg.slice(0,10);
+  var max=agg[0].value, rowH=26, W=560, H=agg.length*rowH+8, barX=176, barW=W-barX-64, g="";
+  agg.forEach(function(d,i){
+    var y=i*rowH+4, name=projName(d.id);
+    if(name.length>27) name=name.slice(0,26)+"…";
+    g+='<text x="0" y="'+(y+14)+'" font-size="12.5" fill="#14231F" font-family="inherit">'+esc(name)+'</text>';
+    g+='<rect x="'+barX+'" y="'+(y+4)+'" width="'+barW+'" height="12" fill="#EDF0EC" rx="2"/>';
+    g+='<rect x="'+barX+'" y="'+(y+4)+'" width="'+Math.max(1,(d.value/max)*barW)+'" height="12" fill="'+projColor(d.id)+'" rx="2"/>';
+    g+='<text x="'+W+'" y="'+(y+14)+'" text-anchor="end" font-size="12" fill="#14231F" font-family="inherit">'+fmt(d.value)+' h · '+Math.round(d.value/total*100)+'%</text>';
+  });
+  return svg(W,H,g);
+}
+
+function payPeriodChart(pp){
+  var days=daysIn(pp), goal=state.settings.periodHours||0, today=iso(new Date());
+  var cum=0, actual=[], lastIdx=-1;
+  days.forEach(function(d,i){
+    cum+=state.entries.filter(function(e){ return e.date===d; }).reduce(function(s,e){ return s+e.hours; },0);
+    actual.push(cum);
+    if(d<=today) lastIdx=i;
+  });
+  if(lastIdx<0) return emptyBox("This pay period hasn't started yet.");
+  var upto = today>pp[1] ? days.length-1 : lastIdx;
+  var max=Math.ceil(Math.max(goal,cum,1)*1.1);
+  var W=560,H=230,L=34,R=10,T=10,B=26,pw=W-L-R,ph=H-T-B;
+  var xf=function(i){ return L+(days.length===1?pw/2:(i/(days.length-1))*pw); };
+  var yf=function(v){ return T+ph-(v/max)*ph; };
+  var g="";
+  [0,max/2,max].forEach(function(v){
+    var y=yf(v);
+    g+='<line x1="'+L+'" y1="'+y+'" x2="'+(W-R)+'" y2="'+y+'" stroke="#D2DAD4"/>';
+    g+='<text x="'+(L-6)+'" y="'+(y+4)+'" text-anchor="end" font-size="10" fill="#5E6E68" font-family="inherit">'+fmt(v)+'</text>';
+  });
+  if(goal>0){
+    var gy=yf(goal);
+    g+='<line x1="'+L+'" y1="'+gy+'" x2="'+(W-R)+'" y2="'+gy+'" stroke="#9A3B2E" stroke-width="1.5" stroke-dasharray="5 4"/>';
+    g+='<text x="'+(L+3)+'" y="'+(gy-5)+'" font-size="10" fill="#9A3B2E" font-family="inherit">'+fmt(goal)+' h</text>';
+  }
+  var pts=actual.slice(0,upto+1).map(function(v,i){ return xf(i)+","+yf(v); }).join(" ");
+  g+='<polyline fill="none" stroke="#1F5D50" stroke-width="2.5" stroke-linejoin="round" points="'+pts+'"/>';
+  actual.slice(0,upto+1).forEach(function(v,i){
+    g+='<circle cx="'+xf(i)+'" cy="'+yf(v)+'" r="2.5" fill="#1F5D50"><title>'+esc(prettyDate(days[i]))+': '+fmtH(v)+' cumulative</title></circle>';
+  });
+  days.forEach(function(d,i){
+    if(i===0||i===days.length-1||i%Math.ceil(days.length/7)===0)
+      g+='<text x="'+xf(i)+'" y="'+(H-9)+'" text-anchor="middle" font-size="10" fill="#5E6E68" font-family="inherit">'+parseISO(d).getDate()+'</text>';
+  });
+  g+='<text x="'+(W-R)+'" y="'+(T+10)+'" text-anchor="end" font-size="11" fill="#5E6E68" font-family="inherit">'+
+     fmt(actual[upto])+' of '+fmt(goal)+' h</text>';
+  return svg(W,H,g);
+}
+
+function renderPayPeriod(){
+  var pp=payPeriodFor(iso(anchor)), panel=$("#ppPanel");
+  if(!pp){ panel.style.display="none"; return; }
+  panel.style.display="";
+  var a=parseISO(pp[0]), b=parseISO(pp[1]);
+  var label=a.getDate()+" "+MON[a.getMonth()]+" – "+b.getDate()+" "+MON[b.getMonth()];
+  var logged=totalOf(entriesIn(pp)), goal=state.settings.periodHours||0, today=iso(new Date());
+  var msg;
+  if(today>pp[1]) msg=label+" · closed at "+fmt(logged)+" of "+fmt(goal)+" h";
+  else if(today<pp[0]) msg=label+" · not started";
+  else{
+    var left=daysIn([today,pp[1]]).length;
+    msg=label+" · "+fmt(logged)+" of "+fmt(goal)+" h · "+fmt(Math.max(0,goal-logged))+
+        " h to go, "+left+" day"+(left>1?"s":"")+" left";
+  }
+  $("#ppNote").textContent=msg;
+  $("#chartPP").innerHTML=payPeriodChart(pp);
+}
+
+/* ---------- render ---------- */
+function updatePrintHead(){
+  var r=range(), total=totalOf(entriesIn(r)), lbl=periodLabel();
+  $("#phTitle").textContent="Project time report — "+lbl.title;
+  $("#phSub").textContent=(state.owner?state.owner+" · ":"")+fmtH(total)+" across "+
+    hoursByProject(r).length+" projects · generated "+prettyDate(iso(new Date()));
+}
+function render(){
+  var r=range(), list=entriesIn(r), total=totalOf(list), lbl=periodLabel();
+  $("#periodTitle").textContent=lbl.title;
+  $("#periodSub").textContent=lbl.sub;
+  Array.prototype.forEach.call(document.querySelectorAll(".scope button"),function(b){
+    b.setAttribute("aria-pressed",String(b.dataset.view===view));
+  });
+  updatePrintHead();
+  renderFigures(list,total,r);
+  renderBoard(r);
+  renderPies();
+  renderTagPies();
+  $("#dailyNote").textContent = view==="day" ? "Seven days ending on the selected date."
+    : "Stacked by project. The dashed line is your daily target.";
+  $("#chartDaily").innerHTML=stackedDaily();
+  $("#chartRank").innerHTML=rankBars();
+  renderPayPeriod();
+  renderSummary(list,total,r);
+  renderPeople(r);
+  renderWins(r);
+  renderEntries(list);
+  $("#reportNotePrint").textContent=state.reportNote||"";
+  renderSelects();
+}
+
+function renderFigures(list,total,r){
+  var days=daysIn(r), seen={};
+  list.forEach(function(e){ seen[e.date]=1; });
+  var active=Object.keys(seen).length;
+  var top=hoursByProject(r)[0];
+  var live=state.projects.filter(function(p){ return p.status==="active"; }).length;
+  var figs=[
+    {k:"Hours logged",v:fmt(total)},
+    {k:"Projects touched",v:String(hoursByProject(r).length)},
+    {k:"Active projects",v:String(live)},
+    {k:"Days with entries",v:active+" of "+days.length}
+  ];
+  var pp=payPeriodFor(iso(anchor));
+  if(pp) figs.push({k:"Pay period so far",v:fmt(totalOf(entriesIn(pp)))+" of "+fmt(state.settings.periodHours)});
+  figs.push({k:"Biggest project",v:top?(projName(top.id).length>18?projName(top.id).slice(0,17)+"…":projName(top.id)):"—"});
+  $("#figures").innerHTML=figs.map(function(f){
+    return '<div class="fig"><div class="v num">'+esc(f.v)+'</div><div class="k">'+esc(f.k)+'</div></div>';
+  }).join("");
+}
+
+function card(p,r){
+  var periodH=state.entries.filter(function(e){ return e.projectId===p.id&&e.date>=r[0]&&e.date<=r[1]; })
+    .reduce(function(s,e){ return s+e.hours; },0);
+  var all=allTimeHours(p.id);
+  var running=timer&&timer.projectId===p.id;
+  var scope = view==="day"?"today":view==="week"?"this week":"this month";
+  var people=(p.people||[]).filter(Boolean);
+  return '<article class="pcard'+(p.status!=="active"?" done":"")+'" style="--c:'+p.color+';--tint:'+tint(p.color,0.06)+'">'+
+    '<div class="ptop"><h3>'+esc(p.name)+'</h3>'+
+      (p.status==="complete"?'<span class="pill">Complete</span>':p.status==="archived"?'<span class="pill">Archived</span>':
+       running?'<span class="pill on">Timing</span>':'')+'</div>'+
+    '<div class="pmeta">'+
+      (p.tag?'<span class="tagchip" style="background:'+tint(tagColor(p.tag),0.16)+';color:'+tagColor(p.tag)+'">'+esc(p.tag)+'</span>':'')+
+      (people.length?'<span>with <b>'+people.map(esc).join(", ")+'</b></span>':'')+'</div>'+
+    '<div class="phours"><span class="big num">'+fmt(periodH)+'</span><span class="sm">h '+scope+' · '+fmt(all)+' h total</span></div>'+
+    '<div class="padd">'+
+      '<button class="qa" data-p="'+p.id+'" data-inc="0.25">+15m</button>'+
+      '<button class="qa" data-p="'+p.id+'" data-inc="0.5">+30m</button>'+
+      '<button class="primary hour qa" data-p="'+p.id+'" data-inc="1">+ 1 hour</button>'+
+      '<button class="tm'+(running?" running":"")+'" data-p="'+p.id+'">'+(running?"Stop":"Timer")+'</button>'+
+    '</div>'+
+    '<div class="prow2">'+
+      '<button class="quiet ep" data-p="'+p.id+'">Edit</button>'+
+      (p.status==="active"
+        ? '<button class="quiet st" data-p="'+p.id+'" data-s="complete">Mark complete</button>'+
+          '<button class="quiet st" data-p="'+p.id+'" data-s="archived">Archive</button>'
+        : '<button class="quiet st" data-p="'+p.id+'" data-s="active">Reopen</button>')+
+    '</div></article>';
+}
+
+function renderBoard(r){
+  var hrs={}; hoursByProject(r).forEach(function(d,i){ hrs[d.id]=[d.value,i]; });
+  function sortP(a,b){
+    var ha=hrs[a.id]?hrs[a.id][0]:0, hb=hrs[b.id]?hrs[b.id][0]:0;
+    if(hb!==ha) return hb-ha;
+    return a.name.localeCompare(b.name);
+  }
+  var active=state.projects.filter(function(p){ return p.status==="active"; }).sort(sortP);
+  var rest=state.projects.filter(function(p){ return p.status!=="active"; }).sort(sortP);
+  $("#boardTitle").textContent="Active projects";
+  $("#boardHint").textContent = active.length ? "Hours shown for "+(view==="day"?"the selected day":view==="week"?"this week":"this month") : "";
+  $("#board").innerHTML = active.length ? active.map(function(p){ return card(p,r); }).join("")
+    : '<div class="empty" style="grid-column:1/-1">No active projects. Use <strong>New project</strong> to add one.</div>';
+  $("#stash").innerHTML = rest.length
+    ? '<details class="stash"><summary>'+rest.length+' completed or archived project'+(rest.length>1?"s":"")+
+      ' — hours stay in your reports</summary><div class="board">'+rest.map(function(p){ return card(p,r); }).join("")+'</div></details>'
+    : "";
+}
+
+function renderSummary(list,total,r){
+  var agg=hoursByProject(r);
+  $("#summaryNote").textContent = agg.length
+    ? "Hours in this period, with lifetime totals for context."
+    : "Nothing logged in this period.";
+  if(!agg.length){ $("#projectSummary").innerHTML=emptyBox("No hours logged in this period."); return; }
+  $("#projectSummary").innerHTML=
+    '<table><thead><tr><th>Project</th><th>Tag</th><th>Collaborating with</th><th>Status</th>'+
+    '<th class="r">Hours</th><th class="r">Share</th><th class="r">All time</th></tr></thead><tbody>'+
+    agg.map(function(d){
+      var p=projById(d.id);
+      return '<tr><td><div class="pname"><span class="swatch" style="background:'+projColor(d.id)+'"></span>'+
+        esc(projName(d.id))+'</div></td>'+
+        '<td>'+(p&&p.tag?'<span class="tagchip" style="background:'+tint(tagColor(p.tag),0.16)+';color:'+tagColor(p.tag)+'">'+esc(p.tag)+'</span>':'—')+'</td>'+
+        '<td>'+esc(((p&&p.people)||[]).filter(Boolean).join(", ")||"—")+'</td>'+
+        '<td>'+esc(p?(p.status==="active"?"Active":p.status==="complete"?"Complete":"Archived"):"—")+'</td>'+
+        '<td class="r num">'+fmt(d.value)+'</td>'+
+        '<td class="r num">'+Math.round(d.value/total*100)+'%</td>'+
+        '<td class="r num">'+fmt(allTimeHours(d.id))+'</td></tr>';
+    }).join("")+
+    '<tr><td colspan="4"><strong>Total</strong></td><td class="r num"><strong>'+fmt(total)+'</strong></td><td class="r">100%</td><td></td></tr>'+
+    '</tbody></table>';
+}
+
+function renderPeople(r){
+  var agg=hoursByProject(r), m={};
+  agg.forEach(function(d){
+    var p=projById(d.id); if(!p) return;
+    (p.people||[]).filter(Boolean).forEach(function(n){
+      if(!m[n]) m[n]={h:0,n:0};
+      m[n].h+=d.value; m[n].n++;
+    });
+  });
+  var names=Object.keys(m).sort(function(a,b){ return m[b].h-m[a].h; });
+  if(!names.length){ $("#people").innerHTML=emptyBox("No collaborators listed on projects with hours this period."); return; }
+  $("#people").innerHTML='<table><tbody>'+names.map(function(n){
+    return '<tr><td>'+esc(n)+'</td><td class="r num">'+fmt(m[n].h)+' h</td>'+
+      '<td class="r" style="color:var(--muted);font-size:12.5px">'+m[n].n+' project'+(m[n].n>1?"s":"")+'</td></tr>';
+  }).join("")+'</tbody></table>';
+}
+
+function renderWins(r){
+  var panel=$("#winsPanel");
+  panel.style.display = view==="day" ? "none" : "";
+  $("#winsTitle").textContent = view==="week" ? "Weekly wins" : "Wins this month";
+  if(view==="day") return;
+  var ws=winsIn(r);
+  $("#winList").innerHTML = ws.length ? ws.map(function(w){
+    var p=w.projectId?projById(w.projectId):null;
+    return '<div class="win">'+
+      '<span class="swatch" style="margin-top:6px;background:'+(p?p.color:"#C8D0CA")+'"></span>'+
+      '<div class="body"><div class="txt">'+esc(w.text)+'</div>'+
+        '<div class="tag">'+(p?esc(p.name)+' · ':'')+esc(prettyDate(w.date))+'</div></div>'+
+      '<div class="rowacts no-print">'+
+        '<button class="quiet we" data-id="'+w.id+'">Edit</button>'+
+        '<button class="quiet danger wd" data-id="'+w.id+'">Delete</button></div>'+
+    '</div>';
+  }).join("") : emptyBox("Nothing logged yet for this "+(view==="week"?"week":"month")+".");
+}
+
+function renderEntries(list){
+  $("#entryCount").textContent=list.length+(list.length===1?" entry":" entries")+" in this period.";
+  if(!list.length){ $("#entryTable").innerHTML=emptyBox("Nothing logged yet."); return; }
+  $("#entryTable").innerHTML='<table><thead><tr><th>Date</th><th>Project</th><th class="r">Hours</th><th>Detail</th>'+
+    '<th class="r no-print">Edit</th></tr></thead><tbody>'+list.map(function(e){
+    return '<tr><td class="num">'+esc(prettyDate(e.date))+'</td>'+
+      '<td><div class="pname"><span class="swatch" style="background:'+projColor(e.projectId)+'"></span>'+esc(projName(e.projectId))+'</div></td>'+
+      '<td class="r num">'+fmt(e.hours)+'</td><td>'+esc(e.note||"")+'</td>'+
+      '<td class="r no-print"><div class="rowacts"><button class="quiet ee" data-id="'+e.id+'">Edit</button>'+
+      '<button class="quiet danger ed" data-id="'+e.id+'">Delete</button></div></td></tr>';
+  }).join("")+'</tbody></table>';
+}
+
+function renderSelects(){
+  var opts=function(includeAll){
+    var l=state.projects.filter(function(p){ return includeAll||p.status==="active"; });
+    return l.map(function(p){ return '<option value="'+p.id+'">'+esc(p.name)+(p.status!=="active"?" ("+p.status+")":"")+'</option>'; }).join("");
+  };
+  var s1=$("#eProject"), c1=s1.value;
+  s1.innerHTML = state.projects.length ? opts(true) : '<option value="">No projects yet</option>';
+  if(c1) s1.value=c1;
+  var s2=$("#wProject"), c2=s2.value;
+  s2.innerHTML='<option value="">No project</option>'+opts(true);
+  if(c2) s2.value=c2;
+}
+
+/* ---------- mutations ---------- */
+function addProject(name,tag,people,color){
+  name=(name||"").trim(); if(!name) return null;
+  tag=TAGS.indexOf(tag)>=0?tag:"";
+  var p={id:uid(),name:name,tag:tag,color:color||PALETTE[state.projects.length%PALETTE.length],
+         people:(people||[]).map(function(s){ return String(s||"").trim(); }).filter(Boolean).slice(0,3),
+         status:"active",created:iso(new Date()),completedOn:null};
+  state.projects.push(p); markDirty(); return p;
+}
+function logTime(projectId,date,hours,note){
+  if(!projectId||!(hours>0)) return null;
+  var e={id:uid(),projectId:projectId,date:date,hours:Math.round(hours*1000)/1000,note:(note||"").trim()};
+  state.entries.push(e); markDirty(); return e;
+}
+function removeEntry(id){ state.entries=state.entries.filter(function(e){ return e.id!==id; }); markDirty(); }
+
+/* ---------- files ---------- */
+function download(filename,text,type){
+  var blob=new Blob([text],{type:type||"application/json"}), url=URL.createObjectURL(blob);
+  var a=document.createElement("a"); a.href=url; a.download=filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); },500);
+}
+function saveFile(){
+  state.reportNote=$("#reportNote").value;
+  var payload=JSON.parse(JSON.stringify(state));
+  payload.savedAt=new Date().toISOString();
+  payload.activeTimer=timer;
+  var slug=(state.owner||"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+  download("project-ledger-"+(slug?slug+"-":"")+iso(new Date())+".json",JSON.stringify(payload,null,2));
+  dirty=false; $("#fileState").textContent="— saved "+iso(new Date());
+  toast("Ledger saved to your downloads");
+}
+function loadFile(text){
+  var d;
+  try{ d=JSON.parse(text); }catch(err){ toast("That file isn't valid JSON"); return; }
+  var rawProjects = d.projects || d.tasks;
+  if(!d||!Array.isArray(rawProjects)||!Array.isArray(d.entries)){ toast("That file doesn't look like a ledger export"); return; }
+  function normTag(p){
+    var raw=p.tag||p.category||"";
+    for(var i=0;i<TAGS.length;i++) if(TAGS[i].toLowerCase()===String(raw).toLowerCase()) return TAGS[i];
+    return "";
+  }
+  state.projects=rawProjects.map(function(p,i){
+    return {id:p.id||uid(),name:p.name||"Untitled",tag:normTag(p),
+            color:p.color||PALETTE[i%PALETTE.length],
+            people:Array.isArray(p.people)?p.people.filter(Boolean).slice(0,3):[],
+            status:p.status||(p.archived?"archived":"active"),
+            created:p.created||iso(new Date()),completedOn:p.completedOn||null};
+  });
+  state.entries=d.entries.filter(function(e){ return e.date&&e.hours>0; }).map(function(e){
+    return {id:e.id||uid(),projectId:e.projectId||e.taskId,date:e.date,hours:+e.hours,note:e.note||""};
+  });
+  state.wins=Array.isArray(d.wins)?d.wins.map(function(w){
+    return {id:w.id||uid(),date:w.date||iso(new Date()),text:w.text||"",projectId:w.projectId||""};
+  }).filter(function(w){ return w.text; }):[];
+  var ds=d.settings||{};
+  state.settings={
+    weekStart: ds.weekStart===0?0:1,
+    trackPeriod: ds.trackPeriod!==false,
+    periodHours: (typeof ds.periodHours==="number")?ds.periodHours:80,
+    periodDays: (typeof ds.periodDays==="number")?ds.periodDays:14,
+    periodAnchor: ds.periodAnchor||iso(startOfWeek(new Date()))
+  };
+  state.reportNote=d.reportNote||"";
+  state.owner=d.owner||"";
+  timer=d.activeTimer||null;
+  $("#reportNote").value=state.reportNote;
+  $("#owner").value=state.owner;
+  dirty=false; $("#fileState").textContent="— loaded";
+  render(); toast("Ledger loaded");
+}
+function exportCsv(){
+  var r=range(), list=entriesIn(r);
+  var rows=[["date","project","tag","collaborators","status","hours","note"]].concat(list.map(function(e){
+    var p=projById(e.projectId);
+    return [e.date,projName(e.projectId),p?(p.tag||""):"",p?(p.people||[]).join("; "):"",p?p.status:"",fmt(e.hours),e.note||""];
+  }));
+  var csv=rows.map(function(row){ return row.map(function(c){
+    c=String(c); return /[",\n]/.test(c)?'"'+c.replace(/"/g,'""')+'"':c; }).join(","); }).join("\n");
+  download("project-hours-"+r[0]+"-to-"+r[1]+".csv",csv,"text/csv");
+}
+function copySummary(){
+  var r=range(), list=entriesIn(r), total=totalOf(list), lbl=periodLabel(), agg=hoursByProject(r);
+  var lines=["Project time report — "+lbl.title];
+  if(state.owner) lines.push("Prepared by "+state.owner);
+  lines.push(fmt(total)+" hours across "+agg.length+" projects");
+  var ppr=payPeriodFor(iso(anchor));
+  if(ppr){
+    var pa=parseISO(ppr[0]), pb=parseISO(ppr[1]);
+    lines.push("Pay period "+pa.getDate()+" "+MON[pa.getMonth()]+"–"+pb.getDate()+" "+MON[pb.getMonth()]+
+      ": "+fmt(totalOf(entriesIn(ppr)))+" of "+fmt(state.settings.periodHours)+" h");
+  }
+  lines.push("");
+  var tagAgg=hoursByTag(r);
+  if(tagAgg.length){
+    lines.push("By tag:");
+    tagAgg.forEach(function(t){ lines.push("• "+t.tag+" — "+fmt(t.value)+" h ("+Math.round(t.value/total*100)+"%)"); });
+    lines.push("","By project:");
+  }
+  agg.forEach(function(d){
+    var p=projById(d.id), people=((p&&p.people)||[]).filter(Boolean);
+    lines.push("• "+projName(d.id)+" — "+fmt(d.value)+" h ("+Math.round(d.value/total*100)+"%)"+
+      (p&&p.tag?" · "+p.tag:"")+
+      (p&&p.status==="complete"?" [complete]":"")+(people.length?" · with "+people.join(", "):""));
+    var notes=list.filter(function(e){ return e.projectId===d.id&&e.note; }).map(function(e){ return e.note; });
+    var seen={};
+    notes.filter(function(n){ if(seen[n]) return false; seen[n]=1; return true; })
+         .slice(0,4).forEach(function(n){ lines.push("    – "+n); });
+  });
+  var ws=winsIn(r);
+  if(ws.length&&view!=="day"){
+    lines.push("", view==="week"?"Wins this week:":"Wins this month:");
+    ws.forEach(function(w){
+      var p=w.projectId?projById(w.projectId):null;
+      lines.push("• "+w.text+(p?" ("+p.name+")":""));
+    });
+  }
+  var note=$("#reportNote").value.trim();
+  if(note){ lines.push("","Notes:",note); }
+  var text=lines.join("\n");
+  if(navigator.clipboard&&navigator.clipboard.writeText)
+    navigator.clipboard.writeText(text).then(function(){ toast("Summary copied"); },function(){ fallbackCopy(text); });
+  else fallbackCopy(text);
+}
+function fallbackCopy(text){
+  var ta=document.createElement("textarea"); ta.value=text; document.body.appendChild(ta); ta.select();
+  try{ document.execCommand("copy"); toast("Summary copied"); }catch(e){ toast("Copy failed — select the text manually"); }
+  document.body.removeChild(ta);
+}
+
+/* ---------- modals ---------- */
+function openModal(html){
+  $("#modal").innerHTML=html; $("#scrim").classList.add("open");
+  var f=$("#modal").querySelector("input,select,textarea,button"); if(f) f.focus();
+}
+function closeModal(){ $("#scrim").classList.remove("open"); $("#modal").innerHTML=""; }
+
+function knownPeople(){
+  var m={}; state.projects.forEach(function(p){ (p.people||[]).forEach(function(n){ if(n) m[n]=1; }); });
+  return Object.keys(m);
+}
+function projectModal(id){
+  var p=id?projById(id):null;
+  var people=(p&&p.people?p.people.slice():[]).concat(["","",""]).slice(0,3);
+  var color=p?p.color:PALETTE[state.projects.length%PALETTE.length];
+  openModal('<h2>'+(p?"Edit project":"New project")+'</h2>'+
+    '<input type="hidden" id="pId" value="'+(p?p.id:"")+'">'+
+    '<div class="mrow"><div class="c" style="flex:2 1 220px"><label for="pName">Project name</label>'+
+      '<input id="pName" type="text" value="'+esc(p?p.name:"")+'" placeholder="Reporting rebuild"></div>'+
+      '<div class="c"><label for="pTag">Tag</label><select id="pTag"><option value="">Untagged</option>'+
+      TAGS.map(function(t){ return '<option value="'+esc(t)+'"'+((p&&p.tag===t)?" selected":"")+'>'+esc(t)+'</option>'; }).join("")+
+      '</select></div></div>'+
+    '<label>Collaborating with — up to 3 people</label>'+
+    '<div class="mrow">'+[0,1,2].map(function(i){
+      return '<div class="c"><input type="text" class="pp" list="peopleList" value="'+esc(people[i]||"")+'" placeholder="'+(i===0?"Name":"Optional")+'"></div>';
+    }).join("")+'<datalist id="peopleList">'+knownPeople().map(function(n){ return '<option value="'+esc(n)+'">'; }).join("")+'</datalist></div>'+
+    '<div class="mrow"><div class="c" style="flex:0 0 96px"><label for="pColor">Colour</label>'+
+      '<input id="pColor" type="color" value="'+color+'" style="width:60px;padding:1px"></div>'+
+      (p?'<div class="c"><label for="pStatus">Status</label><select id="pStatus">'+
+        ['active','complete','archived'].map(function(s){
+          return '<option value="'+s+'"'+(p.status===s?' selected':'')+'>'+s.charAt(0).toUpperCase()+s.slice(1)+'</option>';
+        }).join("")+'</select></div>':'')+
+    '</div>'+
+    (p?'<p class="note" style="font-size:12px;color:var(--muted)">Logged '+fmt(allTimeHours(p.id))+' h all time'+
+        (p.created?' · started '+esc(prettyDate(p.created)):'')+'.</p>':'')+
+    '<div style="display:flex;justify-content:space-between;gap:8px;margin-top:14px">'+
+      (p?'<button class="danger pdel" data-p="'+p.id+'">Delete project</button>':'<span></span>')+
+      '<span><button id="mClose">Cancel</button> <button class="primary" id="pSave">'+(p?"Save changes":"Create project")+'</button></span>'+
+    '</div>');
+}
+function settingsModal(){
+  var s=state.settings;
+  openModal('<h2>Settings</h2>'+
+    '<div class="mrow"><div class="c"><label for="sWeek">Week starts on</label><select id="sWeek">'+
+      '<option value="1"'+(s.weekStart===1?" selected":"")+'>Monday</option>'+
+      '<option value="0"'+(s.weekStart===0?" selected":"")+'>Sunday</option></select></div>'+
+      '<div class="c"><label for="sTrack">Pay period total</label><select id="sTrack">'+
+        '<option value="1"'+(s.trackPeriod?" selected":"")+'>Track it</option>'+
+        '<option value="0"'+(!s.trackPeriod?" selected":"")+'>Don\'t track it</option></select></div></div>'+
+    '<div class="mrow"><div class="c"><label for="sHours">Hours per pay period</label>'+
+      '<input id="sHours" type="number" min="0" max="400" step="1" value="'+s.periodHours+'"></div>'+
+      '<div class="c"><label for="sLen">Pay period length (days)</label>'+
+      '<input id="sLen" type="number" min="1" max="62" step="1" value="'+s.periodDays+'"></div>'+
+      '<div class="c"><label for="sAnchor">A pay period started on</label>'+
+      '<input id="sAnchor" type="date" value="'+esc(s.periodAnchor)+'"></div></div>'+
+    '<p class="note" style="font-size:12px;color:var(--muted);line-height:1.5">'+
+      'A 9/80 schedule is 80 hours over 14 days. Set the start date of any one pay period and every '+
+      'period after it lines up. Nothing here assumes a fixed number of hours per day — an 11-hour '+
+      'Tuesday and a 7-hour Thursday both just count toward the period total.</p>'+
+    '<div style="text-align:right"><button id="mClose">Cancel</button> <button class="primary" id="sSave">Save settings</button></div>');
+}
+
+/* ---------- events ---------- */
+document.addEventListener("click",function(ev){
+  var el=ev.target.closest?ev.target.closest("button"):null;
+  if(!el) return;
+
+  if(el.id==="toastUndo"){ if(undoFn){ undoFn(); undoFn=null; } $("#toast").classList.remove("show"); return; }
+  if(el.dataset.view){ view=el.dataset.view; render(); return; }
+  if(el.id==="prev"||el.id==="next"){
+    var dir=el.id==="prev"?-1:1;
+    if(view==="day") anchor=addDays(anchor,dir);
+    else if(view==="week") anchor=addDays(anchor,7*dir);
+    else anchor=new Date(anchor.getFullYear(),anchor.getMonth()+dir,1);
+    render(); return;
+  }
+  if(el.id==="today"){ anchor=new Date(); render(); return; }
+
+  if(el.id==="btnNew"){ projectModal(null); return; }
+  if(el.id==="btnSettings"){ settingsModal(); return; }
+  if(el.id==="btnSave"){ saveFile(); return; }
+  if(el.id==="btnImport"){ $("#fileInput").click(); return; }
+  if(el.id==="btnCsv"){ exportCsv(); return; }
+  if(el.id==="btnCopy"){ copySummary(); return; }
+  if(el.id==="btnPrint"){ state.reportNote=$("#reportNote").value; $("#reportNotePrint").textContent=state.reportNote; window.print(); return; }
+  if(el.id==="mClose"){ closeModal(); return; }
+
+  if(el.classList.contains("qa")){
+    var inc=parseFloat(el.dataset.inc);
+    var e=logTime(el.dataset.p,iso(new Date()),inc,"");
+    render();
+    toast("Logged "+fmtH(inc)+" to "+projName(el.dataset.p)+" today",function(){
+      removeEntry(e.id); render(); toast("Removed");
+    });
+    return;
+  }
+  if(el.classList.contains("tm")){ toggleTimer(el.dataset.p); return; }
+  if(el.classList.contains("ep")){ projectModal(el.dataset.p); return; }
+  if(el.classList.contains("st")){
+    var p=projById(el.dataset.p);
+    if(p){ p.status=el.dataset.s; p.completedOn=el.dataset.s==="complete"?iso(new Date()):null; markDirty(); }
+    render(); toast(projName(el.dataset.p)+" marked "+el.dataset.s); return;
+  }
+  if(el.id==="pSave"){ saveProjectModal(); return; }
+  if(el.classList.contains("pdel")){
+    var used=state.entries.filter(function(x){ return x.projectId===el.dataset.p; }).length;
+    if(!confirm(used?"Delete this project and its "+used+" entries? This can't be undone.":"Delete this project?")) return;
+    state.entries=state.entries.filter(function(x){ return x.projectId!==el.dataset.p; });
+    state.wins=state.wins.map(function(w){ if(w.projectId===el.dataset.p) w.projectId=""; return w; });
+    state.projects=state.projects.filter(function(x){ return x.id!==el.dataset.p; });
+    if(timer&&timer.projectId===el.dataset.p) timer=null;
+    markDirty(); closeModal(); render(); return;
+  }
+  if(el.id==="sSave"){
+    state.settings.weekStart=parseInt($("#sWeek").value,10);
+    state.settings.trackPeriod=$("#sTrack").value==="1";
+    state.settings.periodHours=Math.max(0,parseFloat($("#sHours").value)||0);
+    state.settings.periodDays=Math.max(1,parseInt($("#sLen").value,10)||14);
+    state.settings.periodAnchor=$("#sAnchor").value||state.settings.periodAnchor;
+    markDirty(); closeModal(); render(); return;
+  }
+
+  if(el.id==="eAdd"){ submitEntry(); return; }
+  if(el.id==="eCancel"){ resetEntryForm(); return; }
+  if(el.classList.contains("ee")){
+    var en=state.entries.filter(function(x){ return x.id===el.dataset.id; })[0];
+    if(!en) return;
+    editingId=en.id;
+    $("#eProject").value=en.projectId; $("#eDate").value=en.date;
+    $("#eHours").value=fmt(en.hours); $("#eNote").value=en.note||"";
+    $("#eAdd").textContent="Update entry"; $("#eCancel").style.display="";
+    $("#entryHint").textContent="Editing an existing entry.";
+    $("#eHours").focus(); return;
+  }
+  if(el.classList.contains("ed")){
+    if(!confirm("Delete this entry?")) return;
+    removeEntry(el.dataset.id);
+    if(editingId===el.dataset.id) resetEntryForm();
+    render(); return;
+  }
+
+  if(el.id==="wAdd"){ submitWin(); return; }
+  if(el.id==="wCancel"){ resetWinForm(); return; }
+  if(el.classList.contains("we")){
+    var w=state.wins.filter(function(x){ return x.id===el.dataset.id; })[0];
+    if(!w) return;
+    editingWin=w.id; $("#wText").value=w.text; $("#wProject").value=w.projectId||"";
+    $("#wAdd").textContent="Update win"; $("#wCancel").style.display="";
+    $("#wText").focus(); return;
+  }
+  if(el.classList.contains("wd")){
+    if(!confirm("Delete this win?")) return;
+    state.wins=state.wins.filter(function(x){ return x.id!==el.dataset.id; });
+    if(editingWin===el.dataset.id) resetWinForm();
+    markDirty(); render(); return;
+  }
+});
+
+function saveProjectModal(){
+  var id=$("#pId").value;
+  var name=$("#pName").value.trim();
+  if(!name){ toast("Give the project a name"); $("#pName").focus(); return; }
+  var people=Array.prototype.map.call($("#modal").querySelectorAll(".pp"),function(i){ return i.value.trim(); })
+    .filter(Boolean).slice(0,3);
+  if(id){
+    var p=projById(id);
+    if(p){
+      p.name=name; p.tag=$("#pTag").value; p.color=$("#pColor").value; p.people=people;
+      var st=$("#pStatus"); if(st){ p.status=st.value; if(p.status==="complete"&&!p.completedOn) p.completedOn=iso(new Date()); }
+      markDirty();
+    }
+    closeModal(); render(); toast("Project updated"); return;
+  }
+  addProject(name,$("#pTag").value,people,$("#pColor").value);
+  closeModal(); render(); toast("Project created");
+}
+
+document.addEventListener("input",function(ev){
+  if(ev.target.id==="reportNote"){ state.reportNote=ev.target.value; markDirty(); }
+  if(ev.target.id==="owner"){ state.owner=ev.target.value.trim(); markDirty(); updatePrintHead(); }
+});
+$("#scrim").addEventListener("click",function(ev){ if(ev.target===$("#scrim")) closeModal(); });
+document.addEventListener("keydown",function(ev){
+  if(ev.key==="Escape"&&$("#scrim").classList.contains("open")) closeModal();
+  if(ev.key==="Enter"&&(ev.target.id==="eHours"||ev.target.id==="eNote")) submitEntry();
+  if(ev.key==="Enter"&&ev.target.id==="pName"){ ev.preventDefault(); saveProjectModal(); }
+  if(ev.key==="Enter"&&ev.metaKey&&ev.target.id==="wText") submitWin();
+});
+$("#fileInput").addEventListener("change",function(){
+  var f=this.files[0]; if(!f) return;
+  var rd=new FileReader(); rd.onload=function(){ loadFile(rd.result); }; rd.readAsText(f); this.value="";
+});
+window.addEventListener("beforeunload",function(ev){ if(dirty){ ev.preventDefault(); ev.returnValue=""; } });
+
+function submitEntry(){
+  var pid=$("#eProject").value, date=$("#eDate").value, h=parseHours($("#eHours").value);
+  if(!pid){ toast("Create a project first"); projectModal(null); return; }
+  if(!date){ toast("Pick a date"); return; }
+  if(!(h>0)){ toast("Enter time as 1.5, 90m, or 1:30"); $("#eHours").focus(); return; }
+  if(editingId){
+    var e=state.entries.filter(function(x){ return x.id===editingId; })[0];
+    if(e){ e.projectId=pid; e.date=date; e.hours=Math.round(h*1000)/1000; e.note=$("#eNote").value.trim(); markDirty(); }
+    resetEntryForm(); render(); toast("Entry updated"); return;
+  }
+  logTime(pid,date,h,$("#eNote").value);
+  $("#eHours").value=""; $("#eNote").value=""; $("#eHours").focus();
+  render(); toast("Logged "+fmtH(h));
+}
+function resetEntryForm(){
+  editingId=null;
+  $("#eAdd").textContent="Log time"; $("#eCancel").style.display="none";
+  $("#eHours").value=""; $("#eNote").value=""; $("#eDate").value=iso(new Date());
+  $("#entryHint").textContent="For backdating or adding detail. Accepts 1.5, 90m, 1:30, or 1h30.";
+}
+
+function submitWin(){
+  var text=$("#wText").value.trim();
+  if(!text){ toast("Write the win first"); $("#wText").focus(); return; }
+  if(editingWin){
+    var w=state.wins.filter(function(x){ return x.id===editingWin; })[0];
+    if(w){ w.text=text; w.projectId=$("#wProject").value; markDirty(); }
+    resetWinForm(); render(); toast("Win updated"); return;
+  }
+  var r=range(), today=iso(new Date());
+  var date=(today>=r[0]&&today<=r[1])?today:r[0];
+  state.wins.push({id:uid(),date:date,text:text,projectId:$("#wProject").value});
+  markDirty(); resetWinForm(); render(); toast("Win added");
+}
+function resetWinForm(){
+  editingWin=null; $("#wText").value=""; $("#wProject").value="";
+  $("#wAdd").textContent="Add win"; $("#wCancel").style.display="none";
+}
+
+/* ---------- timer ---------- */
+function toggleTimer(pid){
+  if(timer&&timer.projectId===pid){
+    var hrs=(Date.now()-timer.startedAt)/3600000; timer=null;
+    if(hrs*60<1){ render(); toast("Timer stopped — under a minute, nothing logged"); return; }
+    logTime(pid,iso(new Date()),Math.round(hrs*100)/100,"");
+    render(); toast("Logged "+fmtH(Math.round(hrs*100)/100)+" from the timer"); return;
+  }
+  if(timer){
+    var prev=timer.projectId, h2=(Date.now()-timer.startedAt)/3600000;
+    if(h2*60>=1) logTime(prev,iso(new Date()),Math.round(h2*100)/100,"");
+  }
+  timer={projectId:pid,startedAt:Date.now()};
+  markDirty(); render(); toast("Timer running on "+projName(pid));
+}
+setInterval(function(){
+  if(!timer) return;
+  var mins=Math.floor((Date.now()-timer.startedAt)/60000);
+  Array.prototype.forEach.call(document.querySelectorAll(".tm.running"),function(b){
+    b.textContent="Stop · "+Math.floor(mins/60)+"h"+String(mins%60).padStart(2,"0");
+  });
+},15000);
+
+/* ---------- boot ---------- */
+$("#eDate").value=iso(new Date());
+if(!state.settings.periodAnchor) state.settings.periodAnchor=iso(startOfWeek(new Date()));
+if(!state.projects.length){
+  addProject("Reporting rebuild","Program",["Ana Ruiz"]);
+  addProject("Vendor migration","PLM Division",["Ben Okafor","Priya Nair"]);
+  addProject("Audit readiness","SMS",[]);
+  addProject("Intake & support","Home Office",[]);
+  dirty=false; $("#fileState").textContent="— unsaved";
+}
+render();
+})();
+</script>
+</body>
+</html>
