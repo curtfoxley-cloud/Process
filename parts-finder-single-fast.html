@@ -156,6 +156,9 @@ tr.miss td.pn{color:var(--miss)}
 .tag.exact{color:var(--found);border-color:#a9c8b7}
 .tag.split{color:var(--found);border-color:#a9c8b7}
 .tag.linesplit{color:var(--found);border-color:#a9c8b7}
+.morebar{display:flex;align-items:center;gap:12px;justify-content:center;
+  padding:12px;border:1px solid var(--rule);border-top:none;background:var(--panel);
+  font-size:12.5px;color:var(--ink2)}
 .tag.fuzzy{color:var(--review);border-color:#dfb583}
 .tag.near{color:var(--review);border-color:#dfb583}
 .tag.none{color:var(--miss);border-color:var(--rule)}
@@ -194,7 +197,7 @@ details.setup pre{font:11.5px/1.6 var(--mono);background:#fff;border:1px solid v
 
 <div class="topbar">
   <h1>Parts Finder</h1>
-  <span class="sub">OCR scanned PDFs and check them against a parts list. Nothing leaves this machine.</span>
+  <span class="sub">Find part numbers and phrases across scanned PDFs and Word documents. Nothing leaves this machine.</span>
   <span class="spacer"></span>
   <span class="pillrow">
     <span class="pill" id="libpill">loading…</span>
@@ -209,14 +212,14 @@ details.setup pre{font:11.5px/1.6 var(--mono);background:#fff;border:1px solid v
   <div class="rail">
 
     <div class="step" id="step1">
-      <h2><span class="n">1</span> Your parts list</h2>
-      <label class="f" for="partsText">Paste part numbers (one per line, or comma separated)</label>
-      <textarea id="partsText" placeholder="A-10422&#10;BRG-6205-2RS&#10;91290A115&#10;SKF 6203"></textarea>
+      <h2><span class="n">1</span> What to look for</h2>
+      <label class="f" for="partsText">Paste part numbers or phrases, one per line</label>
+      <textarea id="partsText" placeholder="A-10422&#10;BRG-6205-2RS&#10;91290A115&#10;relief valve&#10;outbound ceiling display"></textarea>
       <div class="row" style="margin-top:9px">
         <span class="btnfile"><button type="button">Load CSV…</button><input type="file" id="partsFile" accept=".csv,.txt,.tsv"></span>
         <select id="partsCol" style="display:none"></select>
       </div>
-      <p class="hint" id="partsHint">In Excel: File &rsaquo; Save As &rsaquo; CSV, or just copy the column and paste it above.</p>
+      <p class="hint" id="partsHint">Part numbers, single words, or multi-word phrases. From Excel: File &rsaquo; Save As &rsaquo; CSV, or copy the column and paste it above.</p>
     </div>
 
     <div class="step" id="step2">
@@ -227,6 +230,7 @@ details.setup pre{font:11.5px/1.6 var(--mono);background:#fff;border:1px solid v
       </div>
       <ul class="filelist" id="pdfList"></ul>
       <p class="hint" id="pdfHint"></p>
+      <p class="hint">Scanned PDFs are OCR'd page by page. PDFs that already contain text, and Word files, are read directly and take almost no time. DOCX is split at page breaks; headers, footers and text boxes are included, and deleted tracked-changes text is ignored.</p>
     </div>
 
     <div class="step done" id="step3">
@@ -278,6 +282,10 @@ details.setup pre{font:11.5px/1.6 var(--mono);background:#fff;border:1px solid v
           </select>
         </div>
       </div>
+      <p class="hint"><b>Auto</b> sends anything with a space, or any word of 4+ letters with no digits,
+         to phrase matching; everything else is treated as a part number. Phrases match whole words in
+         order, so they survive a line break but cannot match across word boundaries.
+         <b>Context</b> sets how much surrounding text is shown per hit, on screen and in the CSV.</p>
 
       <div class="grid2" style="margin-top:10px">
         <div>
@@ -290,9 +298,10 @@ details.setup pre{font:11.5px/1.6 var(--mono);background:#fff;border:1px solid v
         </div>
       </div>
       <label class="check"><input type="checkbox" id="skipText" checked>
-        <span>Skip OCR on pages that already have a text layer</span></label>
+        <span>Skip OCR on pages that already have a text layer (much faster on mixed documents)</span></label>
       <label class="check"><input type="checkbox" id="fuzzy" checked>
-        <span>Catch OCR look-alike errors (<span style="font-family:var(--mono)">0/O, 1/I/l, 5/S, 8/B, 2/Z, 6/G</span>) and flag them for review</span></label>
+        <span>Catch OCR look-alike errors (<span style="font-family:var(--mono)">0/O, 1/I/l, 5/S, 8/B, 2/Z, 6/G</span>) and flag them for review.
+        Built for part numbers — on ordinary words it is noisy, since <span style="font-family:var(--mono)">VALVE</span> and <span style="font-family:var(--mono)">VALUE</span> fold together.</span></label>
       <label class="check"><input type="checkbox" id="binarize">
         <span>High-contrast cleanup — helps faded photocopies, can hurt clean scans</span></label>
     </div>
@@ -339,7 +348,7 @@ details.setup pre{font:11.5px/1.6 var(--mono);background:#fff;border:1px solid v
     <div id="results">
       <div class="empty">
         <p>No results yet.</p>
-        <p class="small">Add a parts list and your PDF or DOCX files, then run the scan. Nothing leaves this machine.</p>
+        <p class="small">Add what you are looking for and your PDF or DOCX files, then run the scan.<br>Part numbers, words and phrases all work. Nothing leaves this machine.</p>
       </div>
     </div>
   </div>
@@ -94092,7 +94101,14 @@ function makeOcrWorker(psm){
       legacyLang   : false
     });
   }).then(function(w){
-    return w.setParameters({ tessedit_pageseg_mode: psm }).then(function(){ return w; });
+    // If setParameters rejects, the worker is already spawned and would leak,
+    // since it was never handed to the scheduler that terminates the pool.
+    return w.setParameters({ tessedit_pageseg_mode: psm })
+      .then(function(){ return w; })
+      .catch(function(err){
+        try { w.terminate(); } catch (e) {}
+        throw err;
+      });
   });
 }
 
@@ -94926,6 +94942,7 @@ function finish(part, hits){
 function match(){
   if (!index || !parts.length) return;
   var useFuzzy = $("fuzzy").checked;
+  showAllRows = false;
   rows = [];
 
   parts.forEach(function(part){
@@ -94972,6 +94989,12 @@ function match(){
 var TIER_LABEL = { exact:"exact", split:"spaced", linesplit:"line-split",
                    fuzzy:"look-alike", near:"1 char off", none:"—" };
 
+// Building every row for a several-thousand-entry list costs more than anyone
+// can read at once. The table is already assembled detached and inserted in a
+// single append, so the cost here is row count, not insertion strategy.
+var MAX_ROWS = 300;
+var showAllRows = false;
+
 function render(){
   var filter = $("filter").value, q = norm($("search").value);
   var counts = { found:0, review:0, miss:0 };
@@ -94994,13 +95017,16 @@ function render(){
     return;
   }
 
+  var capped = !showAllRows && shown.length > MAX_ROWS;
+  var visible = capped ? shown.slice(0, MAX_ROWS) : shown;
+
   var t = document.createElement("table");
-  t.innerHTML = '<thead><tr><th style="width:22%">Part</th><th style="width:13%">Match</th>' +
-                '<th style="width:28%">Where</th><th>What the page actually says</th></tr></thead>';
+  t.innerHTML = '<thead><tr><th style="width:22%">Part or phrase</th><th style="width:13%">Match</th>' +
+                '<th style="width:28%">Where it appears</th><th>What the document actually says</th></tr></thead>';
   var tb = document.createElement("tbody");
   var esc = function(s){ return s.replace(/[&<>]/g, function(m){ return {"&":"&amp;","<":"&lt;",">":"&gt;"}[m]; }); };
 
-  shown.forEach(function(r){
+  visible.forEach(function(r){
     var tr = document.createElement("tr");
     tr.className = r.status === "review" ? "review" : (r.status === "miss" ? "miss" : "");
 
@@ -95053,6 +95079,16 @@ function render(){
   t.appendChild(tb);
   host.innerHTML = "";
   host.appendChild(t);
+
+  if (capped){
+    var more = document.createElement("div");
+    more.className = "morebar";
+    more.innerHTML = '<span></span> <button id="showAll">Show all ' + shown.length + '</button>';
+    more.querySelector("span").textContent =
+      "Showing the first " + MAX_ROWS + " of " + shown.length + " entries.";
+    host.appendChild(more);
+    document.getElementById("showAll").onclick = function(){ showAllRows = true; render(); };
+  }
 }
 
 /* ===========================================================================
@@ -95069,7 +95105,7 @@ function download(name, data, type){
 function exportCsv(){
   if (!rows.length) return;
   var q = function(v){ return '"' + String(v).replace(/"/g, '""') + '"'; };
-  var out = [["Part number","Status","Match type","Occurrences","File","Pages","Example text on page"].map(q).join(",")];
+  var out = [["Part or phrase","Status","Match type","Occurrences","File","Where","Surrounding text"].map(q).join(",")];
   rows.forEach(function(r){
     if (!r.hits.length){
       out.push([r.part.raw, "not found", "", 0, "", "", ""].map(q).join(","));
@@ -95139,8 +95175,8 @@ document.addEventListener("DOMContentLoaded", function(){
 
   $("runBtn").onclick = run;
   $("cancelBtn").onclick = function(){ cancelled = true; progress(null, "Stopping after the current page…"); };
-  $("filter").onchange = render;
-  $("search").oninput  = render;
+  $("filter").onchange = function(){ showAllRows = false; render(); };
+  $("search").oninput  = function(){ showAllRows = false; render(); };
   $("fuzzy").onchange  = function(){ if (index && rows.length) match(); };
 
   // Presentation only: no OCR, no re-indexing, no re-matching.
