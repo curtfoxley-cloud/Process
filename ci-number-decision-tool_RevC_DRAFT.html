@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Same CI or Separate CIs</title>
+<style>
+:root{
+  --ink:#1E262E; --ink-2:#2C3841; --slate:#5C6D78; --mute:#8998A2;
+  --paper:#FFFFFF; --surface:#F4F6F7; --surface-2:#EDF0F1; --rule:#D6DCDF;
+  --rust:#A8481F; --rust-soft:#F2E4DD; --rust-ink:#7E340F;
+  --amber:#9A6508; --amber-soft:#F6ECD8;
+  --serif:Georgia,Cambria,"Times New Roman",serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--surface);font-size:15px;line-height:1.55}
+button{font-family:inherit;cursor:pointer}
+input,textarea{font-family:inherit;font-size:14px;color:inherit}
+.top{background:var(--ink);color:#fff;padding:13px 20px}
+.top b{font-family:var(--serif);font-size:16px;display:block;line-height:1.2}
+.top span{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#93A2AB}
+.wrap{max-width:820px;margin:0 auto;padding:24px 20px 70px}
+h1{font-family:var(--serif);font-size:27px;font-weight:400;margin:0 0 6px;line-height:1.2}
+.lede{font-size:14px;color:var(--slate);margin:0 0 20px}
+.lab{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--rust-ink);font-weight:700;margin-bottom:8px}
+.card{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:16px 18px;margin:0 0 18px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fld label{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--slate);font-weight:700;margin-bottom:4px}
+.fld input,.fld textarea{width:100%;padding:7px 9px;border:1px solid var(--rule);border-radius:4px;background:var(--paper)}
+.fld input:focus,.fld textarea:focus{outline:2px solid var(--rust);outline-offset:1px}
+
+/* ---- the tree ---- */
+#tree{position:relative;padding-left:30px}
+#tree:before{content:"";position:absolute;left:8px;top:10px;bottom:26px;width:2px;background:var(--rule)}
+.node{position:relative;margin-bottom:6px}
+.node:before{content:"";position:absolute;left:-26px;top:13px;width:14px;height:2px;background:var(--rule)}
+.node:after{content:"";position:absolute;left:-30px;top:8px;width:11px;height:11px;border-radius:50%;
+  background:var(--paper);border:2px solid var(--rule)}
+.node.done:after{background:var(--slate);border-color:var(--slate)}
+.node.fired:after{background:var(--rust);border-color:var(--rust)}
+.node.here:after{background:var(--paper);border-color:var(--rust);box-shadow:0 0 0 3px var(--rust-soft)}
+.node.hold:after{background:var(--amber);border-color:var(--amber)}
+
+.node .row{display:flex;gap:10px;align-items:baseline;padding:5px 0;font-size:13.5px;color:var(--mute)}
+.node .g{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--mute);min-width:28px}
+.node.done .row,.node.fired .row,.node.hold .row{color:var(--ink-2)}
+.node.done .g,.node.fired .g,.node.hold .g{color:var(--rust-ink)}
+.node .ans{margin-left:auto;font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;padding:2px 7px;border-radius:3px;background:var(--surface-2);color:var(--slate);white-space:nowrap;cursor:pointer;border:1px solid var(--rule)}
+.node.fired .ans{background:var(--rust-soft);color:var(--rust-ink);border-color:#E3CCC2}
+.node.hold .ans{background:var(--amber-soft);color:var(--amber);border-color:#E4D3AF}
+.node .ans:hover{border-color:var(--slate)}
+
+.node.here{background:var(--paper);border:1px solid var(--rule);border-left:3px solid var(--rust);
+  border-radius:0 6px 6px 0;padding:14px 16px;margin:10px 0 12px -3px}
+.node.here:before{top:22px}
+.node.here:after{top:17px}
+.node.here .row{padding:0;font-size:16px;color:var(--ink);display:block}
+.node.here .g{display:block;margin-bottom:5px;font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--rust-ink)}
+.node.here .qt{font-family:var(--serif);font-size:19px;line-height:1.3;display:block}
+.node.here .why{font-size:13px;color:var(--slate);margin:7px 0 0}
+.branch{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.branch button{border:1px solid var(--rule);background:var(--paper);color:var(--ink);border-radius:4px;
+  padding:8px 15px;font-size:13.5px;font-weight:600}
+.branch button:hover{background:var(--surface);border-color:var(--slate)}
+.branch button:focus-visible{outline:2px solid var(--rust);outline-offset:2px}
+.branch button.stop{border-style:dashed;color:var(--slate)}
+.node.pending{opacity:.55}
+
+.leaf{margin-top:6px;position:relative}
+.leaf:after{content:"";position:absolute;left:-30px;top:8px;width:11px;height:11px;border-radius:50%;
+  background:var(--paper);border:2px solid var(--rule)}
+.leaf.on:after{background:var(--rust);border-color:var(--rust)}
+.leaf.on.hold:after{background:var(--amber);border-color:var(--amber)}
+.leaf:before{content:"";position:absolute;left:-26px;top:13px;width:14px;height:2px;background:var(--rule)}
+.leaf .box{border:1px solid var(--rule);border-radius:6px;background:var(--paper);padding:14px 16px}
+.leaf.on .box{border-left:3px solid var(--rust);margin-left:-3px}
+.leaf.on.hold .box{border-left-color:var(--amber)}
+.leaf h2{font-family:var(--serif);font-size:20px;font-weight:400;margin:0 0 4px}
+.leaf p{margin:0;font-size:13.5px;color:var(--slate)}
+.leaf ul{margin:10px 0 0;padding-left:18px}
+.leaf li{font-size:13px;color:var(--ink-2);margin-bottom:4px}
+.warn{background:var(--amber-soft);border:1px solid #E4D3AF;border-radius:5px;padding:11px 13px;margin-top:12px;font-size:13px;color:var(--ink-2)}
+.btnrow{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:14px}
+.btn{border:1px solid var(--rule);background:var(--paper);color:var(--ink);border-radius:4px;padding:9px 16px;font-size:13.5px;font-weight:600}
+.btn:hover{background:var(--surface)}
+.btn:focus-visible{outline:2px solid var(--rust);outline-offset:2px}
+.btn.pri{background:var(--rust);border-color:var(--rust);color:#fff}
+.btn.pri:hover{background:var(--rust-ink)}
+.btn.gh{background:transparent;color:var(--slate)}
+#msg{font-size:12.5px;color:var(--slate)}
+h2.sect{font-family:var(--serif);font-size:19px;font-weight:400;margin:30px 0 10px}
+table.ref{border-collapse:collapse;width:100%;font-size:13.5px}
+table.ref td{padding:7px 10px;border-top:1px solid var(--rule);color:var(--ink-2);vertical-align:top}
+table.ref td.k{font-family:var(--mono);font-size:12px;color:var(--rust-ink);font-weight:700;width:38px}
+.small{font-size:12.5px;color:var(--slate)}
+.foot{font-size:12.5px;color:var(--slate);border-top:1px solid var(--rule);padding-top:14px;margin-top:26px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media(max-width:680px){.grid{grid-template-columns:1fr}.node .ans{margin-left:0}}
+@media print{.top,.branch,.btnrow,#msg{display:none}body{background:#fff;font-size:11pt}.node.pending{display:none}}
+</style>
+</head>
+<body>
+<div class="top"><b>Same CI or Separate CIs</b><span>Configuration Management &middot; Rev C draft</span></div>
+<div class="wrap">
+<h1>Do these two items share one CI, or do they need two?</h1>
+<p class="lede">Every gate runs. Any one of them is enough on its own, so the verdict records all of them.</p>
+
+<div class="card">
+  <div class="grid">
+    <div class="fld"><label for="f-a">Item A</label><input id="f-a"></div>
+    <div class="fld"><label for="f-b">Item B</label><input id="f-b"></div>
+    <div class="fld"><label for="f-assessor">Assessor</label><input id="f-assessor"></div>
+    <div class="fld"><label for="f-date">Date</label><input id="f-date"></div>
+  </div>
+</div>
+
+<div class="sr" id="live" role="status" aria-live="polite"></div>
+<div id="tree"></div>
+
+<h2 class="sect">EIA-649-1A &sect;3.2.1(2)</h2>
+<table class="ref">
+  <tr><td class="k">a</td><td>The item is critical to the functioning of the system.</td></tr>
+  <tr><td class="k">b</td><td>Failure of the item might result in serious injury, loss of life, or loss of primary system capability.</td></tr>
+  <tr><td class="k">c</td><td>The item&rsquo;s technology is complex, not well known, and critical to meeting acquisition, operational, or supportability goals of the program.</td></tr>
+  <tr><td class="k">d</td><td>The item is under control as designated by the Acquirer.</td></tr>
+  <tr><td class="k">e</td><td>The item requires separate type designation, versions, or nomenclatures.</td></tr>
+  <tr><td class="k">f</td><td>The item is critical or high risk and failure would have significant financial impact.</td></tr>
+  <tr><td class="k">g</td><td>The item requires one or more logistics elements (e.g., APL/AEL/ACL provisioning lists, test equipment, technical manuals, PMS MIP/MRC, danger/caution tag-out).</td></tr>
+</table>
+<p class="small" style="margin-top:10px"><b>Configuration Item.</b> Any hardware, software, firmware, or aggregation thereof that satisfies a system end-use function and is designated for separate configuration management.</p>
+<p class="small"><b>CI identifier and part number.</b> The CI identifier follows the end-use function and the need to manage it separately. The part or identifying number follows form, fit, and function, and changes on a non-interchangeable condition. One CI can carry many part numbers.</p>
+
+<div class="foot">
+  <p>CI selection is a CM decision. The concurrences confirm the technical basis is sound. They do not make the selection.</p>
+  <p>Nothing is saved. Download before you close the tab. Process document number and revision: <span style="font-family:var(--mono)">[to be assigned]</span></p>
+</div>
+</div>
+
+<script>
+/* ---- offline .docx writer: a docx is a ZIP of XML parts, stored uncompressed ---- */
+var CRC=(function(){var t=new Uint32Array(256),c,n,k;for(n=0;n<256;n++){c=n;for(k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);t[n]=c>>>0;}return t;})();
+function crc32(b){var c=0xFFFFFFFF;for(var i=0;i<b.length;i++)c=CRC[(c^b[i])&0xFF]^(c>>>8);return (c^0xFFFFFFFF)>>>0;}
+function utf8(s){return new TextEncoder().encode(s);}
+function makeZip(files){
+  var parts=[],cen=[],off=0;
+  function u16(v){return [v&255,(v>>8)&255];} function u32(v){return [v&255,(v>>8)&255,(v>>16)&255,(v>>>24)&255];}
+  files.forEach(function(f){
+    var nm=utf8(f.name),dt=utf8(f.data),c=crc32(dt);
+    var lo=[].concat(u32(0x04034b50),u16(20),u16(0x0800),u16(0),u16(0),u16(0),u32(c),u32(dt.length),u32(dt.length),u16(nm.length),u16(0));
+    parts.push(new Uint8Array(lo),nm,dt);
+    var ce=[].concat(u32(0x02014b50),u16(20),u16(20),u16(0x0800),u16(0),u16(0),u16(0),u32(c),u32(dt.length),u32(dt.length),u16(nm.length),u16(0),u16(0),u16(0),u16(0),u32(0),u32(off));
+    ce.name=nm; cen.push(ce); off+=lo.length+nm.length+dt.length;
+  });
+  var cd=[],cl=0; cen.forEach(function(c){cd.push(new Uint8Array(c),c.name);cl+=c.length+c.name.length;});
+  var end=new Uint8Array([].concat(u32(0x06054b50),u16(0),u16(0),u16(files.length),u16(files.length),u32(cl),u32(off),u16(0)));
+  var all=parts.concat(cd,[end]),tot=all.reduce(function(n,a){return n+a.length;},0),out=new Uint8Array(tot),p=0;
+  all.forEach(function(a){out.set(a,p);p+=a.length;});
+  return out;
+}
+function xe(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,'');}
+function rt(s){return String(s==null?'':s).split(/\r?\n/).map(function(l,i){return (i?'<w:br/>':'')+'<w:t xml:space="preserve">'+xe(l)+'</w:t>';}).join('');}
+function P(t,o){o=o||{};return '<w:p><w:pPr>'+(o.after!==undefined?'<w:spacing w:after="'+o.after+'"/>':'')+(o.keep?'<w:keepNext/>':'')+'</w:pPr><w:r><w:rPr>'+(o.b?'<w:b/>':'')+(o.sz?'<w:sz w:val="'+o.sz+'"/><w:szCs w:val="'+o.sz+'"/>':'')+(o.color?'<w:color w:val="'+o.color+'"/>':'')+'</w:rPr>'+rt(t)+'</w:r></w:p>';}
+function TC(x,w,o){o=o||{};return '<w:tc><w:tcPr><w:tcW w:w="'+w+'" w:type="dxa"/>'+(o.shade?'<w:shd w:val="clear" w:fill="'+o.shade+'"/>':'')+'<w:vAlign w:val="center"/></w:tcPr>'+x+'</w:tc>';}
+function TB(rows,w){
+  var b=['top','left','bottom','right','insideH','insideV'].map(function(s){return '<w:'+s+' w:val="single" w:sz="4" w:space="0" w:color="D6DCDF"/>';}).join('');
+  return '<w:tbl><w:tblPr><w:tblW w:w="9360" w:type="dxa"/><w:tblBorders>'+b+'</w:tblBorders><w:tblCellMar><w:top w:w="60" w:type="dxa"/><w:left w:w="90" w:type="dxa"/><w:bottom w:w="60" w:type="dxa"/><w:right w:w="90" w:type="dxa"/></w:tblCellMar></w:tblPr>'+
+    rows.map(function(r){return '<w:tr>'+r.map(function(c,i){return TC(c.xml,w[i],c);}).join('')+'</w:tr>';}).join('')+'</w:tbl>';
+}
+function packDocx(body,title,author){
+  var doc='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'+body+'<w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1080" w:right="1080" w:bottom="1080" w:left="1080"/></w:sectPr></w:body></w:document>';
+  return makeZip([
+   {name:'[Content_Types].xml',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/></Types>'},
+   {name:'_rels/.rels',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/></Relationships>'},
+   {name:'docProps/core.xml',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>'+xe(title)+'</dc:title><dc:creator>'+xe(author)+'</dc:creator></cp:coreProperties>'},
+   {name:'word/_rels/document.xml.rels',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>'},
+   {name:'word/styles.xml',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:sz w:val="20"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="80" w:line="240" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style></w:styles>'},
+   {name:'word/document.xml',data:doc}
+  ]);
+}
+function dlBytes(bytes,name){
+  var u=URL.createObjectURL(new Blob([bytes],{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}));
+  var a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(function(){URL.revokeObjectURL(u);},4000);
+}
+
+/* ============ the tree ============ */
+/* Three stop nodes end the tree. Seven gate nodes all run.
+   fire: the answer that makes a separation driver. */
+var NODES=[
+ {g:'C1', q:'Are these items already designated?', short:'Already designated',
+  opts:[{v:'none',l:'Neither yet'},{v:'one',l:'One CI today'},{v:'separate',l:'Separate today'}]},
+
+ {g:'G1', q:'Does each item satisfy a system end-use function?', short:'End-use function',
+  opts:[{v:'yes',l:'Yes'},{v:'no',l:'No',stop:'not-candidates'}]},
+
+ {g:'G2', q:'Does either item meet a CI selection criterion?', short:'CI qualification',
+  why:'Run the criteria screen on each item first.',
+  opts:[{v:'yes',l:'Yes'},{v:'no',l:'Neither does',stop:'parts-only'}]},
+
+ {g:'G3', q:'Is either item inside a larger item procured as a unit from its designing supplier?', short:'Design authority',
+  why:'If so, the CI is the item as procured.',
+  opts:[{v:'no',l:'No'},{v:'yes',l:'Yes',stop:'procurement'}]},
+
+ {g:'G4', q:'Do the items perform the same end-use function?', short:'Function',
+  fire:'no', driver:'Different end-use functions. The CI identifier follows function.',
+  opts:[{v:'yes',l:'Same function'},{v:'no',l:'Different functions'}]},
+
+ {g:'G5', q:'Do the items share the same parent in the CI hierarchy?', short:'Hierarchy',
+  why:'Where a model exists, answer from the model.',
+  fire:'no', driver:'Different parents in the CI hierarchy.',
+  opts:[{v:'yes',l:'Same parent'},{v:'no',l:'Different parents'}]},
+
+ {g:'G6', q:'Is either item safety-critical?', short:'Safety',
+  why:'Answer from the safety management system. Do not re-determine it here.',
+  fire:'yes', driver:'At least one item is safety-critical. Separate hazard traceability is required.',
+  opts:[{v:'yes',l:'Yes'},{v:'no',l:'Neither'}]},
+
+ {g:'G7', q:'Can a single specification define performance and interfaces for all variants?', short:'One spec',
+  why:'Sharing an interface control document is not evidence of a common interface definition.',
+  fire:'no', driver:'No single specification covers performance and interfaces for all variants.',
+  hold:'Whether one specification covers performance and interfaces. The interface callouts need analysis.',
+  opts:[{v:'yes',l:'Yes'},{v:'no',l:'No'},{v:'unknown',l:'Not established'}]},
+
+ {g:'G8', q:'Do the items share the same verification requirements and plan?', short:'Verification',
+  fire:'no', driver:'Verification requirements or plans differ.',
+  hold:'The verification requirements and plan for each item.',
+  opts:[{v:'yes',l:'Yes'},{v:'no',l:'No'},{v:'unknown',l:'Not established'}]},
+
+ {g:'G9', q:'Will changes to one item routinely need a separate change effectivity address?', short:'Effectivity',
+  fire:'yes', driver:'Separate change effectivity addresses are needed.',
+  opts:[{v:'yes',l:'Yes'},{v:'no',l:'No'}]},
+
+ {g:'G10', q:'Does Acquirer direction, nomenclature, or logistics force separation?', short:'External drivers',
+  fire:'yes', driver:'Acquirer direction, nomenclature, or logistics forces separation.',
+  opts:[{v:'yes',l:'Yes'},{v:'no',l:'No'}]}
+];
+
+var LEAF={
+ 'not-candidates':{t:'Not CI candidates',d:'At least one item has no system end-use function. Control it within the parent CI\u2019s configuration documentation.',
+   next:['Name the parent CI for each item']},
+ 'parts-only':{t:'Parts, not CIs',d:'No criterion applies to either item. Their part numbers already carry the differences.',
+   next:['Record the do-not-designate result for each item','Confirm both appear in the parent CI\u2019s product structure']},
+ 'procurement':{t:'Assess at the procurement level',d:'The customer-facing CI is the item as procured. Do not decompose a supplier-designed item.',
+   next:['Re-frame the comparison at the procured level','Register the boundary to the procured item like any other']},
+ 'hold':{t:'Hold. Obtain the missing facts',d:'A gate could not be answered from what is known today. Deciding without it means deciding twice. Any driver already found still stands.',
+   next:['Name the fact, name who owns it, ask in writing','Return here when it arrives']},
+ 'separate':{t:'Separate CIs',d:'Each CI gets its own hierarchy entry, its own configuration documentation, its own change effectivity address, and its own baseline.',
+   next:['Record the rationale citing every driver below','Register each pairwise boundary in the interface register','Assign identifiers','Submit for Acquirer concurrence where Acquirer-controlled']},
+ 'one-ci':{t:'One CI, with part number variants',d:'One function, one parent, one specification basis, one verification basis, common effectivity. The part numbers carry the non-interchangeable differences.',
+   next:['Record the CI-to-variant mapping in the CI index','Tabulate the variant differences in the specification','Submit for Acquirer concurrence where Acquirer-controlled']}
+};
+
+var SPLIT=['CI identifiers change. Part numbers move only on a non-interchangeable condition. Unit identifiers never move.',
+ 'Every boundary between the new siblings goes in the interface register.',
+ 'Retain the old index row with its status changed. Never delete it.',
+ 'A split is a selection change. Submit it for Acquirer concurrence.'];
+var MERGE=['The boundary becomes internal. Disposition the interface register rows and record why.',
+ 'Retain the old index rows with their status changed.',
+ 'Part numbers do not merge. Variants keep their own beneath one CI.',
+ 'A consolidation is a selection change. Submit it for Acquirer concurrence.'];
+
+var A={};            /* answers by gate id */
+var $=function(id){return document.getElementById(id);};
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function today(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+$('f-date').value=today();
+
+function stopHit(){
+  for(var i=0;i<NODES.length;i++){
+    var n=NODES[i],a=A[n.g];
+    if(!a) return null;
+    var o=n.opts.filter(function(x){return x.v===a;})[0];
+    if(o&&o.stop) return {node:n,leaf:o.stop};
+  }
+  return null;
+}
+function cursor(){                       /* first unanswered node, or null */
+  if(stopHit()) return null;
+  for(var i=0;i<NODES.length;i++) if(!A[NODES[i].g]) return i;
+  return null;
+}
+function drivers(){return NODES.filter(function(n){return n.fire&&A[n.g]===n.fire;});}
+function holds(){return NODES.filter(function(n){return n.hold&&A[n.g]==='unknown';});}
+function leafKey(){
+  var s=stopHit(); if(s) return s.leaf;
+  if(cursor()!==null) return null;
+  if(holds().length) return 'hold';
+  return drivers().length?'separate':'one-ci';
+}
+function changeKind(){
+  var k=leafKey();
+  if(A.C1==='one'&&k==='separate') return {t:'This verdict is a split',list:SPLIT};
+  if(A.C1==='separate'&&k==='one-ci') return {t:'This verdict is a consolidation',list:MERGE};
+  return null;
+}
+
+function render(){
+  var cur=cursor(), stop=stopHit(), key=leafKey(), html='';
+  NODES.forEach(function(n,i){
+    var a=A[n.g], o=a?n.opts.filter(function(x){return x.v===a;})[0]:null;
+    if(stop && i>NODES.indexOf(stop.node)) return;        /* tree ends at the stop */
+    if(i===cur){
+      html+='<div class="node here"><div class="row"><span class="g">'+n.g+'</span>'+
+        '<span class="qt">'+esc(n.q)+'</span></div>'+
+        (n.why?'<p class="why">'+esc(n.why)+'</p>':'')+
+        '<div class="branch">'+n.opts.map(function(x){
+          return '<button class="'+(x.stop?'stop':'')+'" data-g="'+n.g+'" data-v="'+x.v+'">'+esc(x.l)+'</button>';
+        }).join('')+'</div></div>';
+    } else if(a){
+      var cls = n.fire&&a===n.fire ? 'fired' : (n.hold&&a==='unknown' ? 'hold' : 'done');
+      html+='<div class="node '+cls+'"><div class="row"><span class="g">'+n.g+'</span>'+
+        '<span>'+esc(n.short)+'</span>'+
+        '<button class="ans" data-undo="'+n.g+'" title="Change this answer">'+esc(o?o.l:a)+'</button>'+
+        '</div></div>';
+    } else {
+      html+='<div class="node pending"><div class="row"><span class="g">'+n.g+'</span><span>'+esc(n.short)+'</span></div></div>';
+    }
+  });
+
+  /* the leaf */
+  var L=key?LEAF[key]:null;
+  html+='<div class="leaf '+(key?'on ':'')+(key==='hold'?'hold':'')+'"><div class="box">';
+  if(!L){
+    html+='<h2>Verdict</h2><p>Answer the gates above.</p>';
+  } else {
+    html+='<h2>'+esc(L.t)+'</h2><p>'+esc(L.d)+'</p>';
+    if(holds().length) html+='<ul>'+holds().map(function(n){return '<li><b>'+n.g+'.</b> '+esc(n.hold)+'</li>';}).join('')+'</ul>';
+    if(drivers().length) html+='<div class="lab" style="margin-top:12px">Separation drivers</div><ul>'+
+      drivers().map(function(n){return '<li><b>'+n.g+'.</b> '+esc(n.driver)+'</li>';}).join('')+'</ul>';
+    var ck=changeKind();
+    if(ck) html+='<div class="warn"><b>'+esc(ck.t)+'.</b><ul style="margin:6px 0 0">'+
+      ck.list.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul></div>';
+    html+='<div class="lab" style="margin-top:12px">Next</div><ul>'+
+      L.next.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul>';
+    html+='<div class="fld" style="margin-top:14px"><label for="f-rat">Rationale for the record</label>'+
+      '<textarea id="f-rat" rows="2">'+esc(RAT!==null?RAT:suggest(key))+'</textarea></div>'+
+      '<div class="btnrow"><button class="btn pri" id="dl">Download as Word</button>'+
+      '<button class="btn" id="copy">Copy</button>'+
+      '<button class="btn gh" id="reset">Clear</button><span id="msg"></span></div>';
+  }
+  html+='</div></div>';
+  $('tree').innerHTML=html;
+
+  $('tree').querySelectorAll('[data-v]').forEach(function(b){
+    b.addEventListener('click',function(){ A[b.dataset.g]=b.dataset.v; RAT=null; render(); focusCur(); });
+  });
+  $('tree').querySelectorAll('[data-undo]').forEach(function(b){
+    b.addEventListener('click',function(){
+      var from=NODES.findIndex(function(n){return n.g===b.dataset.undo;});
+      NODES.slice(from).forEach(function(n){delete A[n.g];});
+      RAT=null; render(); focusCur();
+    });
+  });
+  if(L){
+    $('f-rat').addEventListener('input',function(){RAT=this.value;});
+    $('dl').addEventListener('click',doDownload);
+    $('copy').addEventListener('click',doCopy);
+    $('reset').addEventListener('click',function(){
+      if(!confirm('Clear the assessment?')) return;
+      A={};RAT=null;render();
+    });
+    $('live').textContent=L.t+'. '+L.d;
+  } else {
+    var n=NODES[cur]; if(n) $('live').textContent=n.g+'. '+n.q;
+  }
+}
+function focusCur(){
+  var b=$('tree').querySelector('.node.here .branch button');
+  if(b) b.focus();
+}
+var RAT=null;
+function suggest(k){
+  var a=$('f-a').value||'Item A', b=$('f-b').value||'Item B';
+  if(k==='separate') return 'Separate CIs. '+a+' and '+b+' separate on '+drivers().map(function(n){return n.g;}).join(', ')+'.';
+  if(k==='one-ci') return 'One CI. '+a+' and '+b+' carried as part number variants beneath one CI.';
+  if(k==='hold') return 'No verdict. Facts outstanding at '+holds().map(function(n){return n.g;}).join(', ')+'.';
+  if(k==='parts-only') return 'Neither designated. No criterion applies. Controlled as parts under the parent CI.';
+  if(k==='not-candidates') return 'Not assessed. At least one item has no system end-use function.';
+  if(k==='procurement') return 'Not assessed at this level. At least one item sits inside a supplier-designed procured unit.';
+  return '';
+}
+
+/* ---- outputs ---- */
+function meta(){return {a:$('f-a').value,b:$('f-b').value,assessor:$('f-assessor').value,date:$('f-date').value};}
+function answered(){
+  var stop=stopHit(), cut=stop?NODES.indexOf(stop.node):NODES.length-1, out=[];
+  NODES.forEach(function(n,i){
+    if(i>cut||!A[n.g]) return;
+    var o=n.opts.filter(function(x){return x.v===A[n.g];})[0];
+    out.push({g:n.g,q:n.q,a:o?o.l:A[n.g]});
+  });
+  return out;
+}
+function textOut(){
+  var m=meta(),L=LEAF[leafKey()],out=[];
+  out.push('SAME CI OR SEPARATE CIs','',
+    'Item A: '+m.a,'Item B: '+m.b,'Assessor: '+m.assessor,'Date: '+m.date,'','Gates');
+  answered().forEach(function(s){out.push('  '+s.g+'. '+s.q,'      '+s.a);});
+  out.push('');
+  if(holds().length){out.push('Facts outstanding');holds().forEach(function(n){out.push('  '+n.g+'. '+n.hold);});out.push('');}
+  if(drivers().length){out.push('Separation drivers');drivers().forEach(function(n){out.push('  '+n.g+'. '+n.driver);});out.push('');}
+  out.push('Verdict: '+L.t,'','Rationale: '+($('f-rat')?$('f-rat').value:''));
+  var ck=changeKind();
+  if(ck){out.push('',ck.t);ck.list.forEach(function(x){out.push('  - '+x);});}
+  out.push('','Concurrence: CM ________  Acquirer ________  Date ________');
+  return out.join('\n');
+}
+function docBody(){
+  var m=meta(),L=LEAF[leafKey()],b=[];
+  b.push(P('Same CI or Separate CIs',{b:true,sz:32,after:40}));
+  b.push(P('Attach to the CI Selection Rationale Record for both items.',{sz:18,color:'5C6D78',after:160}));
+  b.push(TB([
+    [{xml:P('Item A',{b:true,sz:18}),shade:'F4F6F7'},{xml:P(m.a,{sz:20})},
+     {xml:P('Item B',{b:true,sz:18}),shade:'F4F6F7'},{xml:P(m.b,{sz:20})}],
+    [{xml:P('Assessor',{b:true,sz:18}),shade:'F4F6F7'},{xml:P(m.assessor,{sz:20})},
+     {xml:P('Date',{b:true,sz:18}),shade:'F4F6F7'},{xml:P(m.date,{sz:20})}]
+  ],[1400,3280,1400,3280]));
+  b.push(P('',{after:160}));
+  b.push(P('Gates',{b:true,sz:24,keep:true}));
+  var rows=[[{xml:P('Gate',{b:true,sz:17}),shade:'EDF0F1'},{xml:P('Question',{b:true,sz:17}),shade:'EDF0F1'},{xml:P('Answer',{b:true,sz:17}),shade:'EDF0F1'}]];
+  answered().forEach(function(s){rows.push([{xml:P(s.g,{b:true,sz:18})},{xml:P(s.q,{sz:18})},{xml:P(s.a,{sz:18})}]);});
+  b.push(TB(rows,[900,6060,2400]));
+  b.push(P('',{after:160}));
+  if(holds().length){
+    b.push(P('Facts outstanding',{b:true,sz:24,keep:true}));
+    holds().forEach(function(n){b.push(P(n.g+'. '+n.hold,{sz:18,color:'9A6508'}));});
+    b.push(P('',{after:160}));
+  }
+  if(drivers().length){
+    b.push(P('Separation drivers',{b:true,sz:24,keep:true}));
+    drivers().forEach(function(n){b.push(P(n.g+'. '+n.driver,{sz:18}));});
+    b.push(P('',{after:160}));
+  }
+  b.push(P('Verdict',{b:true,sz:24,keep:true}));
+  b.push(TB([[{xml:P(L.t,{b:true,sz:22})+P(L.d,{sz:18,color:'5C6D78'})}]],[9360]));
+  b.push(P('',{after:80}));
+  b.push(P('Rationale',{b:true,sz:20}));
+  b.push(TB([[{xml:P($('f-rat')?$('f-rat').value:'',{sz:20})}]],[9360]));
+  b.push(P('',{after:160}));
+  var ck=changeKind();
+  if(ck){
+    b.push(P(ck.t,{b:true,sz:24,keep:true}));
+    ck.list.forEach(function(x){b.push(P(x,{sz:18}));});
+    b.push(P('',{after:160}));
+  }
+  b.push(P('Concurrence',{b:true,sz:24,keep:true}));
+  b.push(TB([
+    [{xml:P('CM',{b:true,sz:18}),shade:'F4F6F7'},{xml:P('')},{xml:P('Date',{b:true,sz:18}),shade:'F4F6F7'},{xml:P('')}],
+    [{xml:P('Acquirer',{b:true,sz:18}),shade:'F4F6F7'},{xml:P('')},{xml:P('Date',{b:true,sz:18}),shade:'F4F6F7'},{xml:P('')}]
+  ],[1700,4260,900,2500]));
+  b.push(P('This record is an assessment. It is not a concurrence.',{sz:15,color:'8998A2'}));
+  return b.join('');
+}
+function slug(s){return String(s||'item').replace(/[^A-Za-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,36);}
+function doDownload(){
+  var m=meta();
+  if(!m.a.trim()||!m.b.trim()){ $('f-a').focus(); $('msg').textContent='Name both items first.'; return; }
+  try{
+    var by=packDocx(docBody(),'Same CI or Separate CIs: '+m.a+' and '+m.b,m.assessor);
+    dlBytes(by,'CI-Number-Assessment_'+slug(m.a)+'_'+slug(m.b)+'_'+(m.date||today())+'.docx');
+    $('msg').textContent='Downloaded.';
+  }catch(e){ $('msg').textContent='Build failed: '+e.message; }
+}
+function doCopy(){
+  var t=textOut(),b=$('copy');
+  function ok(){b.textContent='Copied';setTimeout(function(){b.textContent='Copy';},2000);}
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(ok,fb);}else fb();
+  function fb(){var ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity=0;
+    document.body.appendChild(ta);ta.select();try{document.execCommand('copy');ok();}catch(e){$('msg').textContent='Copy failed.';}
+    document.body.removeChild(ta);}
+}
+window.addEventListener('beforeunload',function(e){
+  if(Object.keys(A).length){e.preventDefault();e.returnValue='';}
+});
+render();
+</script>
+</body>
+</html>
