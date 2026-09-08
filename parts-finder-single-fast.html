@@ -216,21 +216,22 @@ details.setup pre{font:11.5px/1.6 var(--mono);background:#fff;border:1px solid v
       <label class="f" for="partsText">Paste part numbers or phrases, one per line</label>
       <textarea id="partsText" placeholder="A-10422&#10;BRG-6205-2RS&#10;91290A115&#10;relief valve&#10;outbound ceiling display"></textarea>
       <div class="row" style="margin-top:9px">
-        <span class="btnfile"><button type="button">Load CSV…</button><input type="file" id="partsFile" accept=".csv,.txt,.tsv"></span>
+        <span class="btnfile"><button type="button">Load Excel or CSV…</button><input type="file" id="partsFile" accept=".xlsx,.xlsm,.csv,.txt,.tsv"></span>
+        <select id="partsSheet" style="display:none"></select>
         <select id="partsCol" style="display:none"></select>
       </div>
-      <p class="hint" id="partsHint">Part numbers, single words, or multi-word phrases. From Excel: File &rsaquo; Save As &rsaquo; CSV, or copy the column and paste it above.</p>
+      <p class="hint" id="partsHint">Part numbers, single words, or multi-word phrases. Load an .xlsx straight in and pick the sheet and column, or paste them above.</p>
     </div>
 
     <div class="step" id="step2">
       <h2><span class="n">2</span> Your documents</h2>
       <div class="drop" id="drop">
-        Drop PDF or DOCX files here, or
-        <span class="btnfile"><button type="button">choose files</button><input type="file" id="pdfFile" accept=".pdf,.docx" multiple></span>
+        Drop PDF, Word or Excel files here, or
+        <span class="btnfile"><button type="button">choose files</button><input type="file" id="pdfFile" accept=".pdf,.docx,.xlsx,.xlsm" multiple></span>
       </div>
       <ul class="filelist" id="pdfList"></ul>
       <p class="hint" id="pdfHint"></p>
-      <p class="hint">Scanned PDFs are OCR'd page by page. PDFs that already contain text, and Word files, are read directly and take almost no time. DOCX is split at page breaks; headers, footers and text boxes are included, and deleted tracked-changes text is ignored.</p>
+      <p class="hint">Scanned PDFs are OCR'd page by page. PDFs with a text layer, and Office files, are read directly and take almost no time. Word files are split at page breaks, including headers, footers and text boxes, and ignoring deleted tracked-changes text. Excel files are split by worksheet, and hits are reported down to the cell.</p>
     </div>
 
     <div class="step done" id="step3">
@@ -348,7 +349,7 @@ details.setup pre{font:11.5px/1.6 var(--mono);background:#fff;border:1px solid v
     <div id="results">
       <div class="empty">
         <p>No results yet.</p>
-        <p class="small">Add what you are looking for and your PDF or DOCX files, then run the scan.<br>Part numbers, words and phrases all work. Nothing leaves this machine.</p>
+        <p class="small">Add what you are looking for and your PDF, Word or Excel files, then run the scan.<br>Part numbers, words and phrases all work. Nothing leaves this machine.</p>
       </div>
     </div>
   </div>
@@ -94171,9 +94172,10 @@ function getContextSnippet(pg, h){
   var start = Math.max(0, h.at - n);
   var end   = Math.min(pg.raw.length, h.at + h.tok.length + n);
 
-  var before = pg.raw.slice(start, h.at).replace(/\s+/g, " ").replace(/^\s+/, "");
-  var tok    = pg.raw.slice(h.at, h.at + h.tok.length).replace(/\s+/g, " ").trim();
-  var after  = pg.raw.slice(h.at + h.tok.length, end).replace(/\s+/g, " ").replace(/\s+$/, "");
+  var sep = function(t){ return t.replace(/[\u001e\u001f]/g, " | "); };
+  var before = sep(pg.raw.slice(start, h.at)).replace(/\s+/g, " ").replace(/^[\s|]+/, "");
+  var tok    = sep(pg.raw.slice(h.at, h.at + h.tok.length)).replace(/\s+/g, " ").trim();
+  var after  = sep(pg.raw.slice(h.at + h.tok.length, end)).replace(/\s+/g, " ").replace(/[\s|]+$/, "");
 
   return {
     before: before, tok: tok, after: after,
@@ -94212,7 +94214,7 @@ function lev1(a, b){
    State
    =========================================================================== */
 var pdfFiles = [], parts = [], index = null, rows = [];
-var cancelled = false, running = false, sheetRows = null;
+var cancelled = false, running = false, sheetRows = null, workbookSheets = null;
 
 var $ = function(id){ return document.getElementById(id); };
 
@@ -94381,7 +94383,7 @@ function readParts(){
 function addPDFs(list){
   for (var i = 0; i < list.length; i++){
     var f = list[i];
-    if (!/\.(pdf|docx)$/i.test(f.name)) continue;
+    if (!/\.(pdf|docx|xlsx|xlsm)$/i.test(f.name)) continue;
     var dup = pdfFiles.some(function(x){ return x.name === f.name && x.size === f.size; });
     if (!dup) pdfFiles.push(f);
   }
@@ -94401,10 +94403,13 @@ function renderPDFList(){
   });
   $("step2").classList.toggle("done", pdfFiles.length > 0);
   var nDocx = pdfFiles.filter(function(f){ return /\.docx$/i.test(f.name); }).length;
-  var nPdf  = pdfFiles.length - nDocx;
+  var nXlsx = pdfFiles.filter(function(f){ return /\.(xlsx|xlsm)$/i.test(f.name); }).length;
+  var nPdf  = pdfFiles.length - nDocx - nXlsx;
   var bits = [];
   if (nPdf)  bits.push(nPdf + " PDF" + (nPdf > 1 ? "s" : "") + " (roughly 1–4s per scanned page)");
-  if (nDocx) bits.push(nDocx + " DOCX (no OCR needed, near-instant)");
+  if (nDocx) bits.push(nDocx + " Word");
+  if (nXlsx) bits.push(nXlsx + " Excel");
+  if (nDocx || nXlsx) bits.push("Office files need no OCR and read almost instantly");
   setHint("pdfHint", bits.join(" · "));
   updateRunState();
 }
@@ -94541,7 +94546,21 @@ async function buildIndex(scheduler){
     }
   }
 
-  var pdfOnly = pdfFiles.filter(function(f){ return !/\.docx$/i.test(f.name); });
+  var bookFiles = pdfFiles.filter(function(f){ return /\.(xlsx|xlsm)$/i.test(f.name); });
+  for (var xi = 0; xi < bookFiles.length; xi++){
+    progress(0, "Reading " + bookFiles[xi].name + "…");
+    try {
+      var xrecs = await readXlsx(bookFiles[xi]);
+      if (limit) xrecs = xrecs.slice(0, limit);
+      xrecs.forEach(function(r){ pages.push(r); });
+    } catch (err){
+      pages.push({ file: bookFiles[xi].name, page: 1, label: "error",
+                   source: "error", raw: "", error: err.message });
+      progress(null, "Could not read " + bookFiles[xi].name + ": " + err.message);
+    }
+  }
+
+  var pdfOnly = pdfFiles.filter(function(f){ return !/\.(docx|xlsx|xlsm)$/i.test(f.name); });
   for (var fi = 0; fi < pdfOnly.length; fi++){
     var f = pdfOnly[fi];
     var buf = await f.arrayBuffer();
@@ -94757,7 +94776,9 @@ function docxSegments(xmlText){
       walk(n);
 
       // Cell and row terminators keep adjacent cells from running together.
-      if (ln === "p" || ln === "tc" || ln === "tr") buf.push("\n");
+      if (ln === "p")  buf.push("\n");
+      if (ln === "tc") buf.push(CELL_SEP);
+      if (ln === "tr") buf.push(ROW_SEP + "\n");
     }
   }
 
@@ -94828,6 +94849,252 @@ function pageLabel(pg){
 }
 
 /* ===========================================================================
+   XLSX ingestion
+   ---------------------------------------------------------------------------
+   Same ZIP + XML machinery as the DOCX path, so again no library. One record
+   per worksheet, with every cell's character range recorded so a hit can be
+   reported as BOM!C42 rather than just "somewhere on this sheet".
+
+   Cells are separated by CELL_SEP and rows by ROW_SEP — control characters
+   that never occur in real text. These are hard barriers: a phrase or part
+   number cannot match across one, so "Bearing housing" in C4 and "Display
+   bracket" in D4 can never combine into a phantom "housing display".
+   =========================================================================== */
+
+var CELL_SEP = "\u001f";
+var ROW_SEP  = "\u001e";
+
+function xmlDoc(text){
+  var d = new DOMParser().parseFromString(text, "application/xml");
+  if (d.getElementsByTagName("parsererror").length) throw new Error("malformed XML");
+  return d;
+}
+
+// Depth-first search for the first element with this localName.
+function findEl(node, name){
+  for (var n = node.firstChild; n; n = n.nextSibling){
+    if (n.nodeType !== 1) continue;
+    if (n.localName === name) return n;
+    var hit = findEl(n, name);
+    if (hit) return hit;
+  }
+  return null;
+}
+function childrenNamed(node, name){
+  var out = [];
+  for (var n = node.firstChild; n; n = n.nextSibling){
+    if (n.nodeType === 1 && n.localName === name) out.push(n);
+  }
+  return out;
+}
+
+// Collect <t> text, skipping <rPh> phonetic hints.
+function collectText(node){
+  var buf = [];
+  (function walk(n){
+    for (var c = n.firstChild; c; c = c.nextSibling){
+      if (c.nodeType !== 1) continue;
+      if (c.localName === "rPh") continue;
+      if (c.localName === "t") buf.push(c.textContent);
+      else walk(c);
+    }
+  })(node);
+  return buf.join("");
+}
+
+function xlsxSharedStrings(xml){
+  if (!xml) return [];
+  var root = xmlDoc(xml).documentElement;
+  return childrenNamed(root, "si").map(collectText);
+}
+
+function colToIndex(ref){
+  var m = /^([A-Z]+)/.exec(ref || "");
+  if (!m) return 0;
+  var n = 0;
+  for (var i = 0; i < m[1].length; i++) n = n * 26 + (m[1].charCodeAt(i) - 64);
+  return n;
+}
+
+// -> [{ref, row, col, text}] in document order
+function xlsxSheetCells(xml, shared){
+  var root = xmlDoc(xml).documentElement;
+  var data = findEl(root, "sheetData");
+  if (!data) return [];
+
+  var cells = [];
+  childrenNamed(data, "row").forEach(function(row){
+    var rowNum = parseInt(row.getAttribute("r"), 10) || (cells.length ? cells[cells.length-1].row + 1 : 1);
+    childrenNamed(row, "c").forEach(function(c){
+      var ref  = c.getAttribute("r") || "";
+      var type = c.getAttribute("t") || "n";
+      var text = "";
+
+      if (type === "inlineStr"){
+        var is = findEl(c, "is");
+        if (is) text = collectText(is);
+      } else {
+        var v = null;
+        for (var n = c.firstChild; n; n = n.nextSibling){
+          if (n.nodeType === 1 && n.localName === "v"){ v = n; break; }
+        }
+        if (v){
+          var raw = v.textContent;
+          if (type === "s"){
+            var i = parseInt(raw, 10);
+            text = (shared[i] !== undefined) ? shared[i] : "";
+          } else if (type === "b"){
+            text = raw === "1" ? "TRUE" : "FALSE";
+          } else if (type === "e"){
+            text = "";                       // formula error cells carry nothing useful
+          } else {
+            text = raw;                      // numbers and cached formula strings
+          }
+        }
+      }
+
+      text = String(text).trim();
+      if (text) cells.push({ ref: ref, row: rowNum, col: colToIndex(ref), text: text });
+    });
+  });
+  return cells;
+}
+
+// Sheet name -> worksheet part, following the workbook relationships so the
+// tab order and names match what the user sees in Excel.
+function xlsxSheetList(zip, workbookXml, relsXml){
+  var out = [];
+  try {
+    var wb  = xmlDoc(workbookXml).documentElement;
+    var shs = findEl(wb, "sheets");
+    var rels = {};
+    if (relsXml){
+      var rr = xmlDoc(relsXml).documentElement;
+      childrenNamed(rr, "Relationship").forEach(function(r){
+        rels[r.getAttribute("Id")] = r.getAttribute("Target");
+      });
+    }
+    if (shs){
+      childrenNamed(shs, "sheet").forEach(function(sh){
+        var rid = sh.getAttributeNS("http://schemas.openxmlformats.org/officeDocument/2006/relationships", "id")
+               || sh.getAttribute("r:id");
+        var target = rels[rid];
+        if (!target) return;
+        target = target.replace(/^\/?xl\//, "").replace(/^\//, "");
+        var path = "xl/" + target;
+        if (zip.entries[path]) out.push({ name: sh.getAttribute("name") || path, path: path });
+      });
+    }
+  } catch (e) { /* fall through to enumeration */ }
+
+  if (!out.length){
+    Object.keys(zip.entries)
+      .filter(function(k){ return /^xl\/worksheets\/sheet\d+\.xml$/.test(k); })
+      .sort()
+      .forEach(function(k, i){ out.push({ name: "Sheet" + (i + 1), path: k }); });
+  }
+  return out;
+}
+
+// Shared by both callers below: returns [{name, cells}]
+function xlsxRead(file){
+  return file.arrayBuffer().then(function(ab){
+    var bytes = new Uint8Array(ab);
+    if (!(bytes[0] === 0x50 && bytes[1] === 0x4b))
+      throw new Error(file.name + ": not a .xlsx. Legacy .xls files are not supported — re-save as .xlsx.");
+
+    var zip = zipOpen(bytes);
+    if (zip.entries["EncryptedPackage"]) throw new Error(file.name + ": password-protected, cannot read.");
+
+    return Promise.all([
+      zipReadText(zip, "xl/sharedStrings.xml"),
+      zipReadText(zip, "xl/workbook.xml"),
+      zipReadText(zip, "xl/_rels/workbook.xml.rels")
+    ]).then(function(res){
+      var shared = xlsxSharedStrings(res[0]);
+      var sheets = xlsxSheetList(zip, res[1] || "", res[2]);
+      if (!sheets.length) throw new Error(file.name + ": no worksheets found.");
+
+      var out = [];
+      return sheets.reduce(function(chain, sh){
+        return chain.then(function(){
+          return zipReadText(zip, sh.path).then(function(xml){
+            if (xml) out.push({ name: sh.name, cells: xlsxSheetCells(xml, shared) });
+          });
+        });
+      }, Promise.resolve()).then(function(){ return out; });
+    });
+  });
+}
+
+// Search path: one page record per sheet, with a cell offset map.
+function readXlsx(file){
+  return xlsxRead(file).then(function(sheets){
+    var recs = [], seq = 0;
+
+    sheets.forEach(function(sh){
+      if (!sh.cells.length) return;
+      var parts = [], cellMap = [], pos = 0, lastRow = null;
+
+      sh.cells.forEach(function(c){
+        if (lastRow !== null && c.row !== lastRow){
+          parts.push(ROW_SEP + "\n"); pos += 2;
+        } else if (lastRow !== null){
+          parts.push(CELL_SEP); pos += 1;
+        }
+        cellMap.push({ at: pos, end: pos + c.text.length, ref: c.ref });
+        parts.push(c.text);
+        pos += c.text.length;
+        lastRow = c.row;
+      });
+
+      recs.push({
+        file: file.name, page: ++seq, source: "xlsx",
+        label: sh.name, raw: parts.join(""), cells: cellMap
+      });
+    });
+
+    if (!recs.length) throw new Error(file.name + ": no readable cell text found.");
+    return recs;
+  });
+}
+
+// Parts-list path: pivot a chosen sheet into the 2D array the picker expects.
+function xlsxToGrid(sheet){
+  var maxCol = 0, byRow = {};
+  sheet.cells.forEach(function(c){
+    if (c.col > maxCol) maxCol = c.col;
+    (byRow[c.row] = byRow[c.row] || {})[c.col] = c.text;
+  });
+  return Object.keys(byRow).map(Number).sort(function(a,b){ return a-b; })
+    .map(function(r){
+      var out = [];
+      for (var i = 1; i <= maxCol; i++) out.push(byRow[r][i] || "");
+      return out;
+    });
+}
+
+// Which cell contains this character offset? Used for "BOM!C42".
+function cellAt(pg, offset){
+  if (!pg.cells || !pg.cells.length) return null;
+  var lo = 0, hi = pg.cells.length - 1;
+  while (lo <= hi){
+    var mid = (lo + hi) >> 1, c = pg.cells[mid];
+    if (offset < c.at) hi = mid - 1;
+    else if (offset >= c.end) lo = mid + 1;
+    else return c.ref;
+  }
+  return null;
+}
+
+// Location string for a single hit, as shown in the table and the CSV.
+function hitLocation(pg, h){
+  var base = pageLabel(pg);
+  var ref  = cellAt(pg, h.at);
+  return ref ? base + "!" + ref : base;
+}
+
+/* ===========================================================================
    Lookup and matching
    =========================================================================== */
 // A word is a run of letters/digits. Recording raw offsets lets phrase mode
@@ -94850,6 +95117,13 @@ function tokenizeWords(raw){
       i++;
     }
     merged.push(cur);
+  }
+  // A word carries "hard" when a cell or row separator sits between it and the
+  // previous word. Phrase matching refuses to step over one, so text in
+  // adjacent spreadsheet cells or table cells can never fuse into a phrase.
+  for (var j = 1; j < merged.length; j++){
+    var gap = raw.slice(merged[j-1].end, merged[j].at);
+    merged[j].hard = gap.indexOf(CELL_SEP) !== -1 || gap.indexOf(ROW_SEP) !== -1;
   }
   return merged;
 }
@@ -94874,8 +95148,17 @@ function buildLookup(pages){
       if (ch >= "A" && ch <= "Z" || ch >= "0" && ch <= "9"){ flat += ch; map.push(i); }
     }
     pg.flat = flat; pg.flatCanon = canon(flat); pg.map = map;
+    // Flat-index positions where a hard separator fell, so a part number
+    // cannot be assembled from the tail of one cell and the head of the next.
+    pg.breaks = [];
+    for (var bi = 0; bi < map.length; bi++){
+      var seg = bi === 0 ? "" : pg.raw.slice(map[bi-1] + 1, map[bi]);
+      if (seg.indexOf(CELL_SEP) !== -1 || seg.indexOf(ROW_SEP) !== -1) pg.breaks.push(bi);
+    }
 
-    var m, re = /\S+/g;
+    // Separators are control characters, not whitespace, so \S+ would glue a
+    // cell's last token to the next cell's first one.
+    var m, re = /[^\s\u001e\u001f]+/g;
     while ((m = re.exec(up)) !== null){
       var n = norm(m[0]);
       if (n.length < 2) continue;
@@ -94906,6 +95189,7 @@ function matchPhrase(qWords, useCanon, push){
     var pg = index.pages[loc.pi], ws = pg.words;
     if (loc.wi + keys.length > ws.length) return;
     for (var k = 1; k < keys.length; k++){
+      if (ws[loc.wi + k].hard) return;             // would cross a cell/row edge
       var got = useCanon ? ws[loc.wi + k].c : ws[loc.wi + k].w;
       if (got !== keys[k]) return;
     }
@@ -94920,6 +95204,12 @@ function flatScan(needle, field, tier, push){
   index.pages.forEach(function(pg, pi){
     var hay = pg[field], at = hay.indexOf(needle);
     while (at !== -1){
+      var crosses = false;
+      for (var bi = 0; bi < pg.breaks.length; bi++){
+        var b = pg.breaks[bi];
+        if (b > at && b < at + needle.length){ crosses = true; break; }
+      }
+      if (crosses){ at = hay.indexOf(needle, at + 1); continue; }
       var s = pg.map[at];
       var e = pg.map[Math.min(at + needle.length - 1, pg.map.length - 1)] + 1;
       push({ pi: pi, at: s, tok: pg.raw.slice(s, e) }, tier);
@@ -95044,12 +95334,12 @@ function render(){
       r.hits.forEach(function(h){
         var pg = index.pages[h.pi];
         if (!byFile.has(pg.file)) byFile.set(pg.file, new Map());
-        byFile.get(pg.file).set(pg.page, pageLabel(pg));
+        byFile.get(pg.file).set(hitLocation(pg, h), pg.page);
       });
       var lines = [];
       byFile.forEach(function(m, f){
-        var keys = Array.from(m.keys()).sort(function(a,b){ return a-b; });
-        lines.push(f + "  " + keys.map(function(k){ return m.get(k); }).join(", "));
+        var locs = Array.from(m.keys()).sort(function(a, b){ return m.get(a) - m.get(b); });
+        lines.push(f + "  " + locs.join(", "));
       });
       c3.textContent = lines.join("\n");
       c3.style.whiteSpace = "pre-line";
@@ -95116,14 +95406,14 @@ function exportCsv(){
       var pg = index.pages[h.pi];
       if (!byFile.has(pg.file)) byFile.set(pg.file, { locs:new Map(), sample:"" });
       var v = byFile.get(pg.file);
-      v.locs.set(pg.page, pageLabel(pg));
+      v.locs.set(hitLocation(pg, h), pg.page);
       if (!v.sample) v.sample = getContextSnippet(pg, h).text;
     });
     byFile.forEach(function(v, f){
-      var keys = Array.from(v.locs.keys()).sort(function(a,b){ return a-b; });
+      var locs = Array.from(v.locs.keys()).sort(function(a, b){ return v.locs.get(a) - v.locs.get(b); });
       out.push([r.part.raw, r.status === "found" ? "found" : "needs review",
                 TIER_LABEL[r.tier], r.total, f,
-                keys.map(function(k){ return v.locs.get(k); }).join(", "), v.sample].map(q).join(","));
+                locs.join(", "), v.sample].map(q).join(","));
     });
   });
   download("parts-found.csv", "\uFEFF" + out.join("\r\n"), "text/csv;charset=utf-8");
@@ -95138,12 +95428,40 @@ document.addEventListener("DOMContentLoaded", function(){
   $("partsFile").addEventListener("change", function(e){
     var f = e.target.files[0];
     if (!f) return;
-    f.text().then(function(txt){
-      sheetRows = parseDelimited(txt);
-      buildColumnPicker(f.name);
-    }).catch(function(err){
-      setHint("partsHint", "Could not read that file: " + err.message, true);
-    });
+
+    if (/\.(xlsx|xlsm)$/i.test(f.name)){
+      // Same parser the search path uses, so no second implementation.
+      xlsxRead(f).then(function(sheets){
+        sheets = sheets.filter(function(sh){ return sh.cells.length; });
+        if (!sheets.length) throw new Error("no cells with text in that workbook");
+        workbookSheets = sheets;
+        var sel = $("partsSheet");
+        sel.innerHTML = "";
+        sheets.forEach(function(sh, i){
+          var o = document.createElement("option");
+          o.value = i; o.textContent = sh.name;
+          sel.appendChild(o);
+        });
+        sel.style.display = sheets.length > 1 ? "" : "none";
+        sel.onchange = function(){
+          sheetRows = xlsxToGrid(workbookSheets[+sel.value]);
+          buildColumnPicker(f.name + " — " + workbookSheets[+sel.value].name);
+        };
+        sel.value = 0;
+        sheetRows = xlsxToGrid(sheets[0]);
+        buildColumnPicker(f.name + (sheets.length > 1 ? " — " + sheets[0].name : ""));
+      }).catch(function(err){
+        setHint("partsHint", "Could not read that workbook: " + err.message, true);
+      });
+    } else {
+      f.text().then(function(txt){
+        $("partsSheet").style.display = "none";
+        sheetRows = parseDelimited(txt);
+        buildColumnPicker(f.name);
+      }).catch(function(err){
+        setHint("partsHint", "Could not read that file: " + err.message, true);
+      });
+    }
     e.target.value = "";
   });
 
@@ -95204,7 +95522,7 @@ document.addEventListener("DOMContentLoaded", function(){
     download("text-index.json", JSON.stringify({
       v: 1, saved: new Date().toISOString(),
       pages: index.pages.map(function(p){
-        return { file:p.file, page:p.page, label:p.label, raw:p.raw, source:p.source };
+        return { file:p.file, page:p.page, label:p.label, cells:p.cells, raw:p.raw, source:p.source };
       })
     }), "application/json");
   };
