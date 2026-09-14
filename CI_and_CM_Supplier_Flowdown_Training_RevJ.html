@@ -419,7 +419,7 @@ var MODULES = [
     S("There is no fourth door.",
       "Silent omission is the failure mode the gate exists to close. Because risk acceptance is visible, routes upward, and cannot be scored down, the expected default for most of these requirements is \u201cperform.\u201d"),
     C("Severity is looked up, not re-rated", [
-      "Each of these requirements carries a severity assigned by the barrier safety case and fixed at the register level. At tailoring it is **looked up, never re-assessed.** This removes the one incentive that reliably corrupts these decisions: rating a barrier\u2019s absence low so the acceptance stays at a comfortable altitude.",
+      "Each of these requirements carries a severity assigned by the barrier safety case, and that assignment is fixed. At tailoring it is **looked up, never re-assessed.** This removes the one incentive that reliably corrupts these decisions: rating a barrier\u2019s absence low so the acceptance stays at a comfortable altitude.",
       "The program does not get to decide how dangerous the barrier\u2019s absence would be. That question was answered when the barrier was established, by people with no tailoring decision in front of them."]),
     P("Every disposition lands in a per-program compliance record: one structured, queryable row per safety-mandatory requirement, carrying the disposition, the evidence or risk-acceptance reference, the health check method and schedule, and the sign-off. The record is queryable on purpose: the coverage measures are computed from it, and **records that cannot be queried cannot be measured.**"),
     C("How coverage is measured", [
@@ -439,67 +439,57 @@ var MODULES = [
       ["CI identification", "What a CI is, the CI structure, the interface register, identifiers and documentation sets", "Is this a CI? At what level? What documentation defines it? Which boundaries exist?"],
       ["Configuration audit", "The two audits, audit designation, the readiness checklists and the two check sets", "Does this CI get an audit? Which one? What has to be true first? What is examined?"],
       ["Sub-supplier CM flowdown", "The nine work types and their audit roles, the requirement sets, the standing conditional audit clause, effectiveness determinations", "What does this supplier owe? What is their audit role? How do we know their CM works?"],
-      ["Safety management system", "Hazard analysis, risk controls, and the register of safety-mandatory CM requirements", "Which requirements are mandatory for safety, and what happens if one is not performed?"]]),
+      ["Safety management system", "Hazard analysis, risk controls, and which CM requirements are mandatory for safety", "Which requirements are mandatory for safety, and what happens if one is not performed?"]]),
+    P("The fourth row is the one you have already met. The safety management system decides which CM requirements are mandatory for safety. The safety disposition gate decides what happens when a program proposes not to perform one. Sections M1-05 and M1-06 covered both."),
     C("Three rules that follow from this", [
       "**Each process references the others by plain name, not by number.** Document numbers change. Names do not. You will see the audit designation assessment, not an appendix letter.",
       "**Where two processes cover the same ground, the owner governs.** The audit process restates the supplier work types and their audit roles. The flowdown process owns them, so the flowdown process wins.",
       "**Definitions are used as written.** A term defined in the process that owns it is carried word for word everywhere else, with the plain explanation underneath rather than instead."]),
-    P("**The register of safety-mandatory CM requirements is the one to know about.** It is an enterprise register rather than a program document. The register is also called the CM Floor Register, and the two names mean the same artifact. It lists the requirements obligated through the safety management system pathway, and they are performed on all safety-significant product lines regardless of contract flowdown."),
-    C("Three doors, not two", [
-      "A requirement on that register is **performed**.",
-      "Or it is **replaced by a documented equivalent control**, independently validated.",
-      "Or it is **formally risk-accepted**.",
-      "Any proposal not to perform one goes through the **safety disposition gate**, is recorded in the program safety-requirement disposition record, and is never tailored out silently. There is no fourth door, and silence is not one of the three."], "amber"),
     S("If you do not know which process answers your question, the question is usually about ownership rather than about the answer.",
       "Find the owner first. The answer is normally already written, and arguing it from scratch is how two processes end up disagreeing.")
   ],
-  check:{q:"A buyer wants to drop the requirements-to-test traceability matrix from a supplier statement of work, because the supplier has never been asked for one and the schedule is tight. The matrix is on the register of safety-mandatory CM requirements. What is the correct route?",
+  check:{q:"The configuration audit process and the sub-supplier CM flowdown process both describe the supplier work types and their audit roles. The two descriptions no longer match. Which one governs, and what happens to the other?",
    o:[
-     "Drop it. The register binds the company, not a supplier, and the contract does not flow it down",
-     "Route the proposal through the safety disposition gate, where it is either performed, replaced by a documented equivalent control, or formally risk-accepted, and record the outcome",
-     "Impose it anyway. A safety-mandatory requirement can never be dispositioned any other way",
-     "Ask the Acquirer to decide, since the register came from the contract"],
-   a:1, why:"The register applies on safety-significant product lines regardless of contract flowdown, so not being flowed down is not a reason. But the register is not an absolute either. It has three doors: perform, replace with a documented equivalent control, or formally risk-accept. All three go through the safety disposition gate and all three get recorded. What is never available is dropping it quietly. The register is an enterprise register, so it did not come from this contract and the Acquirer does not own it."}},
+     "The audit process, because the question is about audits",
+     "The flowdown process, because it owns the work types and their audit roles. The audit process only restates them, so the restatement is what gets corrected",
+     "Whichever process was revised most recently",
+     "Neither. Raise it to the program CM plan and let the plan settle it"],
+   a:1, why:"Where two processes cover the same ground, the owner governs. The flowdown process owns the work types and their audit roles, so the conflict resolves in its favor and the restatement is brought back into line rather than argued with. Recency is not the test, because a recently revised restatement is still a restatement. The program CM plan records how CM is performed on one program and does not arbitrate between enterprise processes. The habit this section is really teaching is the one it closes on: when you do not know which process answers a question, the question is usually about ownership rather than about the answer."}},
  {id:"M1-08", title:"Identifiers: the questions each one answers", body:[
-    P("Every identifier answers exactly one question. Conflating them is the most common newcomer error, and it produces the most durable damage. The way to keep them apart is to hold on to the question, not the name."),
-    P("The questions fall into three groups, because three different kinds of thing get identified: hardware, documentation, and software."),
-    S("Hardware: five questions.",
-      "Each one is answered by a different identifier. Read the table across, question first."),
+    P("Every identifier answers exactly one question. Conflating them is the most common newcomer error, and it produces the most durable damage. Hold on to the question rather than the name and they stay apart."),
+    P("There are eleven questions in all. They group by what is being identified: hardware, documentation, and software."),
+    P("**Hardware asks five questions.** Read the table across. The question comes first."),
     TABLE(["The question", "The identifier that answers it", "It changes when\u2026", "It is never\u2026"], [
       ["Whose design definition is this?", "Enterprise identifier: the design activity CAGE code", "The design activity changes. Not otherwise", "Omitted. A part number without one is not unique"],
       ["Which managed function is this, and where is its boundary?", "CI identifier", "The management need changes: a new function is designated as a CI, or a CI is split or consolidated", "Assigned to solve a part-numbering problem"],
       ["Which design definition is this built to, and is it interchangeable with that other one?", "Part or identifying number (PIN)", "A modification creates a non-interchangeable condition in form, fit or function", "Changed for a purely administrative reason"],
       ["Which individual article is this, out of all the ones we built?", "Serial number", "Never. It identifies one article for life", "Revised or re-used, even through a PIN change"],
       ["Which group of articles is this, out of all the ones we built?", "Lot or batch number", "Never. It identifies one group for life", "Revised or re-used. It carries a date code where a shelf-life, cure-date or storage-age limit applies"]]),
-    S("Not every question applies to every item.",
-      "Questions 1 and 3 apply to everything the design activity designs, CIs and parts alike. Question 2 applies to CIs only, because only a CI has a managed boundary. Questions 4 and 5 are conditional, and at item level they are mutually exclusive: an item carries a serial number, or a lot number, or neither. The next section is the test that decides which."),
-    P("Three of the five are worth dwelling on."),
+    P("**Not every question applies to every item.** Questions 1 and 3 apply to everything the design activity designs, CIs and parts alike. Question 2 applies to CIs only, because only a CI has a managed boundary. Questions 4 and 5 are conditional, and at item level they are mutually exclusive. An item carries a serial number, or a lot number, or neither. The next section is the test that decides which."),
+    P("**Documentation asks three questions.** Configuration documentation is identified in its own right, on the same logic as hardware."),
+    TABLE(["The question", "The identifier that answers it", "The rule"], [
+      ["Whose definition is this?", "Enterprise identifier: the same design activity CAGE code that goes on the hardware", "A document number is only unique within the activity that assigned it, exactly as a part number is"],
+      ["Which document is this?", "Document identifier", "Every item of configuration documentation is uniquely identified, so it can be referenced precisely and retrieved"],
+      ["Which version of it is this?", "Revision or version identifier", "Every version of every representation is separately identified. A reference without one points at a moving target"]]),
+    P("**Software asks three questions.** Same logic again, with one addition and one substitution."),
+    TABLE(["The question", "The identifier that answers it", "The rule"], [
+      ["Which software CI is this?", "Software CI identifier", "Every software CI gets one, by the same rule that gives every hardware CI a CI identifier"],
+      ["Which version of it is this?", "Version identifier", "**The addition.** Assigned to every version, without exception. Software changes too easily for the item identifier alone to say what you have"],
+      ["Which physical article is this?", "Usually nothing", "**The substitution.** Software carries identity on the loadable part number and the baseline rather than on a serial number. Do not record this as a serialization obligation"]]),
+    P("Embedded code is where the hardware questions and the software questions meet. It splits two ways. The split is a control decision, made once and then held to:"),
+    CARDS([
+      {h:"Embedded, controlled with its device", b:"Where code and the hardware device it lives in are controlled together on a single altered-item drawing, one PIN represents the device **with the code embedded.** The software medium is labeled separately, and the device is marked accordingly. One identity, deliberately: they change together."},
+      {h:"Controlled separately", b:"Where the code is managed in its own right, the device carries its PIN and serial, and the code is its own software CI with its own identifier and version identifiers. Two identities, deliberately: they change independently, and each needs its own change and status thread."}], 2),
+    P("Two of these identifiers carry controlled definitions. Use them as written."),
     C("Part or Identifying Number (PIN)", [
       "The identifier that, combined with the design activity CAGE code, uniquely identifies an item and its configuration. The PIN changes when a modification creates a non-interchangeable condition."]),
     C("Product unit identifier", [
       "A serial, lot, or batch number that distinguishes one unit, or group of units, of a product from another. Unit identifiers are never revised or re-used once assigned, even when the PIN changes."]),
     P("**CAGE code** is the term you will meet on the forms. It stands for Commercial and Government Entity code, and it is the CAGE code of the design activity. This training says CAGE code, because that is the term in the standard. The process, the checklist and the CI index all say CAGE. They are the same thing, and a PIN without one is not unique, because a part number is only unique within the activity that assigned it."),
-    S("The CI identifier and the PIN are deliberately decoupled.",
-      "They answer different questions, so they move independently. One CI can carry several PINs as variants. One PIN can appear under two different CIs. Both are normal, correct outcomes."),
-    S("Serial and lot numbers are unique, consecutive, and non-duplicating against a non-changing product-tracking base identifier, and once assigned, never revised and never re-used.",
+    P("**The CI identifier and the PIN are deliberately decoupled.** They answer different questions, so they move independently. One CI can carry several PINs as variants. One PIN can appear under two different CIs. Both are normal, correct outcomes."),
+    S("Serial and lot numbers are unique, consecutive, and non-duplicating against a non-changing product-tracking base identifier. Once assigned, they are never revised and never re-used.",
       "A modified unit keeps its original unit identifier through a PIN change. That is what preserves the thread back to the original configuration: the article\u2019s history stays attached to the article."),
-    S("Documentation: three questions.",
-      "Configuration documentation is identified in its own right, on the same logic."),
-    TABLE(["The question", "The identifier that answers it", "The rule"], [
-      ["Whose definition is this?", "Enterprise identifier: the same design activity CAGE code that goes on the hardware", "A document number is only unique within the activity that assigned it, exactly as a part number is"],
-      ["Which document is this?", "Document identifier", "Every item of configuration documentation is uniquely identified, so it can be referenced precisely and retrieved"],
-      ["Which version of it is this?", "Revision or version identifier", "Every version of every representation is separately identified. A reference without one points at a moving target"]]),
-    S("Software: three questions.",
-      "Software follows the same logic, with one addition and one substitution."),
-    TABLE(["The question", "The identifier that answers it", "The rule"], [
-      ["Which software CI is this?", "Software CI identifier", "Every software CI gets one, by the same rule that gives every hardware CI a CI identifier"],
-      ["Which version of it is this?", "Version identifier", "**The addition.** Assigned to every version, without exception. Software changes too easily for the item identifier alone to say what you have"],
-      ["Which physical article is this?", "Usually nothing", "**The substitution.** Software carries identity on the loadable part number and the baseline rather than on a serial number. Do not record this as a serialization obligation"]]),
-    P("Embedded code is the case where the hardware questions and the software questions meet. It splits two ways, and the split is a control decision made once and then held to:"),
-    CARDS([
-      {h:"Embedded, controlled with its device", b:"Where code and the hardware device it lives in are controlled together on a single altered-item drawing, one PIN represents the device **with the code embedded.** The software medium is labeled separately, and the device is marked accordingly. One identity, deliberately: they change together."},
-      {h:"Controlled separately", b:"Where the code is managed in its own right, the device carries its PIN and serial, and the code is its own software CI with its own identifier and version identifiers. Two identities, deliberately: they change independently, and each needs its own change and status thread."}], 2),
-    P("Two rules close out the scheme. Nomenclature is revised when a non-interchangeable condition requires it: a name that no longer distinguishes non-interchangeable things has stopped doing its job. And unique item identification marking is applied where the contract requires it. Which items carry a serial number, which carry a lot number, and which carry neither is a separate question, and the next section answers it.")
+    P("Two rules close out the set. Nomenclature is revised when a non-interchangeable condition requires it, because a name that no longer distinguishes non-interchangeable things has stopped doing its job. And unique item identification marking is applied where the contract requires it. Which items carry a serial number, which carry a lot number, and which carry neither is a separate question, and the next section answers it.")
   ],
   check:{q:"A supplier asks which identifiers to assign to a newly designated CI. It is a machined bracket accepted on lot conformance to an approved source. One lot was scrapped, and the planner wants to re-use that lot number on the replacement lot to keep the sequence tidy.",
    o:[
@@ -621,7 +611,7 @@ var MODULES = [
    {id:"b", q:"The program offers an alternative control it says achieves the same thing. Who decides whether that is true, and against what?"},
    {id:"c", q:"The alternative is not accepted, and the program still wants to proceed. Who signs, and at what level? What would change if the severity had been severe rather than catastrophic?"},
    {id:"d", q:"A colleague suggests re-rating the severity for this program, arguing the design makes the hazard less likely here. How do you answer?"},
-   {id:"e", q:"The requirement is performed after all. What still has to be recorded, and why does it matter that the record is queryable?"}
+   {id:"e", q:"The requirement is performed after all. What still has to be recorded about that decision, and what has to be recorded about keeping the barrier effective for the rest of the program?"}
   ]}
  ]
 },
@@ -1347,7 +1337,7 @@ var MODULES = [
       "A blank cell is indistinguishable from an oversight. A signed determination is a decision with an owner."),
     P("Verify coverage at three points: at CI-list submittal for Acquirer concurrence, at each technical review, and before each baseline establishment. Where modeling is used, add the two-way check that every model interface element resolves to a register row and every row to a model element."),
     C("Four interface requirements are mandatory for safety", [
-      "All four are on the register of safety-mandatory requirements. On a safety-significant product line they are performed regardless of what the contract flows down, or dispositioned through the safety disposition gate.",
+      "On a safety-significant product line these four are performed regardless of what the contract flows down, or dispositioned through the safety disposition gate.",
       "**Identify** the internal and external interface requirements. Systems Engineering does the identifying. The obligation is the company\u2019s.",
       "**Incorporate** the interface information into the functional, allocated and product documentation. That is the documentation determination, covered in section M3-11.",
       "**Maintain configuration control** of baselined interface requirements. That is baseline establishment, covered in M1-10 in Module 1.",
@@ -1596,7 +1586,7 @@ var MODULES = [
       ["Is this a CI, and at what level?", "Systems Engineering, with the Responsible Engineer. CM records the answer and owns the screen"],
       ["Which requirements is this CI accountable for?", "Systems Engineering, from the requirements allocation matrix"],
       ["Who holds design authority for this CI?", "Systems Engineering and the Responsible Engineer. Not procurement, and not CM"],
-      ["Is this requirement mandatory for safety?", "System Safety, against the enterprise register"],
+      ["Is this requirement mandatory for safety?", "System Safety, against the safety management system"],
       ["Does this failure consequence sit in the top two severity bands?", "System Safety, from the hazard log. Use the pre-anchored severity where one is recorded"],
       ["What are the failure modes and the criticality for this CI?", "RM&SH, from the FMECA"],
       ["Which hardware implements this hazard control?", "System Safety names the control. Systems Engineering names the hardware"],
@@ -1910,7 +1900,7 @@ var MODULES = [
       {h:"Act on the determination", b:"Actions from the ladder, with owner and due date, tracked to closure."}], "tl"),
     C("Re-classification triggers", [
       "**Scope change, including scope that grows from build into any element of design authority**: the common and easily missed one, because it silently makes change control applicable.",
-      "Work type change, including added software or firmware. Audit designation change. Source change: new supplier, facility or sub-tier. Revision of the register of safety-mandatory requirements, or of the requirement matrix. An effectiveness determination of less than effective."])
+      "Work type change, including added software or firmware. Audit designation change. Source change: new supplier, facility or sub-tier. Revision of the requirement matrix, or a change in which requirements are mandatory for safety. An effectiveness determination of less than effective."])
   ],
   check:{q:"A build-to-print procurement grows in scope: the supplier will now propose minor design improvements for company approval. Why does this matter to flowdown?",
    o:[
@@ -1929,7 +1919,7 @@ var MODULES = [
       ["System Safety", "Receives safety-relevant supplier findings and escapes into the safety data stream; concurs on dispositions affecting hazard controls; supports evaluation of tailoring proposals at the supplier tier"],
       ["Program Management", "Resources the flowdown and effectiveness work; approves award restrictions and other actions carrying schedule or cost consequence; escalates unresolved supplier CM performance"],
       ["Independent CM and Safety Assurance", "Evaluates a proposed equivalent control where a supplier or program wants to tailor a requirement mandatory for safety: independent of the program bearing the decision, which is the entire point of the role"],
-      ["Enterprise CM functional lead", "Owns the work type taxonomy, the requirement matrix and the deliverable definitions, and maintains them as the requirement set or the register of safety-mandatory requirements changes"],
+      ["Enterprise CM functional lead", "Owns the work type taxonomy, the requirement matrix and the deliverable definitions, and maintains them as the requirement set changes, or as the requirements mandatory for safety change"],
       ["The sub-tier supplier", "Complies with or suitably tailors what is flowed; submits the required deliverables; flows requirements recursively to its own sub-tiers and returns their product data with traceability to next higher assemblies; participates in audits per its work-type role"]]),
     S("Name the handoffs and you have named the failure modes.",
       "A statement of work released without passing through CM. A part attribute authorship case nobody stated, so engineering never approved what the supplier never proposed. An escape found by receiving that never reached the findings log. None of these is a hard judgment call, each is a handoff that had no owner."),
