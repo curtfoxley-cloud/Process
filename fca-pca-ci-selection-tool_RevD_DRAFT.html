@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FCA/PCA CI Selection</title>
+<style>
+:root{
+  --ink:#1E262E; --ink-2:#2C3841; --slate:#5C6D78; --mute:#8998A2;
+  --paper:#FFFFFF; --surface:#F4F6F7; --surface-2:#EDF0F1; --rule:#D6DCDF;
+  --rust:#A8481F; --rust-soft:#F2E4DD; --rust-ink:#7E340F;
+  --teal:#1F5F5B; --teal-soft:#DFEAE8;
+  --amber:#9A6508; --amber-soft:#F6ECD8;
+  --alert:#8E2F2F; --alert-soft:#F4E2E2;
+  --serif:Georgia,Cambria,"Times New Roman",serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--surface);font-size:15px;line-height:1.55}
+button{font-family:inherit;cursor:pointer}
+input{font-family:inherit;font-size:14px;color:inherit}
+.top{background:var(--ink);color:#fff;padding:13px 20px}
+.top b{font-family:var(--serif);font-size:16px;display:block;line-height:1.2}
+.top span{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#93A2AB}
+.wrap{max-width:820px;margin:0 auto;padding:24px 20px 70px}
+h1{font-family:var(--serif);font-size:27px;font-weight:400;margin:0 0 6px;line-height:1.2}
+.lede{font-size:14px;color:var(--slate);margin:0 0 20px;max-width:64ch}
+.lab{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--rust-ink);font-weight:700;margin-bottom:8px}
+.card{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:16px 18px;margin:0 0 18px}
+.card p{margin:0;font-size:13.5px;color:var(--ink-2)}
+.card p+p{margin-top:9px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fld label{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--slate);font-weight:700;margin-bottom:4px}
+.fld input{width:100%;padding:7px 9px;border:1px solid var(--rule);border-radius:4px;background:var(--paper)}
+.fld input:focus{outline:2px solid var(--rust);outline-offset:1px}
+
+.tally{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin:0 0 16px}
+.chip{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;
+  padding:3px 9px;border-radius:3px;border:1px solid var(--rule);background:var(--surface-2);color:var(--slate);white-space:nowrap}
+.chip.on{background:var(--rust-soft);color:var(--rust-ink);border-color:#E3CCC2}
+.chip.hold{background:var(--amber-soft);color:var(--amber);border-color:#E4D3AF}
+.chip.count{background:none;border-color:transparent;color:var(--mute)}
+
+#tree{position:relative;padding-left:30px}
+#tree:before{content:"";position:absolute;left:8px;top:10px;bottom:26px;width:2px;background:var(--rule)}
+.phead{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--rust-ink);font-weight:700;margin:20px 0 2px;position:relative;background:var(--surface);padding:2px 0}
+.phead:first-child{margin-top:0}
+.pnote{font-size:12.5px;color:var(--slate);margin:0 0 8px;max-width:62ch}
+
+.node{position:relative;margin-bottom:6px}
+.node:before{content:"";position:absolute;left:-26px;top:13px;width:14px;height:2px;background:var(--rule)}
+.node:after{content:"";position:absolute;left:-30px;top:8px;width:11px;height:11px;border-radius:50%;
+  background:var(--paper);border:2px solid var(--rule)}
+.node.done:after{background:var(--slate);border-color:var(--slate)}
+.node.fired:after{background:var(--rust);border-color:var(--rust)}
+.node.opn:after{background:var(--amber);border-color:var(--amber)}
+.node.here:after{background:var(--paper);border-color:var(--rust);box-shadow:0 0 0 3px var(--rust-soft)}
+.node.pending{opacity:.55}
+
+.node .row{display:flex;gap:10px;align-items:baseline;padding:5px 0;font-size:13.5px;color:var(--mute)}
+.node .g{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--mute);min-width:28px}
+.node.done .row,.node.fired .row,.node.opn .row{color:var(--ink-2)}
+.node.done .g,.node.fired .g,.node.opn .g{color:var(--rust-ink)}
+.node .owner{display:block;font-size:12px;color:var(--amber);margin-top:2px}
+.node .ans{margin-left:auto;font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;padding:2px 7px;border-radius:3px;background:var(--surface-2);color:var(--slate);
+  white-space:nowrap;cursor:pointer;border:1px solid var(--rule)}
+.node.fired .ans{background:var(--rust-soft);color:var(--rust-ink);border-color:#E3CCC2}
+.node.opn .ans{background:var(--amber-soft);color:var(--amber);border-color:#E4D3AF}
+.node .ans:hover{border-color:var(--slate)}
+.node .ans:focus-visible{outline:2px solid var(--rust);outline-offset:2px}
+
+.node.here{background:var(--paper);border:1px solid var(--rule);border-left:3px solid var(--rust);
+  border-radius:0 6px 6px 0;padding:14px 16px;margin:10px 0 12px -3px}
+.node.here:before{top:22px}
+.node.here:after{top:17px}
+.node.here .row{padding:0;font-size:16px;color:var(--ink);display:block}
+.node.here .g{display:block;margin-bottom:5px;font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--rust-ink)}
+.node.here .qt{font-family:var(--serif);font-size:19px;line-height:1.3;display:block}
+.node.here .why{font-size:13px;color:var(--slate);margin:7px 0 0;max-width:62ch}
+
+.derive{margin-top:11px;border-left:3px solid var(--rule);padding:2px 0 2px 11px}
+.derive div{font-size:12.5px;color:var(--ink-2);margin-bottom:2px}
+.derive .dk{font-family:var(--mono);font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--mute);font-weight:700;display:inline-block;min-width:96px}
+
+.branch{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.branch button{border:1px solid var(--rule);background:var(--paper);color:var(--ink);border-radius:4px;
+  padding:8px 15px;font-size:13.5px;font-weight:600}
+.branch button:hover{background:var(--surface);border-color:var(--slate)}
+.branch button:focus-visible{outline:2px solid var(--rust);outline-offset:2px}
+.branch button.cur{border-color:var(--rust);background:var(--rust-soft);color:var(--rust-ink)}
+.branch button.cur:after{content:" \2713"}
+.branch button.opb{border-style:dashed;color:var(--slate)}
+.branch button.opb.cur{border-style:solid;border-color:var(--amber);background:var(--amber-soft);color:var(--amber)}
+.openbox{margin-top:12px;background:var(--amber-soft);border:1px solid #E4D3AF;border-radius:5px;padding:11px 13px}
+.openbox p{margin:0 0 9px;font-size:12.5px;color:var(--ink-2)}
+.nav{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-top:11px}
+.lnk{border:0;background:none;padding:2px 0;font-size:13px;font-weight:600;color:var(--slate);
+  text-decoration:underline;text-underline-offset:3px}
+.lnk:hover{color:var(--rust)}
+.lnk:focus-visible{outline:2px solid var(--rust);outline-offset:2px;border-radius:3px}
+
+.leaf{margin-top:10px;position:relative}
+.leaf:after{content:"";position:absolute;left:-30px;top:8px;width:11px;height:11px;border-radius:50%;
+  background:var(--paper);border:2px solid var(--rule)}
+.leaf.on:after{background:var(--rust);border-color:var(--rust)}
+.leaf.on.hold:after{background:var(--amber);border-color:var(--amber)}
+.leaf:before{content:"";position:absolute;left:-26px;top:13px;width:14px;height:2px;background:var(--rule)}
+.leaf .box{border:1px solid var(--rule);border-radius:6px;background:var(--paper);padding:16px 18px}
+.leaf.on .box{border-left:3px solid var(--rust);margin-left:-3px}
+.leaf.on.hold .box{border-left-color:var(--amber)}
+.leaf h2{font-family:var(--serif);font-size:21px;font-weight:400;margin:0 0 5px}
+.leaf p{margin:0;font-size:13.5px;color:var(--slate);max-width:66ch}
+.leaf p+p{margin-top:8px}
+.leaf h3{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--slate);font-weight:700;margin:18px 0 6px}
+.leaf ul{margin:0;padding-left:18px}
+.leaf li{font-size:13px;color:var(--ink-2);margin-bottom:5px;max-width:66ch}
+table.ref{border-collapse:collapse;width:100%;font-size:13.5px}
+table.ref td{padding:7px 10px;border-top:1px solid var(--rule);color:var(--ink-2);vertical-align:top}
+table.ref td.k{font-family:var(--mono);font-size:12px;color:var(--rust-ink);font-weight:700;width:38px}
+table.ref td.o{font-size:12.5px;color:var(--slate);width:34%}
+.warn{background:var(--amber-soft);border:1px solid #E4D3AF;border-radius:5px;padding:11px 13px;margin-top:14px;font-size:13px;color:var(--ink-2)}
+.warn.sfty{background:var(--alert-soft);border-color:#E0BFBF}
+.warn.sfty b{color:var(--alert)}
+.warn b{color:var(--ink)}
+.btnrow{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:16px}
+.btn{border:1px solid var(--rule);background:var(--paper);color:var(--ink);border-radius:4px;padding:9px 16px;font-size:13.5px;font-weight:600}
+.btn:hover{background:var(--surface)}
+.btn:focus-visible{outline:2px solid var(--rust);outline-offset:2px}
+.btn.pri{background:var(--rust);border-color:var(--rust);color:#fff}
+.btn.pri:hover{background:var(--rust-ink)}
+.btn.pri[disabled]{background:var(--mute);border-color:var(--mute);cursor:not-allowed}
+.btn.gh{background:transparent;color:var(--slate)}
+
+h2.sect{font-family:var(--serif);font-size:19px;font-weight:400;margin:30px 0 10px}
+h2.sect.gn{margin:16px 0 10px}
+hr.bar{border:0;border-top:2px solid var(--ink-2);margin:34px 0 0}
+.small{font-size:12.5px;color:var(--slate);max-width:72ch}
+.pull{font-family:var(--serif);font-size:15px;font-style:italic;color:var(--ink-2);border-left:3px solid var(--rust);padding-left:12px;margin:14px 0;max-width:62ch}
+.foot{font-size:12.5px;color:var(--slate);border-top:1px solid var(--rule);padding-top:14px;margin-top:26px}
+.foot p{margin:0 0 7px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+.disp{margin-top:20px;border-top:1px solid var(--rule);padding-top:16px}
+.disp .opts{display:flex;gap:16px;flex-wrap:wrap;margin:4px 0 10px}
+.disp label.ck{display:flex;gap:7px;align-items:center;font-size:13.5px;color:var(--ink-2);cursor:pointer}
+.disp label.ck input{margin:0;flex:none;accent-color:var(--rust)}
+.disp .sub{margin-left:2px;padding-left:13px;border-left:2px solid var(--rule)}
+.disp textarea{width:100%;padding:7px 9px;border:1px solid var(--rule);border-radius:4px;
+  background:var(--paper);font-family:inherit;font-size:14px;color:inherit;line-height:1.5}
+.disp textarea:focus{outline:2px solid var(--rust);outline-offset:1px}
+.sigs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
+.sigs .fld input{background:var(--surface)}
+.sigs .fld input:focus{background:var(--paper)}
+.req{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;
+  color:var(--alert);background:var(--alert-soft);border:1px solid #E0BFBF;border-radius:3px;padding:1px 5px;margin-left:6px}
+#acts{margin-top:18px}
+#msg{font-size:12.5px;color:var(--slate)}
+@media(max-width:680px){.sigs{grid-template-columns:1fr}}
+@media print{#acts{display:none}.disp textarea{border:0;padding:0}}
+@media(max-width:680px){
+  .grid{grid-template-columns:1fr}
+  .node .ans{margin-left:0}
+  .node .row{flex-wrap:wrap}
+  .derive .dk{display:block;min-width:0}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media print{
+  .top,.branch,.nav,.btnrow,.lnk{display:none}
+  body{background:#fff;font-size:11pt}
+  .node.pending{display:none}
+  .node.here{border-left-color:var(--slate)}
+  .leaf .box,.card{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<div class="top"><b>FCA/PCA CI Selection</b><span>Configuration Management &middot; Rev D draft</span></div>
+<div class="wrap">
+<h1>Designate this CI for audit?</h1>
+<p class="lede">CM answers every question here. CM answers from documentation. Where the documentation is unclear, the answer is open and CM escalates to the function that owns it.</p>
+
+<div class="card">
+  <div class="lab">Candidate CI</div>
+  <div class="grid">
+    <div class="fld"><label for="f-ci">CI</label><input id="f-ci"></div>
+    <div class="fld"><label for="f-id">CI identifier</label><input id="f-id"></div>
+    <div class="fld"><label for="f-prog">Program</label><input id="f-prog"></div>
+    <div class="fld"><label for="f-assessor">Assessor and date</label><input id="f-assessor"></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="lab">How to answer</div>
+  <p>Read the documentation first. Each question names the documentation set the answer is derived from, and the function that owns it. The owning function supplies the documentation. It does not supply the answer.</p>
+  <p>An answer that has not been established from its source is not a NO. Mark it open, name the owner, set a date, and escalate. The assessment is not signed until every open answer resolves.</p>
+</div>
+
+<div class="card">
+  <div class="lab">When to run this assessment</div>
+  <p>Complete one assessment per CI at initial audit planning, at each CM-plan revision, and on any reassessment trigger. The reassessment triggers are a substantive design, process, facility, tooling, or supplier change, which is a safety management system management-of-change trigger; a new quality escape or safety event traceable to the CI; a CSA reconciliation anomaly; a hazard log revision adding a risk control to the CI; and a sub-supplier effectiveness determination of less than effective for a supplier building the CI. Record the result and rationale for every CI evaluated, designated for audit or not. Attach it to the Audit Designation Assessment Record.</p>
+</div>
+
+<div class="tally" id="tally"></div>
+<div class="sr" id="live" role="status" aria-live="polite"></div>
+<div id="tree"></div>
+<div class="btnrow" id="acts"></div>
+<input type="file" id="file" accept="application/json,.json" style="display:none">
+<p class="small" id="actnote" style="margin:8px 0 0">A saved file spares you retyping. It is not the record, and it is not a tracked action. An open answer is an assigned action with an owner and a date, and it belongs in whatever tracks those.</p>
+
+<hr class="bar">
+<h2 class="sect gn">General Notes</h2>
+<p class="small"><b>CM answers. The functions supply.</b> CM derives every answer from a documentation set and records the source relied on. Systems Engineering and Design Engineering jointly supply the design history and the released design definition, and author the technical content of each engineering change. Airworthiness and Certification supplies the certification basis, the previously approved data, and the change classification where the program has a certification basis. System Safety supplies the hazard log, the safety analyses, and the severities. RM&amp;SH owns and supplies the FMECA and the single point failure identification. Quality supplies the escape, nonconformance, and foreign object findings. Supplier Requirements Engineering supplies the procurement records and the supplier classification log. CM supplies the item index, the change records against the CI since its last audit, the CSA reconciliation indicators, the prior audit records, and the supplier effectiveness determinations.</p>
+<p class="small"><b>Escalate on unclear documentation.</b> CM opens the FMECA to see whether the item is associated with a safety-related function. If the FMECA answers, that is the answer and the FMECA is the source. If the FMECA is unclear, CM asks RM&amp;SH. That order holds for all sixteen questions.</p>
+<p class="pull">A no that means nobody checked is the most expensive answer on the form. It reads exactly like a no that somebody established, and only one of them is true.</p>
+<p class="small"><b>Signatures confirm. They do not determine.</b> CM and Systems Engineering sign. System Safety signs whenever any safety question was answered yes. A concurrence signature confirms that the technical basis is sound. The determination is CM's.</p>
+<p class="small"><b>Audit scope.</b> Designation says whether the CI is audited. Scope says which audit. Both are read from the same answers. The FCA asks whether the design was verified against its requirements. The PCA asks whether the unit conforms to its product definition. An answer that raises doubt about verification points to an FCA. An answer that raises doubt about manufacture, sources, or records points to a PCA. The tool recommends a scope from the answers. The recommendation is not a substitute for the contract, which sets a minimum that the assessment may expand and may not reduce.</p><p class="small"><b>A PCA on its own needs a completed FCA.</b> A PCA does not begin unless the corresponding FCA has been successfully completed or is being conducted concurrently, because the PCA examines the as-built configuration of a validated CI. Where the CI has never been validated and the answers point to a PCA, designate both.</p>
+<p class="small"><b>Part A is contractual.</b> A contract, SOW, or CMP call-out makes designation mandatory. Part B and Part C still run. Contract designation sets a minimum on scope, not a ceiling. Stopping at Part A is the most common error on this assessment.</p>
+<p class="small"><b>Part B is absolute.</b> Any yes in Part B designates the CI for audit, for both an FCA and a PCA. There is no risk factor threshold to reach and no concurrence route by which that designation is set aside. Conducting the FCA and conducting the PCA are themselves entries in the register of safety-mandatory CM requirements, so a proposal not to conduct an audit the CI is designated for goes to the safety disposition gate: performed, replaced with an independently validated equivalent control, or formally risk-accepted at the authority matching the recorded severity. System Safety signs the assessment. System Safety does not concur in the omission.</p>
+<p class="small"><b>Part C is cumulative.</b> One risk factor is recorded and monitored. Two risk factors designate the CI, or the program documents the rationale and CM and Systems Engineering sign it.</p>
+<p class="small"><b>Ceremony versus substance.</b> An internally initiated audit may tailor the ceremony. It may not tailor the substance. The safety-mandatory reconciliation, the traceability matrix, and the as-built examination are performed in full.</p>
+<p class="small"><b>Glossary.</b> CSA is Configuration Status Accounting. PBL is the Product Baseline. FMECA is the Failure Modes, Effects, and Criticality Analysis. FOD is Foreign Object Debris. RFA is a Request for Action. CSCI is a Computer Software Configuration Item. RM&amp;SH is Reliability, Maintainability, Safety, and Health.</p>
+
+<div class="foot">
+  <p><b>Reference.</b> Configuration Audit Process (FCA/PCA), &sect;5.2.1 Audit Designation, and Appendix C, the FCA/PCA CI Selection Checklist.</p>
+  <p>This tool is a decision aid. It does not substitute for engineering judgment, the safety disposition gate, or contractual requirements.</p>
+  <p><b>Record the assessment for every CI evaluated, designated or not.</b> Attach the completed assessment to the Audit Designation Assessment Record. Retained for the program life.</p>
+  <p>Nothing is saved here. Print or transcribe the result before you close the tab. Process document number and revision: <span style="font-family:var(--mono)">[to be assigned]</span></p>
+</div>
+</div>
+
+<script>
+/* ---- the sixteen questions ----
+   doc  = the documentation set CM derives the answer from
+   own  = the function that owns that documentation, and who CM escalates to   */
+var Q = [
+  { id:'A1', part:'a', tag:'A1 \u00b7 Contract',
+    text:'Is the CI identified in the contract, SOW, or CMP as requiring an FCA, a PCA, or both?',
+    why:'Contract designation is the first source of audit designation. If the CI is contractually called out, designation for audit is mandatory. The remaining parts still run. They determine whether risk factors expand the audit scope.',
+    doc:'The contract file, the SOW, and the program CMP',
+    own:'Contracts',
+    short:'Called out in the contract, SOW, or CMP as requiring an FCA, a PCA, or both' },
+  { id:'A2', part:'a', tag:'A2 \u00b7 Baseline',
+    text:'Is the CI an Acquirer-controlled CI whose product baseline the Acquirer will formalize at PCA completion?',
+    why:'PCA completion is the event that formalizes the Product Baseline. For this CI the audit is the formalizing event, and no other event reaches it. Designation here is not a risk judgment.',
+    doc:'The item index and its control designations',
+    own:'CM, with Contracts',
+    short:'Acquirer-controlled CI whose product baseline is formalized at PCA completion' },
+
+  { id:'B1', part:'b', tag:'B1 \u00b7 Hazard controls',
+    text:'Does the CI implement or host one or more hazard risk controls recorded in the safety management system hazard log?',
+    why:'A CI carrying a hazard risk control is designated for audit, for both audits. Read the hazard log for controls allocated to this CI or to functions it hosts.',
+    doc:'The safety management system hazard log, and the analyses behind it',
+    own:'System Safety',
+    short:'Implements or hosts hazard risk controls recorded in the hazard log' },
+  { id:'B2', part:'b', tag:'B2 \u00b7 Criterion (b)',
+    text:'Is the CI a criterion-(b) CI, where failure might result in serious injury, loss of life, or loss of primary system capability?',
+    why:'Criterion (b) of the CI identification process selection criteria. The answer is already recorded on the screen that made the item a CI. Consider both direct failure modes and cascading effects.',
+    doc:'The CI selection record, criterion (b) of the CI Selection Criteria Checklist',
+    own:'CM, with System Safety',
+    short:'Criterion-(b) CI. Failure might cause serious injury, loss of life, or loss of primary capability' },
+  { id:'B3', part:'b', tag:'B3 \u00b7 Severity',
+    text:'Is the severity of the CI\u2019s credible failure consequence in the highest two severity categories of the program safety risk matrix?',
+    why:'For example, catastrophic or hazardous, at matrix levels 4 and 5. Use the pre-anchored severity where the register of safety-mandatory CM requirements records one.',
+    doc:'The program safety risk matrix, and the pre-anchored severity in the register of safety-mandatory CM requirements',
+    own:'System Safety',
+    short:'Credible failure consequence in the highest two severity categories, levels 4 and 5' },
+  { id:'B4', part:'b', tag:'B4 \u00b7 Software and firmware',
+    text:'Is the CI safety-critical software, or firmware embedded in a safety-critical device?',
+    why:'Includes CSCIs performing safety functions. Includes firmware whose host device is safety-critical, regardless of the firmware\u2019s own function.',
+    doc:'The software criticality assessment',
+    own:'Software Engineering, with System Safety',
+    short:'Safety-critical software, or firmware in a safety-critical device' },
+  { id:'B5', part:'b', tag:'B5 \u00b7 Single point of failure',
+    text:'Is the CI a single-point-of-failure item for a safety-related function?',
+    why:'No redundancy or alternate means exists. Failure of this one item defeats the safety-related function. Read the FMECA to see whether the item is associated with a safety-related function. If the FMECA is unclear, ask RM&SH.',
+    doc:'The FMECA and the single point failure identification',
+    own:'RM&SH',
+    short:'Single point of failure for a safety-related function' },
+
+  { id:'C1', part:'c', tag:'C1 \u00b7 Design maturity',
+    text:'Is the design new or novel rather than proven heritage?',
+    why:'First-of-type, new technology, or unproven margins. Proven heritage is a claim about evidence, and the evidence is the fielded history of that design in that application. A design that is unchanged but has never flown in this environment is not heritage. It is a new application of an old drawing. Where the program has a certification basis, test the heritage claim against certification credit as well as against service history.',
+    doc:'Design history, the released design definition, and the fielded evidence the heritage claim rests on. Where the program has a certification basis, also the certification basis, the previously approved data, and the certification credit position',
+    own:'Systems Engineering and Design Engineering. Airworthiness and Certification where the program has a certification basis',
+    short:'New or novel design rather than proven heritage' },
+  { id:'C2', part:'c', tag:'C2 \u00b7 Design change',
+    text:'Has the CI undergone substantive design change since its last audit?',
+    why:'A substantive design change is a safety management system management-of-change trigger. It is a reassessment trigger in its own right. Where the program has a certification basis, the change classification is the sharper test of substantive than the change count is.',
+    doc:'The change records CM holds against the CI since the last audit date. Where the program has a certification basis, also the change classification',
+    own:'CM holds the change records. Systems Engineering and Design Engineering for the technical content of each change. Airworthiness and Certification where the program has a certification basis',
+    short:'Substantive design change since the last audit' },
+  { id:'C3', part:'c', tag:'C3 \u00b7 Manufacturing change',
+    text:'Is there a new or changed manufacturing source, process, facility, or tooling for the CI?',
+    why:'Transferred lines, new facilities, altered processes, and replacement tooling can break the as-designed to as-built correspondence that audits exist to verify.',
+    doc:'Process and tooling change records, and the procurement record where the source moved',
+    own:'Manufacturing, with Supplier Requirements Engineering',
+    short:'New or changed manufacturing source, process, facility, or tooling' },
+  { id:'C4', part:'c', tag:'C4 \u00b7 Sub-tier supplier',
+    text:'Is there a new or changed sub-tier supplier for the CI or its critical components?',
+    why:'Includes second-source qualification. Includes supplier substitutions at any tier feeding critical components.',
+    doc:'Procurement records and the supplier classification log',
+    own:'Supplier Requirements Engineering',
+    short:'New or changed sub-tier supplier for the CI or its critical components' },
+  { id:'C5', part:'c', tag:'C5 \u00b7 Quality history',
+    text:'Does the CI or its production line have a history of quality escapes, nonconformances, FOD findings, or subcontractor disclosures?',
+    why:'These are safety management system safety data sources. Read the data for the production line as well as for the CI. Findings against the line count even where they are not attributed to this specific CI.',
+    doc:'Quality and safety data for the CI and for its production line',
+    own:'Quality Assurance',
+    short:'History of quality escapes, nonconformances, FOD findings, or subcontractor disclosures' },
+  { id:'C6', part:'c', tag:'C6 \u00b7 Work and data findings',
+    text:'Have findings of work performed not in accordance with approved data, or of inaccurate, incomplete, or ambiguous manufacturing data, been recorded against the CI?',
+    why:'These are safety management system safety data. The findings indicate that the released data, or its execution, cannot be relied on without audit verification.',
+    doc:'Quality findings against the CI or its production line',
+    own:'Quality Assurance',
+    short:'Findings of work not per approved data, or of inaccurate, incomplete, or ambiguous manufacturing data' },
+  { id:'C7', part:'c', tag:'C7 \u00b7 CSA health',
+    text:'Do CSA reconciliation health indicators show anomalies for the CI?',
+    why:'As-designed to as-built delta aging, unincorporated-change backlog, or serial and effectivity discrepancies. These indicate that at-scale reconciliation may not be functioning for this CI. That is the condition audits exist to detect.',
+    doc:'CSA reconciliation health indicators',
+    own:'CM',
+    short:'CSA reconciliation anomalies: delta aging, change backlog, or serial and effectivity discrepancies' },
+  { id:'C8', part:'c', tag:'C8 \u00b7 Audit history',
+    text:'Has the CI never received an FCA or PCA, or does a prior audit have an open delta or unresolved action items?',
+    why:'A never-audited CI has no verified baseline correspondence. An open delta or an unresolved RFA means the prior audit scope was never closed.',
+    doc:'Audit records and the prior audit minutes',
+    own:'CM',
+    short:'Never audited, or a prior audit has an open delta or unresolved action items' },
+  { id:'C9', part:'c', tag:'C9 \u00b7 Sub-supplier effectiveness',
+    text:'Has a sub-supplier building this CI, or a critical component of it, been determined less than effective under the sub-supplier CM flowdown process?',
+    why:'A determination of less than effective means the supplier CM process is not meeting the requirements imposed on it.',
+    doc:'The supplier evaluation record maintained under the sub-supplier CM flowdown process',
+    own:'CM',
+    short:'Sub-supplier determined less than effective under the CM flowdown process' }
+];
+
+var PART = {
+  a:{ name:'Part A \u00b7 Mandatory designation',
+      note:'Any yes designates the CI. Part B and Part C still run. They tell you whether the scope should grow.' },
+  b:{ name:'Part B \u00b7 Safety criticality',
+      note:'Any yes designates the CI for audit, for both an FCA and a PCA. There is no concurrence route around it.' },
+  c:{ name:'Part C \u00b7 Risk factors',
+      note:'Two yes answers designate the CI. One yes is recorded and monitored.' }
+};
+
+var IDX={}; Q.forEach(function(q,i){IDX[q.id]=i;});
+var S = { ans:{}, opens:{}, ev:{}, here:Q[0].id, scroll:false,
+  disp:{ des:'', type:'', delta:false, internal:false, rat:'', ratAuto:true, ratSig:'', cm:'', cmd:'' } };
+
+var $=function(id){return document.getElementById(id);};
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function yesIn(p){return Q.filter(function(q){return q.part===p&&S.ans[q.id]==='yes';});}
+function openList(){return Q.filter(function(q){return S.ans[q.id]==='open';});}
+function answeredCount(){return Q.filter(function(q){return S.ans[q.id];}).length;}
+function firstUnanswered(){for(var i=0;i<Q.length;i++) if(!S.ans[Q[i].id]) return Q[i].id; return null;}
+
+function tally(){
+  var a=yesIn('a').length,b=yesIn('b').length,c=yesIn('c').length,o=openList().length,n=answeredCount();
+  $('tally').innerHTML=
+    '<span class="chip'+(a?' on':'')+'">Part A: '+a+' yes</span>'+
+    '<span class="chip'+(b?' on':'')+'">Part B: '+b+' yes</span>'+
+    '<span class="chip'+(c>=2?' on':(c===1?' hold':''))+'">Part C: '+c+' of 9 yes, 2 designate</span>'+
+    (o?'<span class="chip hold">'+o+' open</span>':'')+
+    '<span class="chip count">'+n+' of '+Q.length+' answered</span>';
+}
+
+function nodeCollapsed(q){
+  var a=S.ans[q.id];
+  var cls = a==='yes'?'fired' : a==='open'?'opn' : 'done';
+  var extra='';
+  if(a==='open'){
+    var o=S.opens[q.id]||{};
+    extra='<span class="owner">Open. Owner: '+esc(o.owner||q.own)+'. Due: '+esc(o.due||'not set')+'</span>';
+  } else if((S.ev[q.id]||'').trim()){
+    extra='<span class="owner" style="color:var(--slate)">Source: '+esc(S.ev[q.id])+'</span>';
+  }
+  return '<div class="node '+cls+'" id="n-'+q.id+'"><div class="row">'+
+    '<span class="g">'+q.id+'</span><span class="t">'+esc(q.short)+extra+'</span>'+
+    '<button class="ans" data-open="'+q.id+'" title="Revise this answer">'+a+'</button></div></div>';
+}
+function nodePending(q){
+  return '<div class="node pending" id="n-'+q.id+'"><div class="row">'+
+    '<span class="g">'+q.id+'</span><span class="t">'+esc(q.short)+'</span></div></div>';
+}
+function nodeHere(q){
+  var i=IDX[q.id], a=S.ans[q.id], o=S.opens[q.id]||{};
+  var box = a==='open'
+    ? '<div class="openbox"><p>This answer is not established. Name the owner and a date. The assessment is not signed until it resolves.</p>'+
+      '<div class="grid">'+
+      '<div class="fld"><label for="ow-'+q.id+'">Owner</label><input id="ow-'+q.id+'" data-ow="'+q.id+'" value="'+esc(o.owner||q.own)+'"></div>'+
+      '<div class="fld"><label for="du-'+q.id+'">Date</label><input id="du-'+q.id+'" data-du="'+q.id+'" value="'+esc(o.due||'')+'" placeholder="YYYY-MM-DD"></div>'+
+      '</div></div>'
+    : '';
+  var back = i>0 ? '<button class="lnk" data-open="'+Q[i-1].id+'">Back to '+Q[i-1].id+'</button>' : '';
+  var fwd  = a ? '<button class="lnk" data-next="1">Continue</button>' : '';
+  return '<div class="node here" id="n-'+q.id+'"><div class="row">'+
+    '<span class="g">'+esc(q.tag)+'</span>'+
+    '<span class="qt">'+esc(q.text)+'</span>'+
+    '<p class="why">'+esc(q.why)+'</p>'+
+    '<div class="derive">'+
+      '<div><span class="dk">Derive from</span>'+esc(q.doc)+'</div>'+
+      '<div><span class="dk">If unclear, ask</span>'+esc(q.own)+'</div>'+
+    '</div></div>'+
+    '<div class="fld" style="margin-top:11px"><label for="ev-'+q.id+'">Source relied on</label>'+
+      '<input id="ev-'+q.id+'" data-ev="'+q.id+'" value="'+esc(S.ev[q.id]||'')+'" '+
+      'placeholder="Name the document, revision, or record that established this answer"></div>'+
+    '<div class="branch">'+
+      '<button data-ans="yes" class="'+(a==='yes'?'cur':'')+'">Yes</button>'+
+      '<button data-ans="no" class="'+(a==='no'?'cur':'')+'">No</button>'+
+      '<button data-ans="open" class="opb '+(a==='open'?'cur':'')+'">Open, not established</button>'+
+    '</div>'+box+
+    '<div class="nav">'+back+fwd+'</div></div>';
+}
+
+function render(){
+  coerceDisp();
+  tally();
+  var h='',part='';
+  Q.forEach(function(q){
+    if(q.part!==part){ part=q.part;
+      h+='<div class="phead">'+PART[part].name+'</div><p class="pnote">'+PART[part].note+'</p>'; }
+    if(q.id===S.here) h+=nodeHere(q);
+    else if(S.ans[q.id]) h+=nodeCollapsed(q);
+    else h+=nodePending(q);
+  });
+  if(S.here===null) h+=resultHTML();
+  $('tree').innerHTML=h;
+  $('live').textContent = S.here ? ('Question '+S.here) : 'Assessment complete.';
+  if(S.scroll){
+    var el=S.here?$('n-'+S.here):document.querySelector('.leaf');
+    if(el&&el.scrollIntoView) el.scrollIntoView({block:'center',behavior:'smooth'});
+  }
+  actions();
+  S.scroll=false;
+}
+
+/* ---- audit scope, per Configuration Audit Process 5.2.1 ----
+   Designation says whether the CI is audited. Scope says which audit.
+   Part B forces both. Everything else is read from where the factors sit. */
+var FCA_DRV = {C1:'New or novel design rather than proven heritage',
+               C2:'Substantive design change since the last audit'};
+var PCA_DRV = {A2:'Acquirer formalizes the product baseline at PCA completion',
+               C3:'New or changed manufacturing source, process, facility, or tooling',
+               C4:'New or changed sub-tier supplier',
+               C5:'Escape, nonconformance, FOD, or subcontractor disclosure history',
+               C6:'Findings of work not per approved data, or of defective manufacturing data',
+               C7:'CSA reconciliation health anomalies',
+               C9:'Sub-supplier determined less than effective'};
+function yes(id){ return S.ans[id]==='yes'; }
+function drivers(map){ var o=[]; for(var k in map) if(yes(k)) o.push([k,map[k]]); return o; }
+
+function scope(){
+  var a=yesIn('a').length, b=yesIn('b').length;
+  var f=drivers(FCA_DRV), pc=drivers(PCA_DRV), r={fca:f, pca:pc, c8:yes('C8')};
+
+  if(b){ r.type='both'; r.locked=true;
+    r.why='Any Part B yes designates the CI for both audits. A hazard risk control is verified in the design by the FCA and confirmed in the article by the PCA. Both assurances are required, and neither substitutes for the other.';
+    return r; }
+
+  if(a){ r.locked=false;
+    var a1=yes('A1'), a2=yes('A2');
+    r.type = (a2&&!a1) ? 'pca' : '';
+    r.why = a1
+      ? 'Part A sets the scope. Designate for the audits the contract, SOW, or CMP names.'+
+        (a2?' A2 is also yes, so the scope is a PCA at minimum: successful PCA completion is the event that formalizes the product baseline, and no other event reaches it.':'')+
+        ' Contract scope is a minimum, not a ceiling'+
+        ((f.length||pc.length||r.c8)?': the risk factors below may expand it, and the expansion is recorded with its rationale.':'. No risk factor was triggered that would expand it.')
+      : 'A2 is yes. Successful PCA completion is the event that formalizes the product baseline, and no other event reaches it, so the scope is a PCA at minimum. Designation here is not a risk judgment. It follows from what the PCA does.'+
+        ((f.length||r.c8)?' Factors bearing on verification were also triggered, so assess whether an FCA belongs in the scope as well.':'');
+    return r; }
+
+  if(r.c8){ r.type='both'; r.locked=false;
+    r.why='C8 was answered yes. Where the CI has never been audited, neither question has been established for it and there is no evidence on which to narrow the scope, so designate both. Where the only C8 condition is an open delta or an unresolved action from a prior audit, the scope is a delta audit of that open scope, of the audit type that left it open.';
+    return r; }
+
+  if(f.length && pc.length){ r.type='both'; r.locked=false;
+    r.why='Factors sit on both questions. The design factors reopen verification and the production factors reopen the as-built comparison.'; return r; }
+
+  if(pc.length){ r.type='pca'; r.locked=false;
+    r.why='Every factor triggered bears on how the article is produced or recorded. Nothing reopens the question of whether the design meets its requirements. Valid as a PCA on its own only where the CI is already validated by a completed FCA, by an earlier increment, or by an Acquirer-accepted equivalent. Where it is not, designate both.';
+    return r; }
+
+  if(f.length){ r.type='fca'; r.locked=false;
+    r.why='Every factor triggered bears on whether the design meets its requirements. Nothing points at manufacture, sources, or records.'+
+      (yes('C2')?' Where the design change is embodied in the article or the code, add a PCA, because an embodied change also reopens the as-built comparison.':'');
+    return r; }
+
+  r.type=''; r.locked=false; r.why=''; return r;
+}
+function scopeLabel(t){ return t==='both'?'FCA and PCA' : t==='fca'?'FCA only' : t==='pca'?'PCA only' : 'Set by contract scope'; }
+
+function designating(k){ return k==='mandatory'||k==='safety'||k==='risk'; }
+function scopeHTML(k){
+  var sc=scope();
+  if(!sc.why||!designating(k)) return '';
+  var rows='';
+  sc.fca.forEach(function(d){ rows+='<tr><td class="k">'+d[0]+'</td><td>'+esc(d[1])+'</td><td class="o">Points to FCA</td></tr>'; });
+  sc.pca.forEach(function(d){ rows+='<tr><td class="k">'+d[0]+'</td><td>'+esc(d[1])+'</td><td class="o">Points to PCA</td></tr>'; });
+  if(sc.c8) rows+='<tr><td class="k">C8</td><td>Never audited, or a prior audit left an open delta</td><td class="o">Points to both, or to a delta audit</td></tr>';
+  yesIn('b').forEach(function(q){ rows+='<tr><td class="k">'+q.id+'</td><td>'+esc(q.short)+'</td><td class="o">Points to both</td></tr>'; });
+  return '<h3>Recommended scope: '+esc(scopeLabel(sc.type))+'</h3>'+
+    '<p style="margin:0 0 9px">'+esc(sc.why)+'</p>'+
+    (rows?'<table class="ref"><tbody>'+rows+'</tbody></table>':'');
+}
+
+/* ---- keep the disposition consistent with the answers ---- */
+function coerceDisp(){
+  var a=yesIn('a').length, b=yesIn('b').length, sc=scope();
+  if((a||b) && S.disp.des!=='yes') S.disp.des='yes';
+  if(sc.locked) S.disp.type='both';
+}
+
+function verdict(){
+  var a=yesIn('a'),b=yesIn('b'),c=yesIn('c'),op=openList();
+
+  if(op.length) return {
+    k:'open', cls:'on hold', lab:'Not complete \u00b7 '+op.length+' open', t:'Open answers remain',
+    d:'This assessment has '+op.length+' answer'+(op.length>1?'s':'')+' that have not been established from a source. An answer that has not been established is not a NO. Escalate each one to the function that owns the documentation. The assessment is not signed until every open answer resolves.',
+    opens:op, trig:[], next:[
+      'Escalate each open answer to the named owner',
+      'Record the source relied on once the answer is established',
+      'Do not sign the assessment while any answer is open'
+    ]};
+
+  if(a.length) return {
+    k:'mandatory', cls:'on', lab:'Designate \u00b7 '+(b.length?'Contract and safety':'Contract scope'), t:'Mandatory designation',
+    d:'Part A criteria are met. Designate this CI per the contract scope. '+
+      (b.length
+        ? 'A Part B safety criterion is also met, and that designates the CI for both an FCA and a PCA regardless of what the contract names. Contract scope is a minimum, not a ceiling, and the expansion is recorded with its rationale.'
+        : c.length
+        ? 'Risk factors were also triggered. Assess whether they expand the audit scope, for example a delta audit of open scope or an earlier increment. Contract designation sets a minimum on scope, not a ceiling.'
+        : 'No additional risk factors were triggered. The contractually defined audit scope applies.'),
+    trig:[['Part A, mandatory criteria met',a],['Part B, safety factors triggered',b],['Part C, risk factors triggered',c]],
+    next:[
+      'Record the assessment and the source relied on for every answer, and attach it to the Audit Designation Assessment Record',
+      'Mark the Disposition block per contract scope'+(b.length?'. A Part B yes designates both audits, so the scope cannot be less than both':(c.length?', and evaluate scope expansion against the triggered risk factors':'')),
+      'If the Acquirer will formalize the product baseline under A2, schedule the PCA as the formalizing event',
+      'Enter the CI in the audit plan and data package. Carry the nomenclature, the specification numbers, and the CI identifiers',
+      'Obtain CM and Systems Engineering signature',
+      'Re-run this checklist on any reassessment trigger and at each CM-plan revision'
+    ]};
+
+  if(b.length) return {
+    k:'safety', cls:'on', lab:'Designate \u00b7 Safety criticality', t:'Designate for both audits',
+    d:'One or more Part B safety-criticality criteria are met. The CI is designated for audit, for both an FCA and a PCA. There is no risk factor threshold to reach and no concurrence route by which that designation is set aside.',
+    d2:'Conducting the FCA and conducting the PCA are entries in the register of safety-mandatory CM requirements. A proposal not to conduct an audit this CI is designated for goes to the safety disposition gate: performed, replaced with an independently validated equivalent control, or formally risk-accepted at the authority matching the recorded severity. System Safety signs this assessment. System Safety does not concur in the omission.',
+    trig:[['Part B, safety factors triggered',b],['Part C, risk factors triggered',c]],
+    next:[
+      'Record the assessment and the source relied on for every answer, and attach it to the Audit Designation Assessment Record',
+      'Mark the Disposition block. The audit type is both, and it is set for you',
+      'If the audit is internally initiated, tailor the ceremony and not the substance. Perform the safety-mandatory reconciliation, the traceability matrix, and the as-built examination in full',
+      'Route any findings affecting hazard risk controls per the safety management system standard',
+      'Obtain CM and Systems Engineering signature',
+      'Re-run this checklist on any reassessment trigger and at each CM-plan revision'
+    ]};
+
+  if(c.length>=2) return {
+    k:'risk', cls:'on', lab:'Designate \u00b7 Risk based', t:'Designate for FCA or PCA',
+    d:'Two or more Part C risk factors are met, '+c.length+' of 9. Designate the CI for audit, or document the rationale for not designating and have CM and Systems Engineering sign it.',
+    trig:[['Part C, risk factors triggered',c]],
+    next:[
+      'Record the assessment and the source relied on for every answer, and attach it to the Audit Designation Assessment Record',
+      'Mark the Disposition block. Read the recommended scope above and select FCA, PCA, both, or a delta audit of open scope',
+      'If electing not to designate despite the triggered factors, document the rationale in the Disposition block and obtain CM and Systems Engineering signature',
+      'If the audit is internally initiated, tailor the ceremony and not the substance. Perform the safety-mandatory reconciliation, the traceability matrix, and the as-built examination in full',
+      'Re-run this checklist on any reassessment trigger and at each CM-plan revision'
+    ]};
+
+  if(c.length===1) return {
+    k:'below', cls:'on hold', lab:'Below threshold \u00b7 Record and monitor', t:'Designation not required',
+    d:'Only one Part C risk factor is met. That is below the two-factor designation threshold, and no Part A or Part B criteria were triggered. Designation is not required.',
+    d2:'Record the triggered factor and monitor it. That is the point of recording it. A second factor at any reassessment trigger then lands on a documented first factor rather than in an empty file.',
+    trig:[['Part C, risk factor triggered',c]],
+    next:[
+      'Record the assessment and the rationale on the checklist. This is required for every CI evaluated, designated or not',
+      'Mark the Disposition block: DO NOT DESIGNATE',
+      'Monitor the triggered factor. Re-run this checklist on any reassessment trigger',
+      'Obtain CM and Systems Engineering signature'
+    ]};
+
+  return {
+    k:'none', cls:'', lab:'Do not designate', t:'No audit designation',
+    d:'No Part A, Part B, or Part C criteria are met. The CI is not designated for FCA or PCA at this time. Record the assessment anyway. The process requires a documented rationale for every CI evaluated, designated or not.',
+    d2:'A CI not designated for audit is not an unverified CI. It retains its baselines, its change control, its status accounting, and its coverage by the as-designed to as-built reconciliation performed at scale. The audit is a periodic check on that machinery rather than a substitute for it.',
+    trig:[],
+    next:[
+      'Record the assessment and the rationale on the checklist and attach it to the Audit Designation Assessment Record',
+      'Mark the Disposition block: DO NOT DESIGNATE',
+      'Re-run this checklist on any reassessment trigger: a design, process, facility, tooling, or supplier change, a quality escape or safety event, a CSA anomaly, or a hazard log revision adding a risk control to the CI',
+      'Obtain CM and Systems Engineering signature'
+    ]};
+}
+
+function trigTable(label,list){
+  if(!list.length) return '';
+  var rows='';
+  list.forEach(function(q){ rows+='<tr><td class="k">'+q.id+'</td><td>'+esc(q.short)+'</td><td class="o">'+esc(q.doc)+'</td></tr>'; });
+  return '<h3>'+label+'</h3><table class="ref"><tbody>'+rows+'</tbody></table>';
+}
+function openTable(list){
+  var rows='', od=overdue();
+  list.forEach(function(q){
+    var o=S.opens[q.id]||{};
+    var late=od.indexOf(q)>=0;
+    rows+='<tr><td class="k">'+q.id+'</td><td>'+esc(q.short)+'</td><td class="o">'+esc(o.owner||q.own)+
+      '. Due '+esc(o.due||'not set')+(late?' <b style="color:var(--alert)">overdue</b>':'')+'</td></tr>';
+  });
+  return '<h3>Open answers, escalate each one</h3><table class="ref"><tbody>'+rows+'</tbody></table>';
+}
+function lastAnswered(){for(var i=Q.length-1;i>=0;i--) if(S.ans[Q[i].id]) return Q[i].id; return null;}
+var BUILD='2026-09-14';
+function complete(){ return !firstUnanswered() && !openList().length; }
+function resumePoint(){ var op=openList(); return op.length?op[0].id:firstUnanswered(); }
+function overdue(){
+  var t=today();
+  return openList().filter(function(q){ var d=(S.opens[q.id]||{}).due; return d && /^\d{4}-\d{2}-\d{2}$/.test(d) && d<t; });
+}
+
+function resultHTML(){
+  var v=verdict(), bY=yesIn('b');
+  var body='';
+  if(v.k==='open') body+=openTable(v.opens);
+  (v.trig||[]).forEach(function(t){ body+=trigTable(t[0],t[1]); });
+  var steps=''; v.next.forEach(function(s){ steps+='<li>'+esc(s)+'</li>'; });
+  var sfty = (bY.length && v.k!=='open')
+    ? '<div class="warn sfty"><b>System Safety signature required.</b> '+bY.length+' safety question'+(bY.length>1?'s were':' was')+' answered yes. System Safety signs this assessment. The designation itself is not open to concurrence: a Part B yes designates the CI for both audits, and a proposal not to conduct one of them goes to the safety disposition gate.</div>'
+    : '';
+  var last=lastAnswered();
+  return '<div class="leaf '+v.cls+'"><div class="box">'+
+    '<div class="lab">'+esc(v.lab)+'</div>'+
+    '<h2>'+esc(v.t)+'</h2>'+
+    '<p>'+esc(v.d)+'</p>'+
+    (v.d2?'<p>'+esc(v.d2)+'</p>':'')+
+    sfty+body+scopeHTML(v.k)+
+    '<h3>Recommended next steps</h3><ul>'+steps+'</ul>'+
+    (v.k==='open' ? '' : dispHTML(v))+
+    (last?'<div class="nav"><button class="lnk" data-open="'+last+'">Revise '+last+'</button></div>':'')+
+    '</div></div>';
+}
+
+
+/* ---- Disposition block, per Appendix C ---- */
+function dispSet(k,val){
+  if(k==='rat'){ S.disp.rat=val; S.disp.ratAuto=false; S.disp.ratSig=sig(); actions(); return; }
+  S.disp[k]=val;
+  if(k==='des'||k==='type'||k==='delta'||k==='internal'){ render(); } else { actions(); }
+}
+function ck(k,val,label,type,off){
+  var d=S.disp, on = type==='chk' ? !!d[k] : d[k]===val;
+  return '<label class="ck"'+(off?' style="opacity:.45;cursor:not-allowed"':'')+'>'+
+    '<input type="'+(type==='chk'?'checkbox':'radio')+'"'+
+    (type==='chk'?'':' name="d-'+k+'"')+' data-d="'+k+'"'+(type==='chk'?'':' value="'+val+'"')+
+    (on?' checked':'')+(off?' disabled':'')+'>'+label+'</label>';
+}
+function dispHTML(v){
+  var d=S.disp, bY=yesIn('b').length, aY=yesIn('a').length, sc=scope();
+  if(d.ratAuto){ d.rat=suggestRat(v); d.ratSig=sig(); }
+  var lockDes = !!(aY||bY), lockType = !!sc.locked;
+  var lockNote = bY
+    ? '<div class="warn sfty"><b>This disposition is set by the answers.</b> A Part B safety criterion was answered yes, so the CI is designated for both audits. DO NOT DESIGNATE is not available here and neither is a narrower scope. A proposal not to conduct one of these audits is dispositioned through the safety disposition gate, outside this assessment. Revise the Part B answer if it was recorded in error.</div>'
+    : aY
+    ? '<div class="warn"><b>Designation is mandatory here.</b> A Part A criterion was answered yes, so the contract, SOW, or CMP requires the audit. DO NOT DESIGNATE is not available. Revise the Part A answer if it was recorded in error.</div>'
+    : '';
+  var stale = (!d.ratAuto && d.ratSig && d.ratSig!==sig())
+    ? '<div class="warn"><b>The rationale is stale.</b> The answers have changed since this rationale was written by hand. Update it, or <button type="button" class="lnk" data-regen="1">regenerate it</button> from the current answers.</div>' : '';
+  var sub = d.des==='yes'
+    ? '<div class="sub">'+
+        '<div class="lab" style="margin:8px 0 4px">Audit type'+(sc.type?' \u00b7 recommended: '+esc(scopeLabel(sc.type)):'')+'</div>'+
+        '<div class="opts">'+ck('type','fca','FCA','r',lockType)+ck('type','pca','PCA','r',lockType)+ck('type','both','Both','r',lockType)+'</div>'+
+        (sc.type==='pca'&&!lockType?'<p class="small" style="margin:0 0 8px">A PCA on its own is valid only where the CI is already validated by a completed FCA. Where it is not, select Both.</p>':'')+
+        '<div class="opts">'+ck('delta',null,'Delta audit of open scope','chk')+
+          ck('internal',null,'Internally initiated. Internal co-chair and certification','chk')+'</div>'+
+        (d.internal?'<p class="small" style="margin:0 0 8px">Ceremony only. The safety-mandatory reconciliation, the traceability matrix, and the as-built examination are performed in full.</p>':'')+
+      '</div>' : '';
+  return '<div class="disp">'+
+    '<div class="lab">Disposition</div>'+
+    '<div class="opts">'+ck('des','yes','DESIGNATE','r')+ck('des','no','DO NOT DESIGNATE','r',lockDes)+'</div>'+
+    lockNote+
+    sub+
+    '<div class="fld" style="margin-top:10px"><label for="d-rat">Rationale</label>'+
+      '<textarea id="d-rat" data-d="rat" rows="4">'+esc(d.rat)+'</textarea></div>'+
+    stale+
+    '<div class="lab" style="margin:14px 0 4px">CM determination</div>'+
+    '<div class="sigs">'+
+      '<div class="fld"><label for="d-cm">CM</label><input id="d-cm" data-d="cm" value="'+esc(d.cm)+'"></div>'+
+      '<div class="fld"><label for="d-cmd">Date</label><input id="d-cmd" data-d="cmd" value="'+esc(d.cmd)+'"></div>'+
+    '</div>'+
+    '<p class="small" style="margin:9px 0 0">The downloaded record carries signature blocks for Systems Engineering and for System Safety. Those functions sign the record itself. '+
+      (bY?'<b>System Safety must sign this one.</b> '+bY+' safety question'+(bY>1?'s were':' was')+' answered yes.':'System Safety signs only where a safety question is answered yes.')+
+      ' A concurrence signature confirms that the technical basis is sound. It does not make the determination. The determination is CM\u2019s.</p>'+
+    '</div>';
+}
+function sig(){
+  return Q.map(function(q){return (S.ans[q.id]||'')+'~'+(S.ev[q.id]||'');}).join('|');
+}
+function per(t){ t=String(t||'').trim(); return /[.!?]$/.test(t)?t:t+'.'; }
+function evOf(q){ var e=(S.ev[q.id]||'').trim(); return e?' Source: '+per(e):''; }
+function suggestRat(v){
+  var L=[], a=yesIn('a'), b=yesIn('b'), c=yesIn('c');
+  if(v.k==='mandatory'){ L.push('Designated. Part A applies.');
+    a.forEach(function(q){L.push('Meets '+q.id+': '+per(q.short)+evOf(q));});
+    if(b.length) L.push('A Part B safety criterion also applies, which designates both an FCA and a PCA regardless of contract scope.');
+    else if(c.length) L.push('Risk factors were also triggered. Assess scope expansion.');
+  } else if(v.k==='safety'){ L.push('Designated for both an FCA and a PCA. Part B applies. A safety criticality criterion designates the CI for audit; the designation is not subject to concurrence.');
+  } else if(v.k==='risk'){ L.push('Designated. '+c.length+' Part C risk factors apply, and two or more designate the CI.');
+  } else if(v.k==='below'){ L.push('Not designated. One Part C risk factor applies, which is below the two-factor threshold. The factor is recorded and monitored.');
+  } else { L.push('Not designated. No Part A, Part B, or Part C criterion applies.'); }
+  b.forEach(function(q){L.push('Meets '+q.id+': '+per(q.short)+evOf(q));});
+  c.forEach(function(q){L.push('Meets '+q.id+': '+per(q.short)+evOf(q));});
+  var sc=scope();
+  if(sc.why && designating(v.k)) L.push('Scope: '+scopeLabel(sc.type)+'. '+sc.why);
+  return L.join('\n');
+}
+
+/* ---- validation and the persistent action row ---- */
+function meta(){return {ci:$('f-ci').value,id:$('f-id').value,prog:$('f-prog').value,who:$('f-assessor').value};}
+function blocker(){
+  if(!meta().ci.trim()) return 'Name the CI first.';
+  if(!complete()) return answeredCount()?'':'Answer at least one question first.';
+  if(!S.disp.des) return 'Mark the Disposition block.';
+  if(S.disp.des==='no' && yesIn('b').length) return 'A Part B safety criterion is yes. The CI is designated for both audits and cannot be dispositioned otherwise here.';
+  if(S.disp.des==='no' && yesIn('a').length) return 'A Part A criterion is yes. Designation is mandatory and cannot be dispositioned otherwise here.';
+  if(S.disp.des==='yes' && !S.disp.type) return 'Select the audit type: FCA, PCA, or both.';
+  if(S.disp.des==='yes' && yesIn('b').length && S.disp.type!=='both') return 'A Part B safety criterion is yes. The audit type is both.';
+  if(!String(S.disp.rat||'').trim()) return 'Write the rationale.';
+  return '';
+}
+function status(){
+  if(complete()) return '';
+  var o=openList().length, u=Q.length-answeredCount(), od=overdue().length, p=[];
+  if(u) p.push(u+' unanswered');
+  if(o) p.push(o+' open');
+  if(od) p.push(od+' overdue');
+  return p.length? p.join(', ')+'. The interim record is not a disposition.' : '';
+}
+function actions(){
+  var b=blocker(), fin=complete();
+  $('acts').innerHTML =
+    '<button class="btn pri" id="dl"'+(b?' disabled':'')+'>'+
+      (fin?'Download the assessment as Word':'Download the interim record')+'</button>'+
+    '<button class="btn" id="copy">Copy</button>'+
+    '<button class="btn" id="save">Save assessment</button>'+
+    '<button class="btn" id="load">Open saved assessment</button>'+
+    '<button class="btn gh" id="reset">Clear</button>'+
+    '<span id="msg">'+esc(b||status())+'</span>';
+}
+
+/* ---- offline .docx writer: a docx is a ZIP of XML parts, stored uncompressed ---- */
+var CRC=(function(){var t=new Uint32Array(256),c,n,k;for(n=0;n<256;n++){c=n;for(k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);t[n]=c>>>0;}return t;})();
+function crc32(b){var c=0xFFFFFFFF;for(var i=0;i<b.length;i++)c=CRC[(c^b[i])&0xFF]^(c>>>8);return (c^0xFFFFFFFF)>>>0;}
+function utf8(s){return new TextEncoder().encode(s);}
+function makeZip(files){
+  var parts=[],cen=[],off=0;
+  function u16(v){return [v&255,(v>>8)&255];} function u32(v){return [v&255,(v>>8)&255,(v>>16)&255,(v>>>24)&255];}
+  files.forEach(function(f){
+    var nm=utf8(f.name),dt=utf8(f.data),c=crc32(dt);
+    var lo=[].concat(u32(0x04034b50),u16(20),u16(0x0800),u16(0),u16(0),u16(0),u32(c),u32(dt.length),u32(dt.length),u16(nm.length),u16(0));
+    parts.push(new Uint8Array(lo),nm,dt);
+    var ce=[].concat(u32(0x02014b50),u16(20),u16(20),u16(0x0800),u16(0),u16(0),u16(0),u32(c),u32(dt.length),u32(dt.length),u16(nm.length),u16(0),u16(0),u16(0),u16(0),u32(0),u32(off));
+    ce.name=nm; cen.push(ce); off+=lo.length+nm.length+dt.length;
+  });
+  var cd=[],cl=0; cen.forEach(function(c){cd.push(new Uint8Array(c),c.name);cl+=c.length+c.name.length;});
+  var end=new Uint8Array([].concat(u32(0x06054b50),u16(0),u16(0),u16(files.length),u16(files.length),u32(cl),u32(off),u16(0)));
+  var all=parts.concat(cd,[end]),tot=all.reduce(function(n,a){return n+a.length;},0),out=new Uint8Array(tot),p=0;
+  all.forEach(function(a){out.set(a,p);p+=a.length;});
+  return out;
+}
+function xq(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,'');}
+function rt(s){return String(s==null?'':s).split(/\r?\n/).map(function(l,i){return (i?'<w:br/>':'')+'<w:t xml:space="preserve">'+xq(l)+'</w:t>';}).join('');}
+function P(t,o){o=o||{};return '<w:p><w:pPr>'+(o.after!==undefined?'<w:spacing w:after="'+o.after+'"/>':'')+(o.keep?'<w:keepNext/>':'')+'</w:pPr><w:r><w:rPr>'+(o.b?'<w:b/>':'')+(o.i?'<w:i/>':'')+(o.sz?'<w:sz w:val="'+o.sz+'"/><w:szCs w:val="'+o.sz+'"/>':'')+(o.color?'<w:color w:val="'+o.color+'"/>':'')+'</w:rPr>'+rt(t)+'</w:r></w:p>';}
+function TC(x,w,o){o=o||{};return '<w:tc><w:tcPr><w:tcW w:w="'+w+'" w:type="dxa"/>'+(o.shade?'<w:shd w:val="clear" w:fill="'+o.shade+'"/>':'')+'<w:vAlign w:val="center"/></w:tcPr>'+x+'</w:tc>';}
+function TB(rows,w){
+  var b=['top','left','bottom','right','insideH','insideV'].map(function(s){return '<w:'+s+' w:val="single" w:sz="4" w:space="0" w:color="D6DCDF"/>';}).join('');
+  var grid='<w:tblGrid>'+w.map(function(n){return '<w:gridCol w:w="'+n+'"/>';}).join('')+'</w:tblGrid>';
+  return '<w:tbl><w:tblPr><w:tblW w:w="9360" w:type="dxa"/><w:tblBorders>'+b+'</w:tblBorders><w:tblCellMar><w:top w:w="60" w:type="dxa"/><w:left w:w="90" w:type="dxa"/><w:bottom w:w="60" w:type="dxa"/><w:right w:w="90" w:type="dxa"/></w:tblCellMar></w:tblPr>'+grid+
+    rows.map(function(r){return '<w:tr>'+r.map(function(c,i){return TC(c.xml,w[i],c);}).join('')+'</w:tr>';}).join('')+'</w:tbl>';
+}
+function MK(on){return P(on?'X':'',{b:true});}
+function packDocx(body,title,author){
+  var doc='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'+body+'<w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1080" w:right="1080" w:bottom="1080" w:left="1080" w:header="720" w:footer="720" w:gutter="0"/></w:sectPr></w:body></w:document>';
+  return makeZip([
+   {name:'[Content_Types].xml',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/></Types>'},
+   {name:'_rels/.rels',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/></Relationships>'},
+   {name:'docProps/core.xml',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>'+xq(title)+'</dc:title><dc:creator>'+xq(author)+'</dc:creator></cp:coreProperties>'},
+   {name:'word/_rels/document.xml.rels',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>'},
+   {name:'word/styles.xml',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:sz w:val="20"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="80" w:line="240" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style></w:styles>'},
+   {name:'word/document.xml',data:doc}
+  ]);
+}
+function dlBytes(bytes,name,mime){
+  var u=URL.createObjectURL(new Blob([bytes],{type:mime||'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}));
+  var a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(function(){URL.revokeObjectURL(u);},4000);
+}
+function partRows(part,title){
+  var rows=[[{xml:P('Ref',{b:true,sz:17}),shade:'EDF0F1'},{xml:P('Question',{b:true,sz:17}),shade:'EDF0F1'},
+    {xml:P('Yes',{b:true,sz:17}),shade:'EDF0F1'},{xml:P('No',{b:true,sz:17}),shade:'EDF0F1'},
+    {xml:P('Open',{b:true,sz:17}),shade:'EDF0F1'},{xml:P('Source relied on',{b:true,sz:17}),shade:'EDF0F1'}]];
+  Q.filter(function(q){return q.part===part;}).forEach(function(q){
+    var a=S.ans[q.id], src=(S.ev[q.id]||'').trim(), o=S.opens[q.id]||{}, cell='';
+    if(src) cell+=P(src,{sz:17});
+    if(a==='open') cell+=P('Open. Owner: '+(o.owner||q.own)+'. Due: '+(o.due||'not set'),{sz:16,color:'9A6508'});
+    if(!cell) cell=P('Derive from: '+q.doc,{sz:16,color:'8998A2',i:true});
+    rows.push([{xml:P(q.id,{b:true,sz:18})},{xml:P(q.text,{sz:18})},
+      {xml:MK(a==='yes')},{xml:MK(a==='no')},{xml:MK(a==='open')},{xml:cell}]);
+  });
+  return P(title,{b:true,sz:24,keep:true})+TB(rows,[520,3560,560,560,620,3540])+P('',{after:160});
+}
+function docBody(interim){
+  var m=meta(), v=verdict(), d=S.disp, bY=yesIn('b'), b=[];
+  b.push(P('FCA/PCA CI Selection Checklist',{b:true,sz:32,after:40}));
+  if(interim){
+    b.push(P('INTERIM ASSESSMENT. NOT A DISPOSITION.',{b:true,sz:22,color:'8E2F2F',after:40}));
+    b.push(P('This is a working record of an assessment in progress. It carries no disposition and no signatures. Do not file it as the Audit Designation Assessment Record.',{sz:17,color:'8E2F2F',after:160}));
+  } else {
+    b.push(P('Audit designation assessment. Complete one checklist per CI.',{sz:18,color:'5C6D78',after:160}));
+  }
+  b.push(TB([
+    [{xml:P('CI',{b:true,sz:18}),shade:'F4F6F7'},{xml:P(m.ci,{sz:20})},
+     {xml:P('CI identifier',{b:true,sz:18}),shade:'F4F6F7'},{xml:P(m.id,{sz:20})}],
+    [{xml:P('Program',{b:true,sz:18}),shade:'F4F6F7'},{xml:P(m.prog,{sz:20})},
+     {xml:P('Assessor and date',{b:true,sz:18}),shade:'F4F6F7'},{xml:P(m.who,{sz:20})}]
+  ],[1700,3000,1700,2960]));
+  b.push(P('',{after:160}));
+  b.push(P('CM answers every question. CM derives each answer from the documentation set named for it, and records the source relied on. An answer that has not been established from its source is not a NO.',{sz:17,color:'5C6D78',after:160}));
+  if(interim){
+    var op=openList(), od=overdue(), un=Q.filter(function(q){return !S.ans[q.id];});
+    if(op.length){
+      b.push(P('Open answers. Escalate each one.',{b:true,sz:24,keep:true}));
+      b.push(TB([[{xml:P('Ref',{b:true,sz:17}),shade:'EDF0F1'},{xml:P('Question',{b:true,sz:17}),shade:'EDF0F1'},
+                  {xml:P('Documentation it turns on',{b:true,sz:17}),shade:'EDF0F1'},
+                  {xml:P('Owner',{b:true,sz:17}),shade:'EDF0F1'},{xml:P('Due',{b:true,sz:17}),shade:'EDF0F1'}]].concat(
+        op.map(function(q){ var o=S.opens[q.id]||{}, late=od.indexOf(q)>=0;
+          return [{xml:P(q.id,{b:true,sz:18})},{xml:P(q.text,{sz:17})},{xml:P(q.doc,{sz:16})},
+                  {xml:P(o.owner||q.own,{sz:17})},
+                  {xml:P((o.due||'not set')+(late?' (overdue)':''),{sz:17,color:late?'8E2F2F':null,b:late})}];
+        })),[520,3100,2700,1700,1340]));
+      b.push(P('',{after:160}));
+    }
+    if(un.length){
+      b.push(P('Not yet answered',{b:true,sz:24,keep:true}));
+      b.push(P(un.map(function(q){return q.id;}).join(', '),{sz:18,after:160}));
+    }
+  }
+  b.push(partRows('a','Part A. Mandatory designation'));
+  b.push(partRows('b','Part B. Safety criticality'));
+  b.push(partRows('c','Part C. Risk factors'));
+  b.push(P('Part D. Reassessment triggers',{b:true,sz:24,keep:true}));
+  b.push(P('Re-run this checklist for the CI upon any of the following. A substantive design, process, facility, tooling, or supplier change, which is a safety management system management-of-change trigger. A new quality escape or safety event traceable to the CI. A CSA reconciliation anomaly. A hazard log revision adding a risk control to the CI. A CM-plan revision. A sub-supplier effectiveness determination of less than effective for a supplier building the CI.',{sz:18,after:160}));
+  if(interim){
+    b.push(P('No disposition is recorded. The assessment is not complete and is not signed.',{b:true,sz:18,color:'8E2F2F',after:120}));
+    b.push(P('Reopen the saved assessment file to continue. Attach the completed checklist to the Audit Designation Assessment Record once every answer is established.',{sz:16,color:'8998A2'}));
+    return b.join('');
+  }
+  b.push(P('Tool result: '+v.t,{b:true,sz:20,after:120}));
+  var sc=scope();
+  if(sc.why && designating(v.k)){
+    b.push(P('Audit scope basis',{b:true,sz:24,keep:true}));
+    b.push(P('Recommended scope: '+scopeLabel(sc.type)+'. '+sc.why,{sz:18,after:120}));
+  }
+  b.push(P('Disposition',{b:true,sz:24,keep:true}));
+  b.push(TB([[
+    {xml:P('DESIGNATE',{b:true,sz:18}),shade:'F4F6F7'},{xml:MK(d.des==='yes')},
+    {xml:P('DO NOT DESIGNATE',{b:true,sz:18}),shade:'F4F6F7'},{xml:MK(d.des==='no')}
+  ]],[2200,600,2400,600]));
+  b.push(TB([[
+    {xml:P('FCA',{b:true,sz:18}),shade:'F4F6F7'},{xml:MK(d.des==='yes'&&d.type==='fca')},
+    {xml:P('PCA',{b:true,sz:18}),shade:'F4F6F7'},{xml:MK(d.des==='yes'&&d.type==='pca')},
+    {xml:P('Both',{b:true,sz:18}),shade:'F4F6F7'},{xml:MK(d.des==='yes'&&d.type==='both')},
+    {xml:P('Delta audit of open scope',{b:true,sz:18}),shade:'F4F6F7'},{xml:MK(d.des==='yes'&&d.delta)}
+  ]],[700,500,700,500,700,500,2800,500]));
+  b.push(P('',{after:80}));
+  b.push(TB([[
+    {xml:P('Internally initiated. Internal co-chair and certification',{b:true,sz:18}),shade:'F4F6F7'},{xml:MK(d.internal)}
+  ]],[5000,600]));
+  if(d.internal) b.push(P('Ceremony only. The safety-mandatory reconciliation, the traceability matrix, and the as-built examination are performed in full.',{sz:16,color:'5C6D78'}));
+  b.push(P('',{after:120}));
+  b.push(P('Rationale',{b:true,sz:20}));
+  b.push(TB([[{xml:P(d.rat,{sz:20})}]],[9360]));
+  b.push(P('',{after:160}));
+  if(bY.length) b.push(P('A safety question was answered yes. The CI is designated for both an FCA and a PCA, and that designation is not subject to concurrence. System Safety signs this assessment. A proposal not to conduct an audit the CI is designated for is dispositioned through the safety disposition gate.',{sz:18,color:'8E2F2F',after:160}));
+  b.push(P('Signatures',{b:true,sz:24,keep:true}));
+  b.push(P('A concurrence signature confirms that the technical basis is sound. It does not make the determination. The determination is CM\u2019s.',{sz:16,color:'5C6D78',after:120}));
+  b.push(TB([
+    [{xml:P('CM',{b:true,sz:18}),shade:'F4F6F7'},{xml:P(d.cm,{sz:20})},{xml:P('Date',{b:true,sz:18}),shade:'F4F6F7'},{xml:P(d.cmd,{sz:20})}],
+    [{xml:P('Systems Engineering',{b:true,sz:18}),shade:'F4F6F7'},{xml:P('',{sz:20})},{xml:P('Date',{b:true,sz:18}),shade:'F4F6F7'},{xml:P('',{sz:20})}],
+    [{xml:P('System Safety',{b:true,sz:18})+P(bY.length?'Required. A safety question was answered yes. Signature confirms the technical basis, not the designation.':'Required if any safety criticality criterion is yes.',{sz:15,color:bY.length?'8E2F2F':'5C6D78'}),shade:'F4F6F7'},{xml:P('',{sz:20})},{xml:P('Date',{b:true,sz:18}),shade:'F4F6F7'},{xml:P('',{sz:20})}]
+  ],[2600,3360,900,2500]));
+  b.push(P('',{after:120}));
+  b.push(P('Attach this completed checklist to the Audit Designation Assessment Record. Retained for the program life, for every CI evaluated, designated for audit or not.',{sz:15,color:'8998A2'}));
+  return b.join('');
+}
+function textOut(){
+  var m=meta(), v=verdict(), d=S.disp, L=[], interim=!complete();
+  L.push('FCA/PCA CI SELECTION CHECKLIST',
+    interim?'INTERIM ASSESSMENT. NOT A DISPOSITION.':'','',
+    'CI: '+m.ci,'CI identifier: '+m.id,'Program: '+m.prog,'Assessor and date: '+m.who,'');
+  ['a','b','c'].forEach(function(pt){
+    L.push(PART[pt].name.replace(/\u00b7/g,'.'));
+    Q.filter(function(q){return q.part===pt;}).forEach(function(q){
+      var o=S.opens[q.id]||{};
+      L.push('  ('+q.id+') '+q.text+'  ['+String(S.ans[q.id]||'-').toUpperCase()+']');
+      if((S.ev[q.id]||'').trim()) L.push('      Source relied on: '+S.ev[q.id]);
+      else L.push('      Derive from: '+q.doc);
+      if(S.ans[q.id]==='open') L.push('      OPEN. Owner: '+(o.owner||q.own)+'. Due: '+(o.due||'not set'));
+    });
+    L.push('');
+  });
+  if(interim){
+    var op=openList();
+    if(op.length){
+      L.push('OPEN ANSWERS. ESCALATE EACH ONE.');
+      op.forEach(function(q){ var o=S.opens[q.id]||{};
+        L.push('  ('+q.id+') '+q.short,'      Turns on: '+q.doc,
+               '      Owner: '+(o.owner||q.own)+'. Due: '+(o.due||'not set')+(overdue().indexOf(q)>=0?' (OVERDUE)':''));
+      });
+      L.push('');
+    }
+    var un=Q.filter(function(q){return !S.ans[q.id];});
+    if(un.length) L.push('Not yet answered: '+un.map(function(q){return q.id;}).join(', '),'');
+    L.push('No disposition is recorded. The assessment is not complete and is not signed.');
+    return L.join('\n');
+  }
+  var sc=scope();
+  L.push('Tool result: '+v.t,'');
+  if(sc.why && designating(v.k)) L.push('Audit scope basis: '+scopeLabel(sc.type)+'. '+sc.why,'');
+  L.push('Disposition: '+(d.des==='yes'?'DESIGNATE':d.des==='no'?'DO NOT DESIGNATE':'not marked'));
+  if(d.des==='yes') L.push('  Audit type: '+(d.type?d.type.toUpperCase():'not selected')+
+    (d.delta?'; delta audit of open scope':'')+(d.internal?'; internally initiated, internal co-chair and certification':''));
+  L.push('','Rationale:',d.rat,'',
+    'Signatures',
+    '  CM: '+(d.cm||'________')+'   Date: '+(d.cmd||'________'),
+    '  Systems Engineering: ________   Date: ________',
+    '  System Safety'+(yesIn('b').length?' (required, a safety question was answered yes; signature confirms the technical basis, not the designation)':' (required if any safety criterion is yes)')+': ________   Date: ________',
+    '','Attach to the Audit Designation Assessment Record. Retained for the program life.');
+  return L.join('\n');
+}
+function doSave(){
+  var m=meta();
+  var blob={ tool:'fca-pca-ci-selection', rev:'D', build:BUILD, saved:today(),
+             ci:m.ci, ciId:m.id, program:m.prog, assessor:m.who,
+             answers:S.ans, opens:S.opens, evidence:S.ev, disposition:S.disp };
+  var o=openList().length;
+  dlBytes(utf8(JSON.stringify(blob,null,1)),
+    'FCA-PCA-CI-Selection_'+slug(m.ci||'draft')+'_'+today()+(o?'_'+o+'-OPEN':'')+'.json',
+    'application/json');
+  $('msg').textContent='Assessment saved. Reopen it with Open saved assessment.';
+}
+function doLoad(ev){
+  var f=ev.target.files&&ev.target.files[0]; if(!f){ return; }
+  var r=new FileReader();
+  r.onload=function(){
+    try{
+      var o=JSON.parse(r.result);
+      if(o.tool!=='fca-pca-ci-selection') throw new Error('not an FCA/PCA CI selection file');
+      var ans={},opens={},evs={};
+      Q.forEach(function(q){
+        var a=o.answers&&o.answers[q.id];
+        if(a==='yes'||a==='no'||a==='open') ans[q.id]=a;
+        var e=o.evidence&&o.evidence[q.id];
+        if(typeof e==='string') evs[q.id]=e;
+        var op=o.opens&&o.opens[q.id];
+        if(op&&typeof op==='object') opens[q.id]={owner:String(op.owner||q.own),due:String(op.due||'')};
+      });
+      var d=o.disposition||{};
+      S.ans=ans; S.opens=opens; S.ev=evs;
+      S.disp={ des:(d.des==='yes'||d.des==='no')?d.des:'',
+               type:['fca','pca','both'].indexOf(d.type)>=0?d.type:'',
+               delta:!!d.delta, internal:!!d.internal,
+               rat:typeof d.rat==='string'?d.rat:'', ratAuto:d.ratAuto!==false,
+               ratSig:typeof d.ratSig==='string'?d.ratSig:'',
+               cm:typeof d.cm==='string'?d.cm:'', cmd:typeof d.cmd==='string'?d.cmd:'' };
+      $('f-ci').value=typeof o.ci==='string'?o.ci:'';
+      $('f-id').value=typeof o.ciId==='string'?o.ciId:'';
+      $('f-prog').value=typeof o.program==='string'?o.program:'';
+      $('f-assessor').value=typeof o.assessor==='string'?o.assessor:'';
+      S.here=resumePoint(); S.scroll=true; render();
+      var od=overdue(), parts=['Assessment loaded'];
+      if(o.saved) parts.push('Saved '+o.saved);
+      if(o.rev&&o.rev!=='D') parts.push('written by rev '+o.rev+' of this tool. Rev D makes a Part B yes an absolute designation for both audits. Check the answers and the disposition');
+      if(od.length) parts.push(od.length+' open answer'+(od.length>1?'s are':' is')+' past due: '+
+        od.map(function(q){return q.id;}).join(', '));
+      $('msg').textContent=parts.join('. ')+'.';
+    }catch(e){ $('msg').textContent='Could not read that file: '+e.message; }
+  };
+  r.readAsText(f);
+  ev.target.value='';
+}
+function slug(s){return String(s||'CI').replace(/[^A-Za-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,50);}
+function today(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+
+document.addEventListener('click',function(e){
+  var t=e.target.closest?e.target.closest('button'):null;
+  if(!t) return;
+  if(t.dataset.ans){
+    var id=S.here;
+    S.ans[id]=t.dataset.ans;
+    if(t.dataset.ans==='open'){
+      if(!S.opens[id]) S.opens[id]={owner:Q[IDX[id]].own,due:''};
+      S.scroll=false; render(); return;           // stay put so the owner can be named
+    }
+    delete S.opens[id];
+    S.here=firstUnanswered(); S.scroll=true; render(); return;
+  }
+  if(t.dataset.next){ S.here=firstUnanswered(); S.scroll=true; render(); return; }
+  if(t.dataset.open){ S.here=t.dataset.open; S.scroll=true; render(); return; }
+  if(t.dataset.regen){ S.disp.ratAuto=true; render(); return; }
+  if(t.id==='dl'){ doDownload(); return; }
+  if(t.id==='copy'){ doCopy(t); return; }
+  if(t.id==='save'){ doSave(); return; }
+  if(t.id==='load'){ $('file').click(); return; }
+  if(t.id==='reset'){
+    if(!confirm('Clear the assessment?')) return;
+    S={ans:{},opens:{},ev:{},here:Q[0].id,scroll:true,
+       disp:{des:'',type:'',delta:false,internal:false,rat:'',ratAuto:true,ratSig:'',cm:'',cmd:''}};
+    ['f-ci','f-id','f-prog','f-assessor'].forEach(function(i){ if($(i)) $(i).value=''; });
+    render(); return;
+  }
+});
+function doDownload(){
+  var b=blocker();
+  if(b){ $('msg').textContent=b; return; }
+  var m=meta(), interim=!complete();
+  try{
+    var bytes=packDocx(docBody(interim),
+      (interim?'INTERIM. ':'')+'FCA/PCA CI Selection Checklist: '+m.ci, m.who);
+    dlBytes(bytes,'FCA-PCA-CI-Selection_'+slug(m.ci)+'_'+today()+(interim?'_INTERIM':'')+'.docx');
+    $('msg').textContent=interim
+      ? 'Interim record downloaded. It carries no disposition. Save the assessment too, so you can finish it.'
+      : 'Downloaded.';
+  }catch(e){ $('msg').textContent='Build failed: '+e.message; }
+}
+function doCopy(btn){
+  var t=textOut();
+  function ok(){ btn.textContent='Copied'; setTimeout(function(){btn.textContent='Copy';},2000); }
+  function fb(){ var ta=document.createElement('textarea'); ta.value=t; ta.style.position='fixed'; ta.style.opacity=0;
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); ok(); }catch(e){ $('msg').textContent='Copy failed.'; }
+    document.body.removeChild(ta); }
+  if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(ok,fb); else fb();
+}
+document.addEventListener('input',function(e){
+  var el=e.target, id;
+  if(!el.dataset) return;
+  if((id=el.dataset.ow)){ (S.opens[id]=S.opens[id]||{}).owner=el.value; }
+  else if((id=el.dataset.du)){ (S.opens[id]=S.opens[id]||{}).due=el.value; }
+  else if((id=el.dataset.ev)){ S.ev[id]=el.value; }
+  else if(el.dataset.d){ dispSet(el.dataset.d, el.type==='checkbox'?el.checked:el.value); }
+});
+['f-ci','f-id','f-prog','f-assessor'].forEach(function(i){
+  var el=$(i); if(el) el.addEventListener('input',actions);
+});
+if($('file')) $('file').addEventListener('change',doLoad);
+window.addEventListener('beforeunload',function(e){
+  if(answeredCount()||$('f-ci').value){ e.preventDefault(); e.returnValue=''; }
+});
+render();
+</script>
+</body>
+</html>
