@@ -273,7 +273,7 @@ var STEPS = function(items,tone){return {t:"steps", x:items, tone:tone||""};};
 
 var MODULES = [
 {
- id:"M1", label:"Module 1", title:"Foundations", sub:"What configuration management is, what a CI is, and the documents and identifiers the rest of the course runs on",
+ id:"M1", label:"Module 1", title:"Foundations", sub:"What configuration management is, what a CI is, how it is defined and identified, and how configuration control reaches suppliers",
  sections:[
  {id:"M1-01", title:"What configuration management is", body:[
     P("Configuration management keeps three descriptions of a product consistent with one another. Everything else in the discipline exists to protect that consistency."),
@@ -294,6 +294,7 @@ var MODULES = [
      "Only a quality problem: the parts still passed inspection",
      "Nothing, provided the change is documented at the next revision"],
    a:1, why:"Performance is not the test. The three descriptions have diverged: the released design says one thing and three physical articles say another. Until that is reconciled, the configuration of every delivered unit is in question, not just the three."}},
+
  {id:"M1-02", title:"The five CM functions", body:[
     P("CM is conventionally divided into five functions. Learn what each one answers. Modules 1 to 3 of this course live inside the second one. Modules 4 to 7 reach across four of them."),
     TABLE(["Function", "The question it answers"], [
@@ -321,11 +322,6 @@ var MODULES = [
    a:1, why:"The five functions overlap in time. Planning and management writes the plan that says how identification will be performed, by whom, and in what tool, and it keeps running for the life of the program. What is true about identification is that three of the other four functions act on its outputs: change management needs something to change against, status accounting needs an index, and audit needs both sides of the comparison. That is a dependency claim, not a schedule claim. The Acquirer may recommend candidates but bounds nothing, and baselines are an output of identification rather than a precondition for it."}},
  {id:"M1-03", title:"The words you will meet", body:[
     P("A short detour into vocabulary before the machinery starts. These terms run through the rest of the training and through every document you will touch. Guessing at them is how work gets misclassified."),
-    P("Start with the term the whole course is built on."),
-    C("Configuration Item (CI)", [
-      "Any hardware, software, firmware, or aggregation thereof that satisfies a system end-use function and is designated for separate configuration management. Designation includes establishing the CI\u2019s requirements and verifying that its configuration meets those requirements and that its configuration documentation accurately describes its configuration.",
-      "Read it in two halves. The first sentence says what qualifies. The second says what designating one obliges you to do.",
-      "Hold three things for now. A CI is a thing, not a function. It does a job the system needs. Somebody decided to manage it separately, and recorded that decision. Module 2 takes the definition apart and turns it into gates and criteria."], "teal"),
     C("Two conventions this training uses, and uses without exception", [
       "**Configuration item is shortened to CI.** Wherever this training means a configuration item, it writes CI. So CI always means a configuration item.",
       "**The word item on its own never means a CI.** It is reserved for the things that qualify it, and each of those is always qualified. A **procured item** is the article your company accepts on a line of the acceptance record. A **vendor item** is a commercial or catalog article bought to the vendor's own part number. A **catalog item** and a **commercial item** are the same kind of article. An **end item** is the assembled product. An **action item** is a finding's closure record. A **line item** is a line on a contract. An **open item** is one that is not yet closed.",
@@ -353,153 +349,113 @@ var MODULES = [
      "A technical data package issued to the supplier",
      "A detail specification"],
    a:1, why:"The approved-sources list plus qualification and acceptance criteria for an item used in a critical application is exactly what a source control drawing does. A vendor item control drawing would mean buying a catalog item to the vendor\u2019s number with no such control; a technical data package would mean your company held the design; a detail specification would tell them how to build it, which is the opposite of what is happening here."}},
- {id:"M1-04", title:"Why these two subjects are one course", body:[
-    P("You have the definition of a CI now. This is where it starts earning its keep."),
-    P("This course teaches two things. Modules 1 to 3 are about identifying CIs. Modules 4 to 7 are about flowing configuration management requirements to suppliers. On a course outline they look like two subjects. They are not."),
-    S("A supplier flowdown is a set of CI decisions written into a contract.",
-      "Almost every question the flowdown modules ask you to answer turns on a fact the identification modules produce. If the CI facts are missing, the flowdown still gets written. It just gets written wrong, and the error is discovered at delivery."),
-    P("Here is where the dependency actually bites:"),
-    L([
-      "**What you are buying.** The first question in any flowdown is whether the procured item is a CI, contains one, or is a part inside somebody else\u2019s CI. That answer comes from CI screening. Get it wrong and every requirement downstream is aimed at the wrong thing.",
-      "**What goes in the statement of work.** CI identifiers are cited in it. So are the **part attribute designations**: safety-critical, life-limited and special handling. Those are a separate decision from CI selection and they reach parts that are not CIs at all, so a buyer who only knows the CI answer still does not know what to cite.",
-      "**Whether audits apply.** Audit designation attaches to certain CIs. A buyer who does not know whether the procured item is a CI designated for audit cannot tell whether audit obligations belong in the contract, and cannot price them.",
-      "**What reconciliation means.** Reconciliation compares as-built configuration against released design for a CI. Without knowing which CI, there is nothing to compare against.",
-      "**What comes back at receipt.** Traceability records are per unit, tied to the CI and its next higher assembly. A receiver who cannot answer \u201cwhich CI is this part of\u201d cannot check the record.",
-      "**Sub-tier items.** An item a sub-supplier develops is a CI from your company\u2019s point of view. Recognizing that is a CI judgment, and it is what triggers recursive flowdown."]),
-    C("The failure runs in both directions", [
-      "Flowdown without CI knowledge produces contracts that impose the wrong requirements on the wrong items, and leave out the ones that mattered.",
-      "CI work without flowdown knowledge produces designations nobody can support. Designate a CI at a level your supplier cannot report against, and you have created an obligation that will be missed every month for the life of the program.",
-      "**This is why these are one course and not two.** Take the flowdown modules without the identification modules and you will write plausible contracts that buy the wrong things."])
+ {id:"M1-04", title:"What is a Configuration Item?", body:[
+    P("A Configuration Item is the thing configuration management has decided to manage separately. Before we identify it, baseline it, or flow requirements to a supplier against it, we need to know what the thing is."),
+    C("Configuration Item (CI)", [
+      "Any hardware, software, firmware, or aggregation thereof that satisfies a system end-use function and is designated for separate configuration management. Designation includes establishing the CI\u2019s requirements and verifying that its configuration meets those requirements and that its configuration documentation accurately describes its configuration.",
+      "Read it in two halves. The first sentence says what qualifies. The second says what designating one obliges you to do.",
+      "EIA-649-1A, Configuration Management Requirements for Defense Contracts, states:",
+      "'The Supplier shall identify as a Configuration Item any item that satisfies a system end use function and designates it for separate CM because the item meets or impacts one or more of the following:",
+      "a. An item critical to the functioning of the system.",
+      "b. An item whose failure might result in serious injury, loss of life or loss of primary system capability.",
+      "c. An item whose technology is complex, not well known, and critical to meeting acquisition, operational or supportability goals of the program.",
+      "d. Is under control as designated by the Acquirer.",
+      "e. Requires separate type designation, versions, or nomenclatures.",
+      "f. Is critical or high risk and failure would have significant financial impact.",
+      "g. Requires any one or more of the following logistics elements:",
+      "   1. Supply support Allowance Parts List (APL)",
+      "   2. Supply support Allowance Equipage List (AEL)",
+      "   3. Supply support Allowance Component List (ACL)",
+      "   4. Test equipment (e.g., General Purpose, Special Purpose, or Built-in)",
+      "   5. Technical manuals",
+      "   6. Planned Maintenance System (PMS) Maintenance Index Pages (MIP) and Maintenance Requirement Cards (MRC)",
+      "   7. Danger or Caution Tag Out requirements'",
+      "In this training you will learn about how to screen items against these conditions to identify CIs.",
+      "Hold three things for now. A CI is a thing, not a function. It does a job the system needs. Somebody decided to manage it separately, and recorded that decision. Module 2 takes the definition apart and turns it into gates and criteria."], "teal"),
+    S("A CI is a thing, not a function.",
+      "It satisfies a system end-use function, it is designated for separate configuration management, and that designation creates obligations for its requirements, configuration verification, and configuration documentation." )
   ],
-  check:{q:"A buyer classifies a procurement correctly by work type, negotiates it well, and releases it. Nobody involved knew that the procured assembly is a Configuration Item designated for audit. What is the most likely consequence?",
+  check:{q:"Which statement best describes a Configuration Item?",
    o:[
-     "None of substance, provided the work type classification was right",
-     "The CI identifiers, the audit provisions and the reconciliation requirements are all missing or aimed at nothing, because each of them depends on knowing which CI is being bought",
-     "The supplier will identify the gap and raise it during negotiation",
-     "The gap is corrected automatically at first article inspection"],
-   a:1, why:"Work type tells you what the supplier does. It does not tell you what the item is. The requirements that depend on CI identity are precisely the ones that go missing: which CI the identifiers cite, whether audit obligations apply, what the as-built gets reconciled against, and what traceability records must contain. Suppliers price what they are asked for, so nobody raises the omission."}},
- {id:"M1-05", title:"Why some requirements are mandatory: the sixteen barriers", body:[
-    P("Some CM requirements are not the contract\u2019s to give away. On safety-significant product lines a defined set of roughly forty-four discrete requirements is performed regardless of what the contract flows down. The set is called requirements mandatory for safety. This section is where that set comes from. The next section is what a program does when it wants to skip one."),
-    P("The set is not a list someone thought prudent. Every requirement on it traces to one of sixteen barriers. Every barrier is anchored to a documented aerospace event in which that barrier\u2019s failure killed people or destroyed the product. The set is the deduplicated list of requirements those sixteen barriers rest on."),
-    P("The obligation reaches you down two separate pathways:"),
-    CARDS([
-      {h:"The contract pathway", b:"Binds where clauses are flowed. If the contract invokes a CM requirement, it is contractually obligated; if the contract is silent, it is not. This pathway is real, and it is the only one many engineers are taught to see."},
-      {h:"The safety pathway", b:"The organization adopted a safety management system, which names specific hazards: inaccurate build data, unmanaged change, non-conformance, interface failures, and requires them controlled. Where a CM requirement is the control for a named hazard, the activity is obligated regardless of the contract. The only open question is which label the organization puts on it."}], 2),
-    S("Omitting a barrier because the contract is silent is a catastrophic-or-severe risk-acceptance decision: made by omission, at the wrong altitude.",
-      "Somebody accepts that risk either way. The gate in the next section exists so it is accepted knowingly, by the person whose signature the severity actually requires."),
-    P("The sixteen barriers fall into four clusters, and the shape of this course follows them:"),
-    L([
-      "**Hazard identification and critical-item recognition**: declaring, at CM level, which items can kill, so that everything downstream treats them accordingly.",
-      "**Change discipline and impact assessment**: classifying every change, assessing its full impact, and routing safety-affecting changes to the right approval authority.",
-      "**As-designed-to-as-built reconciliation**: keeping the record of what was actually built, unit by unit, true for the life of the product.",
-      "**Supply chain, interfaces, and verification**: holding the disciplines together across organizational boundaries, where they are weakest."]),
-    P("Three of the anchor events, briefly:"),
-    CARDS([
-      {h:"Alaska Airlines 261: 2000", b:"A horizontal stabilizer jackscrew assembly whose criticality was under-recognized, and whose as-maintained condition drifted over years of service. 88 dead. The barrier: formally identify as critical any item whose failure can cause loss of life, so the system has a structural defense against under-recognized criticality."},
-      {h:"Challenger: 1986", b:"A criticality reclassification that stale paperwork failed to propagate to the people making launch decisions, and a waiver approved through an abbreviated process. 7 dead. The barrier: change classification discipline, and approval authority matched to what the change actually touches."},
-      {h:"Mars Climate Orbiter: 1999", b:"Two teams, one interface, two unit systems, no controlled interface definition catching the mismatch. A $327M spacecraft flown into the atmosphere. The barrier: interface requirements identified, documented, and controlled across every boundary."}]),
-    P("Across the sixteen documented events the fatality count exceeds 880, and thirteen of the sixteen barriers are anchored at the catastrophic level. The barriers are not theoretical, and the requirement set built on them is not bureaucracy: it is the accumulated accident record, converted into requirements.")
-  ],
-  check:{q:"A CM requirement is not flowed down by the contract. It is also the control for a hazard the safety management system names. What is its status on a safety-significant product line?",
-   o:[
-     "Not obligated. The contract defines what is performed",
-     "Obligated through the safety pathway. The contract pathway is silent, and the safety pathway binds anyway",
-     "Obligated only if the Acquirer agrees to fund it",
-     "Obligated only after the hazard is re-assessed for this program"],
-   a:1, why:"Two pathways run in parallel. The contract pathway binds where clauses are flowed. The safety pathway binds where a CM requirement is the control for a hazard the safety management system names, and that pathway does not run through the contract at all. Contract silence removes the contractual obligation. It does not remove the hazard. The Acquirer cannot waive an obligation that was never theirs, and the severity behind the barrier is fixed rather than re-rated program by program."}},
- {id:"M1-06", title:"Requirements mandatory for safety: the disposition gate", body:[
-    P("The previous section established that the safety pathway binds. This section is what happens when a program wants to not perform one of these requirements."),
-    S("Contract silence removes the contractual obligation. It does not remove the hazard the requirement controls.",
-      "So the question is never whether the requirement is obligated. The question is which door the program walks through, and who signs."),
-    P("These requirements enter the process at exactly one point. That point is tailoring, the moment a program decides which CM requirements it will and will not perform. It re-enters at every CM plan revision. When a program proposes not to perform a requirement, the gate runs:"),
+     "Any function the system must perform, whether or not hardware or software is separately controlled",
+     "Any hardware, software, firmware, or aggregation thereof that satisfies a system end-use function and is designated for separate configuration management",
+     "Any part that receives a unique part number",
+     "Any item that is serialized"],
+   a:1, why:"The definition is specific. A CI is hardware, software, firmware, or an aggregation thereof that satisfies a system end-use function and is designated for separate configuration management. A function is not itself a CI, and serialization does not mean the item is a CI."}},
+ {id:"M1-05", title:"Baselines", body:[
+    P("A baseline is an agreed, fixed reference point: the approved configuration documentation for a CI at a defined moment, from which changes are managed by formal action."),
     STEPS([
-      {h:"Step 1: the safety check", b:"Is the requirement mandatory for safety? If no, normal tailoring applies and the program proceeds at its discretion. If yes, it cannot be dropped silently: continue."},
-      {h:"Step 2: choose a door", b:"Exactly three dispositions exist. **Perform** the requirement. **Replace** it with a documented equivalent control, validated independently by CM and Safety Assurance against the hazard it controls, not by the program that proposed it. Or **risk-accept** its absence formally, at the authority the safety management system names. **Catastrophic and severe both route to the accountable executive. Neither routes lower.**"},
-      {h:"Step 3: set the health check", b:"For performed and equivalent items, record how the barrier\u2019s continued effectiveness will be monitored over the program life. A barrier must be present and kept effective: a degraded barrier is a finding, not a pass."}]),
-    S("There is no fourth door.",
-      "Silent omission is the failure mode the gate exists to close. Because risk acceptance is visible, routes upward, and cannot be scored down, the expected default for most of these requirements is \u201cperform.\u201d"),
-    C("Severity is looked up, not re-rated", [
-      "Each of these requirements carries a severity assigned by the barrier safety case, and that assignment is fixed. At tailoring it is **looked up, never re-assessed.** This removes the one incentive that reliably corrupts these decisions: rating a barrier\u2019s absence low so the acceptance stays at a comfortable altitude.",
-      "The program does not get to decide how dangerous the barrier\u2019s absence would be. That question was answered when the barrier was established, by people with no tailoring decision in front of them."]),
-    P("Every disposition lands in a per-program compliance record: one structured, queryable row per safety-mandatory requirement, carrying the disposition, the evidence or risk-acceptance reference, the health check method and schedule, and the sign-off. The record is queryable on purpose: the coverage measures are computed from it, and **records that cannot be queried cannot be measured.**"),
-    C("How coverage is measured", [
-      "Two numbers, reported together and never combined. A severity-weighted coverage percentage gives the trend and rewards closing the deadliest gaps first. Alongside it, a plain **count** of open top-band items, target zero, never averaged into anything.",
-      "The count exists because a single open catastrophic barrier must not be able to hide behind a 96% number. And the share of coverage achieved by risk acceptance rather than performance is reported separately, so a high coverage figure is never misread as a safe portfolio."], "teal")
+      {h:"Functional: FBL", b:"System-level performance requirements and verification method for the system or top-level item. Typically established at the system requirements or functional review."},
+      {h:"Allocated: ABL", b:"Requirements allocated down to each CI, with interfaces and verification, in item performance specifications. Typically at preliminary design review, per CI."},
+      {h:"Product: PBL", b:"PBL: The detailed design definition. The documentation describing the CI as built. The product baseline has two states. The **initial product baseline** is established at completion of critical design review. The **formalized product baseline** is established no later than first production unit delivery or physical audit completion. Module 7 covers which event formalizes it for which CI."}], "tl"),
+    P("Once documentation is baselined, changes to it are processed through formal change action rather than by editing the document. That is the hinge between identification and change management. Baselined interface requirements are no exception: controlling them is mandatory for safety.")
   ],
-  check:{q:"A program proposes not to perform a requirement mandatory for safety, pointing out that the contract does not flow it down. What are its options?",
+  check:{q:"What changes about a document the moment it is baselined?",
    o:[
-     "Drop it with a recorded rationale: the contract governs what is performed",
-     "Perform it, replace it with an independently validated equivalent control, or obtain formal risk acceptance at the severity-matched authority: contract silence changes nothing",
-     "Obtain Acquirer approval to omit it",
-     "Re-rate the severity for this program and tailor accordingly"],
-   a:1, why:"These requirements are obligated through the safety pathway, so a silent contract is beside the point. The three doors are exhaustive. The severity is pre-anchored and cannot be re-rated, and catastrophic and severe both route to the accountable executive. The Acquirer has no standing in it: the obligation was never theirs to waive. Neither CM nor the program manager can sign this one off alone."}},
- {id:"M1-07", title:"The CM document set: who owns what", body:[
-    P("Four processes govern this work. Each one owns something. Each one defers to the others for everything it does not own. Knowing which is which saves a great deal of time."),
-    TABLE(["Process", "Owns", "Answers"], [
-      ["CI identification", "What a CI is, the CI structure, the interface register, identifiers and documentation sets", "Is this a CI? At what level? What documentation defines it? Which boundaries exist?"],
-      ["Configuration audit", "The two audits, audit designation, the readiness checklists and the two check sets", "Does this CI get an audit? Which one? What has to be true first? What is examined?"],
-      ["Sub-supplier CM flowdown", "The nine work types and their audit roles, the requirement sets, the standing conditional audit clause, effectiveness determinations", "What does this supplier owe? What is their audit role? How do we know their CM works?"],
-      ["Safety management system", "Hazard analysis, risk controls, and which CM requirements are mandatory for safety", "Which requirements are mandatory for safety, and what happens if one is not performed?"]]),
-    P("The fourth row is the one you have already met. The safety management system decides which CM requirements are mandatory for safety. The safety disposition gate decides what happens when a program proposes not to perform one. Sections M1-05 and M1-06 covered both."),
-    C("Three rules that follow from this", [
-      "**Each process references the others by plain name, not by number.** Document numbers change. Names do not. You will see the audit designation assessment, not an appendix letter.",
-      "**Where two processes cover the same ground, the owner governs.** The audit process restates the supplier work types and their audit roles. The flowdown process owns them, so the flowdown process wins.",
-      "**Definitions are used as written.** A term defined in the process that owns it is carried word for word everywhere else, with the plain explanation underneath rather than instead."]),
-    S("If you do not know which process answers your question, the question is usually about ownership rather than about the answer.",
-      "Find the owner first. The answer is normally already written, and arguing it from scratch is how two processes end up disagreeing.")
+     "It becomes read-only in the document system",
+     "It can no longer be revised at all",
+     "It is delivered to the Acquirer",
+     "Changes to it are processed through formal change action rather than by editing it"],
+   a:3, why:"A baseline is a reference point, not a lock. The document still changes, but through a controlled, recorded change action, so that every version has a traceable approval behind it."}},
+
+ {id:"M1-06", title:"The three documentation sets", body:[
+    P("A baseline is a moment. The **configuration documentation** is what the baseline is made of, and each baseline has its own set, with its own job. Naming them precisely matters, because the audits, the change function and the whole supplier flowdown all cite one set or another."),
+    TABLE(["Documentation set", "The question it answers", "What it documents"], [
+      ["Functional", "What must the system do, and how will we know it did?", "The system\u2019s functional, performance, interoperability and interface requirements, together with the verifications required to demonstrate those requirements were achieved. It documents the functional baseline, and is typically made up of the contract together with the system or end-item level specification"],
+      ["Allocated", "What must this CI do, given what the system must do?", "The CI\u2019s functional, performance and interoperability requirements **allocated down** from the system or a higher-level CI; its interface requirements with the CIs it interfaces to; and the verifications required to demonstrate achievement. It documents the allocated baseline, CI by CI"],
+      ["Product", "What is this CI in detail, and what has to be true before we accept one?", "The CI\u2019s detailed design: the physical form, fit and function characteristics, plus the functional and performance requirements selected for production, qualification and acceptance test. It documents the product baseline"]]),
+    S("All three carry verification, not just requirements.",
+      "Each set describes what is required **and** how achievement is demonstrated. A requirement documented with no stated means of verifying it is a requirement nobody has yet committed to being able to check, and it will be found at the functional audit, which is precisely a walk from requirement to verification evidence."),
+    P("The product set is the largest, because it has to be sufficient to build the item, accept it, and support it. Alongside the detailed design it carries:"),
+    L([
+      "The verifications necessary to accept deliveries: first article and acceptance inspection provisions, including the form, fit, function and quality assurance provisions required to accept the item.",
+      "The design of any special tooling, software, equipment and facilities required to manufacture, operate, maintain, calibrate or inspect items in the design.",
+      "The design of any special packaging parts required to package the CI.",
+      "Any unique process specifications required to manufacture, operate, maintain or calibrate items in the design.",
+      "Identification of any commercial hardware or software used in the detailed design.",
+      "Where the contract requires it, the technical data giving instructions for installation, operation, maintenance, training and support."]),
+    C("The scaling rule", [
+      "The design information in the product set can be **as simple as identifying a specific part number, or as complex as full design disclosure.** It scales with the production and procurement strategy, which is the same decision you meet again as documentation determination, where the type follows item maturity, ownership and control level.",
+      "For a privately developed CI the obligation is narrow but firm: the product set must at least carry the verification provisions required to accept deliveries. **You may not own the design. You still have to be able to say what an acceptable article looks like.**"]),
+    S("A baseline plus its approved changes is the current approved configuration.",
+      "The baseline alone is a photograph of a moment that has already passed. What anyone actually builds, tests or audits against is the baseline plus everything approved since."),
+    P("Two rules hold the sets together. **Each succeeding baseline traces to its predecessor**, with a detailed extension at each step: system requirements to allocated requirements to detailed design. A product baseline that cannot be traced back to the requirements it satisfies is a design nobody can defend. And **each set identifies any specialized software and the operating environment used to author it**: the same logic that puts the build toolchain under identification. A definition you cannot reopen is a definition you cannot maintain."),
+    P("When a change is approved, maintain the documentation by creating a **new revision.** The revision provides traceability by detailing the conditions before and after the change, and it identifies the change as the revision authority. Interface information is incorporated into all three sets as each is developed, in the applicable specifications directly, or through referenced interface documentation.")
   ],
-  check:{q:"The configuration audit process and the sub-supplier CM flowdown process both describe the supplier work types and their audit roles. The two descriptions no longer match. Which one governs, and what happens to the other?",
+  check:{q:"A colleague says verification requirements belong with the product documentation, since that is where testing gets defined. Where do verifications actually appear?",
    o:[
-     "The audit process, because the question is about audits",
-     "The flowdown process, because it owns the work types and their audit roles. The audit process only restates them, so the restatement is what gets corrected",
-     "Whichever process was revised most recently",
-     "Neither. Raise it to the program CM plan and let the plan settle it"],
-   a:1, why:"Where two processes cover the same ground, the owner governs. The flowdown process owns the work types and their audit roles, so the conflict resolves in its favor and the restatement is brought back into line rather than argued with. Recency is not the test, because a recently revised restatement is still a restatement. The program CM plan records how CM is performed on one program and does not arbitrate between enterprise processes. The habit this section is really teaching is the one it closes on: when you do not know which process answers a question, the question is usually about ownership rather than about the answer."}},
- {id:"M1-08", title:"Identifiers: the questions each one answers", body:[
-    P("Every identifier answers exactly one question. Conflating them is the most common newcomer error, and it produces the most durable damage. Hold on to the question rather than the name and they stay apart."),
-    P("There are eleven questions in all. They group by what is being identified: hardware, documentation, and software."),
-    P("**Hardware asks five questions.** Read the table across. The question comes first."),
-    TABLE(["The question", "The identifier that answers it", "It changes when\u2026", "It is never\u2026"], [
+     "In the product set only: the earlier sets carry requirements, and verification comes later",
+     "In all three sets, doing different jobs: demonstrating system requirements, demonstrating the requirements allocated to each CI, and accepting deliveries of a produced article",
+     "In the test plans, which sit outside configuration documentation entirely",
+     "In the functional set only, since verification is a system-level concern"],
+   a:1, why:"Every set pairs requirements with the means of demonstrating them. The functional set carries the verifications for system requirements, the allocated set those for the requirements allocated to a CI, and the product set the first article and acceptance provisions needed to take delivery of an article. Test plans and procedures implement those verification requirements: they do not replace them."}},
+ {id:"M1-07", title:"Hardware identifiers", body:[
+    P("Hardware identifiers answer different questions. Do not treat them as a checklist that applies in full to every item. Hold on to the question rather than the name and the identifiers stay apart."),
+    P("The hardware identity model begins with four questions. The first three identify the design and configuration; the fourth is conditional and is handled in detail in the next section."),
+    TABLE(["The question", "The identifier that answers it", "It changes when…", "It is never…"], [
       ["Whose design definition is this?", "Enterprise identifier: the design activity CAGE code", "The design activity changes. Not otherwise", "Omitted. A part number without one is not unique"],
       ["Which managed function is this, and where is its boundary?", "CI identifier", "The management need changes: a new function is designated as a CI, or a CI is split or consolidated", "Assigned to solve a part-numbering problem"],
-      ["Which design definition is this built to, and is it interchangeable with that other one?", "Part or identifying number (PIN)", "A modification creates a non-interchangeable condition in form, fit or function", "Changed for a purely administrative reason"],
-      ["Which individual article is this, out of all the ones we built?", "Serial number", "Never. It identifies one article for life", "Revised or re-used, even through a PIN change"],
-      ["Which group of articles is this, out of all the ones we built?", "Lot or batch number", "Never. It identifies one group for life", "Revised or re-used. It carries a date code where a shelf-life, cure-date or storage-age limit applies"]]),
-    P("**Not every question applies to every item.** Questions 1 and 3 apply to everything the design activity designs, CIs and parts alike. Question 2 applies to CIs only, because only a CI has a managed boundary. Questions 4 and 5 are conditional, and at item level they are mutually exclusive. An item carries a serial number, or a lot number, or neither. The next section is the test that decides which."),
-    P("**Documentation asks three questions.** Configuration documentation is identified in its own right, on the same logic as hardware."),
-    TABLE(["The question", "The identifier that answers it", "The rule"], [
-      ["Whose definition is this?", "Enterprise identifier: the same design activity CAGE code that goes on the hardware", "A document number is only unique within the activity that assigned it, exactly as a part number is"],
-      ["Which document is this?", "Document identifier", "Every item of configuration documentation is uniquely identified, so it can be referenced precisely and retrieved"],
-      ["Which version of it is this?", "Revision or version identifier", "Every version of every representation is separately identified. A reference without one points at a moving target"]]),
-    P("**Software asks three questions.** Same logic again, with one addition and one substitution."),
-    TABLE(["The question", "The identifier that answers it", "The rule"], [
-      ["Which software CI is this?", "Software CI identifier", "Every software CI gets one, by the same rule that gives every hardware CI a CI identifier"],
-      ["Which version of it is this?", "Version identifier", "**The addition.** Assigned to every version, without exception. Software changes too easily for the item identifier alone to say what you have"],
-      ["Which physical article is this?", "Usually nothing", "**The substitution.** Software carries identity on the loadable part number and the baseline rather than on a serial number. Do not record this as a serialization obligation"]]),
-    P("Embedded code is where the hardware questions and the software questions meet. It splits two ways. The split is a control decision, made once and then held to:"),
-    CARDS([
-      {h:"Embedded, controlled with its device", b:"Where code and the hardware device it lives in are controlled together on a single altered-item drawing, one PIN represents the device **with the code embedded.** The software medium is labeled separately, and the device is marked accordingly. One identity, deliberately: they change together."},
-      {h:"Controlled separately", b:"Where the code is managed in its own right, the device carries its PIN and serial, and the code is its own software CI with its own identifier and version identifiers. Two identities, deliberately: they change independently, and each needs its own change and status thread."}], 2),
-    P("Two of these identifiers carry controlled definitions. Use them as written."),
-    C("Part or Identifying Number (PIN)", [
-      "The identifier that, combined with the design activity CAGE code, uniquely identifies an item and its configuration. The PIN changes when a modification creates a non-interchangeable condition."]),
-    C("Product unit identifier", [
-      "A serial, lot, or batch number that distinguishes one unit, or group of units, of a product from another. Unit identifiers are never revised or re-used once assigned, even when the PIN changes."]),
-    P("**CAGE code** is the term you will meet on the forms. It stands for Commercial and Government Entity code, and it is the CAGE code of the design activity. This training says CAGE code, because that is the term in the standard. The process, the checklist and the CI index all say CAGE. They are the same thing, and a PIN without one is not unique, because a part number is only unique within the activity that assigned it."),
-    P("**The CI identifier and the PIN are deliberately decoupled.** They answer different questions, so they move independently. One CI can carry several PINs as variants. One PIN can appear under two different CIs. Both are normal, correct outcomes."),
-    S("Serial and lot numbers are unique, consecutive, and non-duplicating against a non-changing product-tracking base identifier. Once assigned, they are never revised and never re-used.",
-      "A modified unit keeps its original unit identifier through a PIN change. That is what preserves the thread back to the original configuration: the article\u2019s history stays attached to the article."),
-    P("Two rules close out the set. Nomenclature is revised when a non-interchangeable condition requires it, because a name that no longer distinguishes non-interchangeable things has stopped doing its job. And unique item identification marking is applied where the contract requires it. Which items carry a serial number, which carry a lot number, and which carry neither is a separate question, and the next section answers it.")
+      ["Which design definition is this built to, and is it interchangeable with that other one?", "Part or identifying number (PIN)", "A modification creates a non-interchangeable condition in form, fit or function", "Changed for a purely administrative reason"]]),
+    C("CI identifier and PIN are deliberately different", [
+      "The **CI identifier** answers: **What managed function is this, and where is its boundary?** Only a CI has a managed boundary.",
+      "The **PIN** answers: **Which design definition is this built to, and is it interchangeable with that other one?** The PIN changes when a modification creates a non-interchangeable condition.",
+      "One CI can carry several PINs as variants. One PIN can appear under two different CIs. Both are normal, correct outcomes."]),
+    C("CAGE", [
+      "CAGE is the Commercial and Government Entity code of the design activity. Combined with the PIN, it makes the item/configuration identification unambiguous because a part number is only unique within the activity that assigned it."]),
+    S("Configuration identity is not product-unit identity.",
+      "The CI identifier tells you which managed object you have. The PIN tells you which configuration you have. Whether you also need to distinguish individual articles or production populations is a separate product-unit-record decision."),
+    P("Serial, lot and batch numbers are introduced here only as the fourth question: **Which physical article or production population must be distinguished?** The next section decides whether the answer is serial, lot/batch, or neither.")
   ],
-  check:{q:"A supplier asks which identifiers to assign to a newly designated CI. It is a machined bracket accepted on lot conformance to an approved source. One lot was scrapped, and the planner wants to re-use that lot number on the replacement lot to keep the sequence tidy.",
+  check:{q:"A modification makes a hardware configuration non-interchangeable with the previous configuration. Which identifier changes because of that condition?",
    o:[
-     "Assign every identifier in the scheme, and re-use the lot number, since the scrapped lot no longer exists",
-     "Assign the CAGE code, the CI identifier and the PIN, plus a lot number because acceptance rests on conformance to an approved source rather than on the history of one article. Never re-use the scrapped lot number",
-     "Assign a serial number, because every designated CI carries a unit identifier",
-     "Assign the PIN only, since a bracket is a part rather than software"],
-   a:1, why:"Two errors are on offer here. The first is treating the identifiers as a checklist that applies in full to every item: the CAGE code and the PIN go on everything, the CI identifier goes on this one because it is a CI, but the serial and lot questions are conditional and mutually exclusive at item level, and the acceptance basis decides which one applies. The second error is re-use. Unit identifiers are never revised and never re-used, with no exception for scrapped material, because the moment two populations have answered to one number every record against that number becomes a question instead of an answer. The replacement takes the next number in sequence."}},
- {id:"M1-09", title:"Which product unit record the item needs", body:[
-    P("The previous section said serial numbers go to individual articles and lot numbers go to groups. That is true and it is circular. It tells you to serialize the things that need serializing. This section is the test that actually decides."),
+     "The serial number",
+     "The CI identifier",
+     "The PIN",
+     "The CAGE code"],
+   a:2, why:"The PIN identifies the design definition/configuration and changes when a modification creates a non-interchangeable condition. The serial number stays with the individual article, the CI identifier identifies the managed object, and the CAGE code identifies the design activity."}},
+
+ {id:"M1-08", title:"Product-unit record structure", body:[
+    P("A PIN tells you which configuration an item is built to. It does not tell you which individual article or production population you are looking at. This section is the test that decides whether the item needs a serial number, lot/batch record, or no independent product-unit record."),
     S("Ask what the approved basis for the item\u2019s continued service depends on.",
       "That one question sorts every item. Apply it to the CI and to each of its component parts. One CI may contain parts of more than one product unit record structure, and that is normal rather than a defect in the assessment."),
     TABLE(["What the approved basis depends on", "The product unit record", "What it looks like"], [
@@ -532,53 +488,149 @@ var MODULES = [
      "No. Item unique identification serializes on inventory status and acquisition cost and never looks at criticality. The safety-critical answer still has to come from the safety management system",
      "No. The item must first be designated a CI before the safety-critical question can be answered"],
    a:2, why:"This is the backward direction, and it is the expensive one. A serial number is evidence that something required a product unit record. It is not evidence of what required it. Item unique identification triggers on serially managed, mission essential or controlled inventory status, or on unit acquisition cost, and a low-criticality item can be serialized on cost alone. The reverse error is just as common: a blank serial field is not evidence an item is not critical, because a critical item may be lot-controlled or carry no product unit record at all. The last option inverts the order. The safety-critical question is part of how you decide whether the item is a CI, so it cannot wait until after."}},
- {id:"M1-10", title:"Baselines", body:[
-    P("A baseline is an agreed, fixed reference point: the approved configuration documentation for a CI at a defined moment, from which changes are managed by formal action."),
-    STEPS([
-      {h:"Functional: FBL", b:"System-level performance requirements and verification method for the system or top-level item. Typically established at the system requirements or functional review."},
-      {h:"Allocated: ABL", b:"Requirements allocated down to each CI, with interfaces and verification, in item performance specifications. Typically at preliminary design review, per CI."},
-      {h:"Product: PBL", b:"PBL: The detailed design definition. The documentation describing the CI as built. The product baseline has two states. The **initial product baseline** is established at completion of critical design review. The **formalized product baseline** is established no later than first production unit delivery or physical audit completion. Module 7 covers which event formalizes it for which CI."}], "tl"),
-    P("Once documentation is baselined, changes to it are processed through formal change action rather than by editing the document. That is the hinge between identification and change management. Baselined interface requirements are no exception: controlling them is mandatory for safety.")
+ {id:"M1-09", title:"Software identifiers", body:[
+    P("Software needs its own identity model because software changes without necessarily changing the physical article that loads it."),
+    P("Software asks two primary questions: which software CI is this, and which version is it?"),
+    TABLE(["The question", "The identifier that answers it", "The rule"], [
+      ["Which software CI is this?", "Software CI identifier", "Every software CI gets one, by the same rule that gives every hardware CI a CI identifier"],
+      ["Which version of it is this?", "Version identifier", "Every version is identified. Software changes too easily for the CI identifier alone to say what you have"]]),
+    P("Software normally does not receive a physical serial number merely because it is software. Its identity is carried through its software CI identifier, version, and the applicable configuration/baseline records."),
+    P("Embedded code is where the hardware and software identity models meet. The control arrangement determines whether the code and device share one configuration representation or have separate identities."),
+    CARDS([
+      {h:"Embedded, controlled with its device", b:"Where code and the hardware device it lives in are controlled together on a single altered-item drawing, one PIN represents the device **with the code embedded.** The software medium is labeled separately, and the device is marked accordingly. One identity, deliberately: they change together."},
+      {h:"Controlled separately", b:"Where the code is managed in its own right, the device carries its PIN and serial, and the code is its own software CI with its own identifier and version identifiers. Two identities, deliberately: they change independently, and each needs its own change and status thread."}], 2),
+    S("The control arrangement determines the identity arrangement.",
+      "Do not infer separate software identity merely because code exists. Ask whether the code is controlled with the device or in its own right, then apply the corresponding identification model.")
   ],
-  check:{q:"What changes about a document the moment it is baselined?",
+  check:{q:"Hardware and embedded code are controlled separately. Which identity set is appropriate?",
    o:[
-     "It becomes read-only in the document system",
-     "It can no longer be revised at all",
-     "It is delivered to the Acquirer",
-     "Changes to it are processed through formal change action rather than by editing it"],
-   a:3, why:"A baseline is a reference point, not a lock. The document still changes, but through a controlled, recorded change action, so that every version has a traceable approval behind it."}},
- {id:"M1-11", title:"The three documentation sets", body:[
-    P("A baseline is a moment. The **configuration documentation** is what the baseline is made of, and each baseline has its own set, with its own job. Naming them precisely matters, because the audits, the change function and the whole supplier flowdown all cite one set or another."),
-    TABLE(["Documentation set", "The question it answers", "What it documents"], [
-      ["Functional", "What must the system do, and how will we know it did?", "The system\u2019s functional, performance, interoperability and interface requirements, together with the verifications required to demonstrate those requirements were achieved. It documents the functional baseline, and is typically made up of the contract together with the system or end-item level specification"],
-      ["Allocated", "What must this CI do, given what the system must do?", "The CI\u2019s functional, performance and interoperability requirements **allocated down** from the system or a higher-level CI; its interface requirements with the CIs it interfaces to; and the verifications required to demonstrate achievement. It documents the allocated baseline, CI by CI"],
-      ["Product", "What is this CI in detail, and what has to be true before we accept one?", "The CI\u2019s detailed design: the physical form, fit and function characteristics, plus the functional and performance requirements selected for production, qualification and acceptance test. It documents the product baseline"]]),
-    S("All three carry verification, not just requirements.",
-      "Each set describes what is required **and** how achievement is demonstrated. A requirement documented with no stated means of verifying it is a requirement nobody has yet committed to being able to check, and it will be found at the functional audit, which is precisely a walk from requirement to verification evidence."),
-    P("The product set is the largest, because it has to be sufficient to build the item, accept it, and support it. Alongside the detailed design it carries:"),
+     "Only the hardware PIN; software needs no independent identity",
+     "Hardware PIN and serial, plus a software CI identifier and software version",
+     "One serial number for the hardware and software together",
+     "A new CAGE code for every software version"],
+   a:1, why:"When code is managed separately, the device retains its PIN and applicable product-unit identity, while the code has its own software CI identifier and version. The two identities allow their change and status threads to remain independent."}},
+ {id:"M1-10", title:"Document identifiers", body:[
+    P("Configuration documentation is identified in its own right. The document identifier tells you which document you are looking at; it does not replace the identifier of the configuration the document defines."),
+    TABLE(["The question", "The identifier that answers it", "The rule"], [
+      ["Whose definition is this?", "Enterprise identifier: the design activity CAGE code", "A document number is only unique within the activity that assigned it, exactly as a part number is"],
+      ["Which document is this?", "Document identifier", "Every item of configuration documentation is uniquely identified, so it can be referenced precisely and retrieved"],
+      ["Which version of it is this?", "Revision or version identifier", "Every version of every representation is separately identified. A reference without one points at a moving target"]]),
+    P("Keep the two identities separate. A drawing/document may define a configuration identified by a CAGE and PIN, while the drawing itself has its own document identifier and revision. The document identity tells you which definition you are reading; the hardware identity tells you which configuration the definition applies to."),
+    S("A document identifier identifies the document.",
+      "It does not become the CI identifier, PIN, serial number, or lot number simply because the document defines one of those things." )
+  ],
+  check:{q:"Two released revisions of the same configuration document are being compared. Which identifier distinguishes the specific version being used?",
+   o:[
+     "The CI identifier",
+     "The PIN",
+     "The revision or version identifier",
+     "The serial number"],
+   a:2, why:"The document identifier identifies which document it is. The revision or version identifier identifies which released version of that document is being used. CI and PIN identify the configuration, not the document revision."}},
+
+ {id:"M1-11", title:"Process ownership: who owns what", body:[
+    P("Four processes govern this work. Each one owns something. Each one defers to the others for everything it does not own. Knowing which is which saves a great deal of time."),
+    TABLE(["Process", "Owns", "Answers"], [
+      ["CI identification", "What a CI is, the CI structure, the interface register, identifiers and documentation sets", "Is this a CI? At what level? What documentation defines it? Which boundaries exist?"],
+      ["Configuration audit", "The two audits, audit designation, the readiness checklists and the two check sets", "Does this CI get an audit? Which one? What has to be true first? What is examined?"],
+      ["Sub-supplier CM flowdown", "The nine work types and their audit roles, the requirement sets, the standing conditional audit clause, effectiveness determinations", "What does this supplier owe? What is their audit role? How do we know their CM works?"],
+      ["Safety management system", "Hazard analysis, risk controls, and which CM requirements are mandatory for safety", "Which requirements are mandatory for safety, and what happens if one is not performed?"]]),
+    C("Three rules that follow from this", [
+      "**Each process references the others by plain name, not by number.** Document numbers change. Names do not. You will see the audit designation assessment, not an appendix letter.",
+      "**Where two processes cover the same ground, the owner governs.** The audit process restates the supplier work types and their audit roles. The flowdown process owns them, so the flowdown process wins.",
+      "**Definitions are used as written.** A term defined in the process that owns it is carried word for word everywhere else, with the plain explanation underneath rather than instead."]),
+    S("If you do not know which process answers your question, the question is usually about ownership rather than about the answer.",
+      "Find the owner first. The answer is normally already written, and arguing it from scratch is how two processes end up disagreeing.")
+  ],
+  check:{q:"The configuration audit process and the sub-supplier CM flowdown process both describe the supplier work types and their audit roles. The two descriptions no longer match. Which one governs, and what happens to the other?",
+   o:[
+     "The audit process, because the question is about audits",
+     "The flowdown process, because it owns the work types and their audit roles. The audit process only restates them, so the restatement is what gets corrected",
+     "Whichever process was revised most recently",
+     "Neither. Raise it to the program CM plan and let the plan settle it"],
+   a:1, why:"Where two processes cover the same ground, the owner governs. The flowdown process owns the work types and their audit roles, so the conflict resolves in its favor and the restatement is brought back into line rather than argued with. Recency is not the test, because a recently revised restatement is still a restatement. The program CM plan records how CM is performed on one program and does not arbitrate between enterprise processes. The habit this section is really teaching is the one it closes on: when you do not know which process answers a question, the question is usually about ownership rather than about the answer."}},
+
+ {id:"M1-12", title:"Why CI identification and CM flowdown belong together", body:[
+    P("You have the definition of a CI now. This is where it starts earning its keep."),
+    P("This course teaches two things. Modules 1 to 3 are about identifying CIs. Modules 4 to 7 are about flowing configuration management requirements to suppliers. On a course outline they look like two subjects. They are not."),
+    S("A supplier flowdown is a set of CI decisions written into a contract.",
+      "Almost every question the flowdown modules ask you to answer turns on a fact the identification modules produce. If the CI facts are missing, the flowdown still gets written. It just gets written wrong, and the error is discovered at delivery."),
+    P("Here is where the dependency actually bites:"),
     L([
-      "The verifications necessary to accept deliveries: first article and acceptance inspection provisions, including the form, fit, function and quality assurance provisions required to accept the item.",
-      "The design of any special tooling, software, equipment and facilities required to manufacture, operate, maintain, calibrate or inspect items in the design.",
-      "The design of any special packaging parts required to package the CI.",
-      "Any unique process specifications required to manufacture, operate, maintain or calibrate items in the design.",
-      "Identification of any commercial hardware or software used in the detailed design.",
-      "Where the contract requires it, the technical data giving instructions for installation, operation, maintenance, training and support."]),
-    C("The scaling rule", [
-      "The design information in the product set can be **as simple as identifying a specific part number, or as complex as full design disclosure.** It scales with the production and procurement strategy, which is the same decision you meet again as documentation determination, where the type follows item maturity, ownership and control level.",
-      "For a privately developed CI the obligation is narrow but firm: the product set must at least carry the verification provisions required to accept deliveries. **You may not own the design. You still have to be able to say what an acceptable article looks like.**"]),
-    S("A baseline plus its approved changes is the current approved configuration.",
-      "The baseline alone is a photograph of a moment that has already passed. What anyone actually builds, tests or audits against is the baseline plus everything approved since."),
-    P("Two rules hold the sets together. **Each succeeding baseline traces to its predecessor**, with a detailed extension at each step: system requirements to allocated requirements to detailed design. A product baseline that cannot be traced back to the requirements it satisfies is a design nobody can defend. And **each set identifies any specialized software and the operating environment used to author it**: the same logic that puts the build toolchain under identification. A definition you cannot reopen is a definition you cannot maintain."),
-    P("When a change is approved, maintain the documentation by creating a **new revision.** The revision provides traceability by detailing the conditions before and after the change, and it identifies the change as the revision authority. Interface information is incorporated into all three sets as each is developed, in the applicable specifications directly, or through referenced interface documentation.")
+      "**What you are buying.** The first question in any flowdown is whether the procured item is a CI, contains one, or is a part inside somebody else\u2019s CI. That answer comes from CI screening. Get it wrong and every requirement downstream is aimed at the wrong thing.",
+      "**What goes in the statement of work.** CI identifiers are cited in it. So are the **part attribute designations**: safety-critical, life-limited and special handling. Those are a separate decision from CI selection and they reach parts that are not CIs at all, so a buyer who only knows the CI answer still does not know what to cite.",
+      "**Whether audits apply.** Audit designation attaches to certain CIs. A buyer who does not know whether the procured item is a CI designated for audit cannot tell whether audit obligations belong in the contract, and cannot price them.",
+      "**What reconciliation means.** Reconciliation compares as-built configuration against released design for a CI. Without knowing which CI, there is nothing to compare against.",
+      "**What comes back at receipt.** Traceability records are per unit, tied to the CI and its next higher assembly. A receiver who cannot answer \u201cwhich CI is this part of\u201d cannot check the record.",
+      "**Sub-tier items.** An item a sub-supplier develops is a CI from your company\u2019s point of view. Recognizing that is a CI judgment, and it is what triggers recursive flowdown."]),
+    C("The failure runs in both directions", [
+      "Flowdown without CI knowledge produces contracts that impose the wrong requirements on the wrong items, and leave out the ones that mattered.",
+      "CI work without flowdown knowledge produces designations nobody can support. Designate a CI at a level your supplier cannot report against, and you have created an obligation that will be missed every month for the life of the program.",
+      "**This is why these are one course and not two.** Take the flowdown modules without the identification modules and you will write plausible contracts that buy the wrong things."])
   ],
-  check:{q:"A colleague says verification requirements belong with the product documentation, since that is where testing gets defined. Where do verifications actually appear?",
+  check:{q:"A buyer classifies a procurement correctly by work type, negotiates it well, and releases it. Nobody involved knew that the procured assembly is a Configuration Item designated for audit. What is the most likely consequence?",
    o:[
-     "In the product set only: the earlier sets carry requirements, and verification comes later",
-     "In all three sets, doing different jobs: demonstrating system requirements, demonstrating the requirements allocated to each CI, and accepting deliveries of a produced article",
-     "In the test plans, which sit outside configuration documentation entirely",
-     "In the functional set only, since verification is a system-level concern"],
-   a:1, why:"Every set pairs requirements with the means of demonstrating them. The functional set carries the verifications for system requirements, the allocated set those for the requirements allocated to a CI, and the product set the first article and acceptance provisions needed to take delivery of an article. Test plans and procedures implement those verification requirements: they do not replace them."}}
- ],
+     "None of substance, provided the work type classification was right",
+     "The CI identifiers, the audit provisions and the reconciliation requirements are all missing or aimed at nothing, because each of them depends on knowing which CI is being bought",
+     "The supplier will identify the gap and raise it during negotiation",
+     "The gap is corrected automatically at first article inspection"],
+   a:1, why:"Work type tells you what the supplier does. It does not tell you what the item is. The requirements that depend on CI identity are precisely the ones that go missing: which CI the identifiers cite, whether audit obligations apply, what the as-built gets reconciled against, and what traceability records must contain. Suppliers price what they are asked for, so nobody raises the omission."}},
+
+ {id:"M1-13", title:"Requirements mandatory for safety", body:[
+    P("Some CM requirements are not the contract\u2019s to give away. On safety-significant product lines a defined set of roughly forty-four discrete requirements is performed regardless of what the contract flows down. The set is called requirements mandatory for safety. This section is where that set comes from. The next section is what a program does when it wants to skip one."),
+    P("The set is not a list someone thought prudent. Every requirement on it traces to one of sixteen barriers. Every barrier is anchored to a documented aerospace event in which that barrier\u2019s failure killed people or destroyed the product. The set is the deduplicated list of requirements those sixteen barriers rest on."),
+    P("The obligation reaches you down two separate pathways:"),
+    CARDS([
+      {h:"The contract pathway", b:"Binds where clauses are flowed. If the contract invokes a CM requirement, it is contractually obligated; if the contract is silent, it is not. This pathway is real, and it is the only one many engineers are taught to see."},
+      {h:"The safety pathway", b:"The organization adopted a safety management system, which names specific hazards: inaccurate build data, unmanaged change, non-conformance, interface failures, and requires them controlled. Where a CM requirement is the control for a named hazard, the activity is obligated regardless of the contract. The only open question is which label the organization puts on it."}], 2),
+    S("Omitting a barrier because the contract is silent is a catastrophic-or-severe risk-acceptance decision: made by omission, at the wrong altitude.",
+      "Somebody accepts that risk either way. The gate in the next section exists so it is accepted knowingly, by the person whose signature the severity actually requires."),
+    P("The sixteen barriers fall into four clusters, and the shape of this course follows them:"),
+    L([
+      "**Hazard identification and critical-item recognition**: declaring, at CM level, which items can kill, so that everything downstream treats them accordingly.",
+      "**Change discipline and impact assessment**: classifying every change, assessing its full impact, and routing safety-affecting changes to the right approval authority.",
+      "**As-designed-to-as-built reconciliation**: keeping the record of what was actually built, unit by unit, true for the life of the product.",
+      "**Supply chain, interfaces, and verification**: holding the disciplines together across organizational boundaries, where they are weakest."]),
+    P("Three of the anchor events, briefly:"),
+    CARDS([
+      {h:"Alaska Airlines 261: 2000", b:"A horizontal stabilizer jackscrew assembly whose criticality was under-recognized, and whose as-maintained condition drifted over years of service. 88 dead. The barrier: formally identify as critical any item whose failure can cause loss of life, so the system has a structural defense against under-recognized criticality."},
+      {h:"Challenger: 1986", b:"A criticality reclassification that stale paperwork failed to propagate to the people making launch decisions, and a waiver approved through an abbreviated process. 7 dead. The barrier: change classification discipline, and approval authority matched to what the change actually touches."},
+      {h:"Mars Climate Orbiter: 1999", b:"Two teams, one interface, two unit systems, no controlled interface definition catching the mismatch. A $327M spacecraft flown into the atmosphere. The barrier: interface requirements identified, documented, and controlled across every boundary."}]),
+    P("Across the sixteen documented events the fatality count exceeds 880, and thirteen of the sixteen barriers are anchored at the catastrophic level. The barriers are not theoretical, and the requirement set built on them is not bureaucracy: it is the accumulated accident record, converted into requirements.")
+  ],
+  check:{q:"A CM requirement is not flowed down by the contract. It is also the control for a hazard the safety management system names. What is its status on a safety-significant product line?",
+   o:[
+     "Not obligated. The contract defines what is performed",
+     "Obligated through the safety pathway. The contract pathway is silent, and the safety pathway binds anyway",
+     "Obligated only if the Acquirer agrees to fund it",
+     "Obligated only after the hazard is re-assessed for this program"],
+   a:1, why:"Two pathways run in parallel. The contract pathway binds where clauses are flowed. The safety pathway binds where a CM requirement is the control for a hazard the safety management system names, and that pathway does not run through the contract at all. Contract silence removes the contractual obligation. It does not remove the hazard. The Acquirer cannot waive an obligation that was never theirs, and the severity behind the barrier is fixed rather than re-rated program by program."}},
+
+ {id:"M1-14", title:"The safety disposition gate", body:[
+    P("The previous section established that the safety pathway binds. This section is what happens when a program wants to not perform one of these requirements."),
+    S("Contract silence removes the contractual obligation. It does not remove the hazard the requirement controls.",
+      "So the question is never whether the requirement is obligated. The question is which door the program walks through, and who signs."),
+    P("These requirements enter the process at exactly one point. That point is tailoring, the moment a program decides which CM requirements it will and will not perform. It re-enters at every CM plan revision. When a program proposes not to perform a requirement, the gate runs:"),
+    STEPS([
+      {h:"Step 1: the safety check", b:"Is the requirement mandatory for safety? If no, normal tailoring applies and the program proceeds at its discretion. If yes, it cannot be dropped silently: continue."},
+      {h:"Step 2: choose a door", b:"Exactly three dispositions exist. **Perform** the requirement. **Replace** it with a documented equivalent control, validated independently by CM and Safety Assurance against the hazard it controls, not by the program that proposed it. Or **risk-accept** its absence formally, at the authority the safety management system names. **Catastrophic and severe both route to the accountable executive. Neither routes lower.**"},
+      {h:"Step 3: set the health check", b:"For performed and equivalent items, record how the barrier\u2019s continued effectiveness will be monitored over the program life. A barrier must be present and kept effective: a degraded barrier is a finding, not a pass."}]),
+    S("There is no fourth door.",
+      "Silent omission is the failure mode the gate exists to close. Because risk acceptance is visible, routes upward, and cannot be scored down, the expected default for most of these requirements is \u201cperform.\u201d"),
+    C("Severity is looked up, not re-rated", [
+      "Each of these requirements carries a severity assigned by the barrier safety case, and that assignment is fixed. At tailoring it is **looked up, never re-assessed.** This removes the one incentive that reliably corrupts these decisions: rating a barrier\u2019s absence low so the acceptance stays at a comfortable altitude.",
+      "The program does not get to decide how dangerous the barrier\u2019s absence would be. That question was answered when the barrier was established, by people with no tailoring decision in front of them."]),
+    P("Every disposition lands in a per-program compliance record: one structured, queryable row per safety-mandatory requirement, carrying the disposition, the evidence or risk-acceptance reference, the health check method and schedule, and the sign-off. The record is queryable on purpose: the coverage measures are computed from it, and **records that cannot be queried cannot be measured.**"),
+    C("How coverage is measured", [
+      "Two numbers, reported together and never combined. A severity-weighted coverage percentage gives the trend and rewards closing the deadliest gaps first. Alongside it, a plain **count** of open top-band items, target zero, never averaged into anything.",
+      "The count exists because a single open catastrophic barrier must not be able to hide behind a 96% number. And the share of coverage achieved by risk acceptance rather than performance is reported separately, so a high coverage figure is never misread as a safe portfolio."], "teal")
+  ],
+  check:{q:"A program proposes not to perform a requirement mandatory for safety, pointing out that the contract does not flow it down. What are its options?",
+   o:[
+     "Drop it with a recorded rationale: the contract governs what is performed",
+     "Perform it, replace it with an independently validated equivalent control, or obtain formal risk acceptance at the severity-matched authority: contract silence changes nothing",
+     "Obtain Acquirer approval to omit it",
+     "Re-rate the severity for this program and tailor accordingly"],
+   a:1, why:"These requirements are obligated through the safety pathway, so a silent contract is beside the point. The three doors are exhaustive. The severity is pre-anchored and cannot be re-rated, and catastrophic and severe both route to the accountable executive. The Acquirer has no standing in it: the obligation was never theirs to waive. Neither CM nor the program manager can sign this one off alone."}}, ],
  exercises:[
  {id:"M1-E1", title:"Exercise 1: Identifiers",
   scen:"Unit serial 0047 of a designated CI is modified in service. The modification changes the mounting flange pattern, so the item can no longer be installed in place of an unmodified unit.",
@@ -914,7 +966,7 @@ var MODULES = [
     C("Read the fourth column across before you assume", [
       "Every row above satisfies criterion (b), the safety-critical screen. Every row also carries a product unit record, and the records are nothing alike. They run from serialization driven by a per-unit life clock, to lot control with traceability to an approved source on an item whose failure would be catastrophic.",
       "**Both are real control. Lot control is not the weak version of serialization.** It is the correct answer where the approved basis for continued service is conformance to an approved source rather than the history of one article.",
-      "**Determine the product unit record from the test in M1-09 in Module 1, never from the external criticality designation.** The external criticality designation answers a selection question. It does not answer a product unit record question, and reading one off the other is how programs serialize populations that gain nothing from it and lot-control populations that needed a per-unit history.",
+      "**Determine the product unit record from the test in M1-08 in Module 1, never from the external criticality designation.** The external criticality designation answers a selection question. It does not answer a product unit record question, and reading one off the other is how programs serialize populations that gain nothing from it and lot-control populations that needed a per-unit history.",
       "Rows marked **Verify** rest on terminology that is program-specific, contract-specific, or subject to recent revision. Confirm those against the governing contract or the current issue of the cited document before you rely on them."]),
     S("When one of these lands on an item, the safety-critical screen is met. CM records the external criticality designation. CM does not re-determine it.",
       "The consequence judgment was made by qualified people. It was accepted by an authority. Your job is to record it, cite the external criticality designation as the basis, and keep screening, because the other criteria still matter. A customer-assigned designation also engages criterion (d), the Acquirer-designation screen. Sustainment reach usually engages criterion (g), the logistics screen. List every criterion that applies, by letter and by name."),
@@ -976,7 +1028,7 @@ var MODULES = [
       ["Emergency battery, limited by service life", "Capacity degrades with age. Its protective role is a separate question from its limit", "Ask the safety team about the protective function. Screen the rest regardless, where logistics usually applies"]]),
     C("Screen the item, not the label", [
       "The word \u201clife-limited\u201d sorts limits, not items. Two items carrying the same label can land in completely different places, and one item can have more than one reason for its limit.",
-      "The limit also decides nothing about the product unit record. A cycles or hours limit serializes. A shelf-life or cure-date limit does not. That is the two-clocks rule from M1-09 in Module 1, and it is a separate assessment from this one.",
+      "The limit also decides nothing about the product unit record. A cycles or hours limit serializes. A shelf-life or cure-date limit does not. That is the two-clocks rule from M1-08 in Module 1, and it is a separate assessment from this one.",
       "**An aircraft lithium main battery is the example worth remembering.** It has a service life limit, which suggests a routine replacement item. It can also fail in a way that starts a fire, which is a hazard the battery itself causes. The limit tells you nothing about that. The screen does."])
   ],
   check:{q:"A hydraulic seal carries a cure-date shelf life. Does the life limit make it a Configuration Item?",
@@ -1161,7 +1213,7 @@ var MODULES = [
     C("The same-CI question arises for software too", [
       "One software CI with several versions, or several software CIs? That is the same question section M3-14 answers for hardware, and the same triggers answer it. Run them, with two substitutions.",
       "**Read version identifier for PIN. Read build or load for variant.** The decision tool makes the swap for you once you answer its software scope question, and it prints CSCI in the verdict.",
-      "**The product unit record structure is different, and it is not a substitution.** Software carries identity on the loadable part number and the baseline. It never carries a physical unit identifier, so the product unit record-structure test in M1-09 in Module 1 lands on \u201cconfiguration identity only\u201d for every software CI you will ever screen."])
+      "**The product unit record structure is different, and it is not a substitution.** Software carries identity on the loadable part number and the baseline. It never carries a physical unit identifier, so the product unit record-structure test in M1-08 in Module 1 lands on \u201cconfiguration identity only\u201d for every software CI you will ever screen."])
   ],
   check:{q:"A flight display application and the control laws it renders are written by one team, run on one processor, and are loaded as a single image. Each is separately specified, separately qualification tested against its own requirements, and re-versioned on its own schedule. One software CI or two?",
    o:[
@@ -1340,7 +1392,7 @@ var MODULES = [
       "On a safety-significant product line these four are performed regardless of what the contract flows down, or dispositioned through the safety disposition gate.",
       "**Identify** the internal and external interface requirements. Systems Engineering does the identifying. The obligation is the company\u2019s.",
       "**Incorporate** the interface information into the functional, allocated and product documentation. That is the documentation determination, covered in section M3-11.",
-      "**Maintain configuration control** of baselined interface requirements. That is baseline establishment, covered in M1-10 in Module 1.",
+      "**Maintain configuration control** of baselined interface requirements. That is baseline establishment, covered in M1-05 in Module 1.",
       "**Provide a representative** to the Acquirer\u2019s interface control working group where one exists. Conditional on the group existing, and mandatory once it does.",
       "**The interface register and the coverage verification records are CM\u2019s evidence that the first one was performed.** They are what the program safety-requirement disposition record points at. A register with blank rows is not a filing lapse on a safety-mandatory requirement. It is the absence of the evidence."]),
     C("The interface control working group", [
@@ -1736,7 +1788,7 @@ var MODULES = [
       "**Deliverable.** This word names two different things and the course uses it for both. A **procured item** is the article the supplier delivers and your company accepts. A **supplier data deliverable**, or SDRL, is data the supplier submits. Say which one you mean every time. A statement of work that says every deliverable requires a reconciliation report has said something false about one of them.",
       "**Severity.** Two scales use this word and they are not the same one. **Barrier severity** is the band a floor requirement sits in, catastrophic or severe. It is pre-anchored and a program cannot re-rate it. **Hazard severity** is the category the safety analysis assigns to a specific hazard, catastrophic through negligible. Say which one you mean. And neither of them tells you what product unit record an item needs.",
       "**Designated.** Always say which kind, because there are four. Being a CI, being audited, carrying a part attribute, and carrying an external criticality label are separate decisions, made by different screens, at different times. A part inside a procured vendor item can be life-limited and serialized without ever being a CI, and that is ordinary rather than an anomaly.",
-      "**Life limited.** This means two different things. An item limited by flight cycles or operating hours is tracked per unit. An item limited by shelf life or cure date is tracked by lot with a date code. The phrase is identical and the product unit record structure is opposite. This is the two-clocks rule from M1-09 in Module 1. The product unit record-structure test there governs here too."])
+      "**Life limited.** This means two different things. An item limited by flight cycles or operating hours is tracked per unit. An item limited by shelf life or cure date is tracked by lot with a date code. The phrase is identical and the product unit record structure is opposite. This is the two-clocks rule from M1-08 in Module 1. The product unit record-structure test there governs here too."])
   ],
   check:{q:"A supplier asks whether they may deliver a part that departs slightly from the drawing. The departure is acceptable to engineering. What is the correct instrument, and when?",
    o:[
@@ -2363,7 +2415,7 @@ var MODULES = [
       "The parts list says whether a part has a life limit and **which kind**. It does not say how much life remains, and it is not expected to.",
       "A **shelf-life** notation requires a date code with cure or expiry evidence.",
       "A **usage or cycle** notation requires a serialized record with life consumed at delivery.",
-      "The parts list notation is where a reader learns which clock applies. Nothing else in the package states it. This is the two-clocks rule from M1-09 in Module 1, and it governs here too.",
+      "The parts list notation is where a reader learns which clock applies. Nothing else in the package states it. This is the two-clocks rule from M1-08 in Module 1, and it governs here too.",
       "**Lot control is not a lesser form of control.** A part of catastrophic hazard severity may be legitimately lot controlled."]),
     C("The part traceability record", [
       "Defined once and referenced from several requirement rows, because it is the identifier vocabulary the rest of the flowdown speaks in. Per delivered unit or lot it records: serial numbers; lot or batch numbers; **life-limited designation with the assigned life limit and the life consumed at delivery**; safety-critical designation; special handling designations; and traceability to the next higher assembly.",
@@ -3158,7 +3210,7 @@ function viewStart(){
     "<p class='scale'>Seven modules \u00b7 "+nS+" sections \u00b7 "+nE+" exercises</p>"+
     "<p>Work through the sections in order. Each ends with a question that checks the point it was making. The exercises at the end of each module are written, not multiple choice: they are what "+esc(CONFIG.trainerName)+" will actually read.</p></div>"+
     "<dl class='meta'>"+
-    "<dt>Module 1</dt><dd>"+esc(MODULES[0].title)+". What configuration management is, what a CI is, and the identifiers, baselines and documentation sets the rest of the course runs on. "+MODULES[0].sections.length+" sections, "+MODULES[0].exercises.length+" exercises.</dd>"+
+    "<dt>Module 1</dt><dd>"+esc(MODULES[0].title)+". What configuration management is, what a CI is, how it is identified and documented, who owns the processes, and why CI identification and supplier flowdown belong together. "+MODULES[0].sections.length+" sections, "+MODULES[0].exercises.length+" exercises.</dd>"+
     "<dt>Module 2</dt><dd>"+esc(MODULES[1].title)+". Where CI candidates come from, what CM reads to nominate them, and the gates and criteria that decide. "+MODULES[1].sections.length+" sections, "+MODULES[1].exercises.length+" exercises.</dd>"+
     "<dt>Module 3</dt><dd>"+esc(MODULES[2].title)+". The CI structure, the interface register, the documentation determination, and what happens when any of them changes. "+MODULES[2].sections.length+" sections, "+MODULES[2].exercises.length+" exercises.</dd>"+
     "<dt>Module 4</dt><dd>"+esc(MODULES[3].title)+". Reading a statement of work, classifying a procurement into work types, and recording the classification. "+MODULES[3].sections.length+" sections, "+MODULES[3].exercises.length+" exercises.</dd>"+
