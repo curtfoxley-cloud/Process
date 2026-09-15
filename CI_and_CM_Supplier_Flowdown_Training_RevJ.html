@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Configuration Item and CM Supplier Flowdown Training</title>
+<title>Configuration Item and Configuration Management Supplier Flowdown Training</title>
 <style>
 :root{
   --ink:#1E262E; --ink-2:#2C3841; --slate:#5C6D78; --mute:#8998A2;
@@ -273,10 +273,10 @@ var STEPS = function(items,tone){return {t:"steps", x:items, tone:tone||""};};
 
 var MODULES = [
 {
- id:"M1", label:"Module 1", title:"Foundations", sub:"What configuration management is, what a CI is, how it is defined and identified, and how configuration control reaches suppliers",
+ id:"M1", label:"Module 1", title:"Foundations", sub:"What Configuration Management is, what a CI is, how it is defined and identified, and how configuration control reaches suppliers",
  sections:[
- {id:"M1-01", title:"What configuration management is", body:[
-    P("Configuration management keeps three descriptions of a product consistent with one another. Everything else in the discipline exists to protect that consistency."),
+ {id:"M1-01", title:"What Configuration Management is", body:[
+    P("Configuration Management keeps three descriptions of a product consistent with one another. Everything else in the discipline exists to protect that consistency."),
     CARDS([
       {h:"As required", b:"What the product is contractually and functionally obliged to be. Specifications, requirements, interface definitions."},
       {h:"As designed", b:"What the released design says the product is. Drawings, models, software design documentation, the technical data package."},
@@ -1723,7 +1723,7 @@ var MODULES = [
  id:"M4", label:"Module 4", title:"Classifying the procurement", sub:"Reading a statement of work, the nine work types, and the recorded classification everything downstream depends on",
  sections:[
  {id:"M4-01", title:"Why flowdown exists", body:[
-    P("Performing configuration management includes responsibility for the CM performance of the supply chain. The governing obligation: **flow to sub-suppliers the same CM requirements imposed on the company, or suitable tailorings of them.**"),
+    P("Performing configuration management includes responsibility for the CM performance of the sub-suppliers. The governing obligation: **flow to sub-suppliers the same CM requirements imposed on the company, or suitable tailorings of them.**"),
     P("Two words do most of the work. *Same* sets the default: the starting point is everything, not nothing. *Suitable* permits reduction, but suitability has to be established and recorded."),
     S("A barrier that exists at this tier and not at the tier that performs the work is not a barrier.",
       "If your company controls change and records as-built configuration, but the supplier who actually builds the item does neither, the control does not exist where the risk is. The paperwork is at one address and the hazard is at another."),
@@ -3204,13 +3204,13 @@ function viewStart(){
     ? "Your work is saved in this browser as you go. To move between machines, or to keep a copy, use <strong>Save progress</strong> in the header: it downloads a small file you can reopen with <strong>Resume</strong>."
     : "This browser is not storing your work automatically. Use <strong>Save progress</strong> in the header before you close the tab: it downloads a small file, and <strong>Resume</strong> loads it back.";
   return "<div class='hero'>"+
-    "<div class='kick'>"+esc(CONFIG.companyName)+" \u00b7 Configuration management onboarding</div>"+
-    "<h1>Configuration Items and Supplier CM Flowdown</h1>"+
-    "<p class='subtitle'>What a configuration item (CI) is and how one is selected, and how configuration management requirements are imposed on the supply chain and proven to work.</p>"+
+    "<div class='kick'>"+esc(CONFIG.companyName)+" \u00b7 Configuration Management</div>"+
+    "<h1>Configuration Items and Supplier Configuration Management Flowdown</h1>"+
+    "<p class='subtitle'>What a Configuration Item (CI) is and how one is selected, and how Configuration Management (CM) requirements are imposed on the sub-suppliers and proven to work.</p>"+
     "<p class='scale'>Seven modules \u00b7 "+nS+" sections \u00b7 "+nE+" exercises</p>"+
     "<p>Work through the sections in order. Each ends with a question that checks the point it was making. The exercises at the end of each module are written, not multiple choice: they are what "+esc(CONFIG.trainerName)+" will actually read.</p></div>"+
     "<dl class='meta'>"+
-    "<dt>Module 1</dt><dd>"+esc(MODULES[0].title)+". What configuration management is, what a CI is, how it is identified and documented, who owns the processes, and why CI identification and supplier flowdown belong together. "+MODULES[0].sections.length+" sections, "+MODULES[0].exercises.length+" exercises.</dd>"+
+    "<dt>Module 1</dt><dd>"+esc(MODULES[0].title)+". What CM is, what a CI is, how it is identified and documented, who owns the processes, and why CI identification and supplier flowdown belong together. "+MODULES[0].sections.length+" sections, "+MODULES[0].exercises.length+" exercises.</dd>"+
     "<dt>Module 2</dt><dd>"+esc(MODULES[1].title)+". Where CI candidates come from, what CM reads to nominate them, and the gates and criteria that decide. "+MODULES[1].sections.length+" sections, "+MODULES[1].exercises.length+" exercises.</dd>"+
     "<dt>Module 3</dt><dd>"+esc(MODULES[2].title)+". The CI structure, the interface register, the documentation determination, and what happens when any of them changes. "+MODULES[2].sections.length+" sections, "+MODULES[2].exercises.length+" exercises.</dd>"+
     "<dt>Module 4</dt><dd>"+esc(MODULES[3].title)+". Reading a statement of work, classifying a procurement into work types, and recording the classification. "+MODULES[3].sections.length+" sections, "+MODULES[3].exercises.length+" exercises.</dd>"+
