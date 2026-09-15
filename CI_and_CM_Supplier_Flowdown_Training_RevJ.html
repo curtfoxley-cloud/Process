@@ -532,7 +532,7 @@ var MODULES = [
     TABLE(["Process", "Owns", "Answers"], [
       ["CI identification", "What a CI is, the CI structure, the interface register, identifiers and documentation sets", "Is this a CI? At what level? What documentation defines it? Which boundaries exist?"],
       ["Configuration audit", "The two audits, audit designation, the readiness checklists and the two check sets", "Does this CI get an audit? Which one? What has to be true first? What is examined?"],
-      ["Sub-supplier CM flowdown", "The nine work types and their audit roles, the requirement sets, the standing conditional audit clause, effectiveness determinations", "What does this supplier owe? What is their audit role? How do we know their CM works?"],
+      ["Supplier CM flowdown", "The nine work types and their audit roles, the requirement sets, the standing conditional audit clause, effectiveness determinations", "What does this supplier owe? What is their audit role? How do we know their CM works?"],
       ["Safety management system", "Hazard analysis, risk controls, and which CM requirements are mandatory for safety", "Which requirements are mandatory for safety, and what happens if one is not performed?"]]),
     C("Three rules that follow from this", [
       "**Each process references the others by plain name, not by number.** Document numbers change. Names do not. You will see the audit designation assessment, not an appendix letter.",
@@ -541,7 +541,7 @@ var MODULES = [
     S("If you do not know which process answers your question, the question is usually about ownership rather than about the answer.",
       "Find the owner first. The answer is normally already written, and arguing it from scratch is how two processes end up disagreeing.")
   ],
-  check:{q:"The configuration audit process and the sub-supplier CM flowdown process both describe the supplier work types and their audit roles. The two descriptions no longer match. Which one governs, and what happens to the other?",
+  check:{q:"The configuration audit process and the supplier CM flowdown process both describe the supplier work types and their audit roles. The two descriptions no longer match. Which one governs, and what happens to the other?",
    o:[
      "The audit process, because the question is about audits",
      "The flowdown process, because it owns the work types and their audit roles. The audit process only restates them, so the restatement is what gets corrected",
@@ -1643,7 +1643,7 @@ var MODULES = [
       ["What are the failure modes and the criticality for this CI?", "RM&SH, from the FMECA"],
       ["Which hardware implements this hazard control?", "System Safety names the control. Systems Engineering names the hardware"],
       ["Is this CI designated for audit?", "Configuration Management, from the audit designation assessment"],
-      ["What is this supplier's work type, and what is their audit role?", "You, from the classification. CM signs it. The flowdown process defines the roles"],
+      ["What is this supplier's work type, and what is their audit role?", "You, from the work type classification. CM signs it. The flowdown process defines the roles"],
       ["Did we buy the right to audit at their facility?", "Supplier Requirements Engineering. Access is bought in the statement of work or it is a request"],
       ["Is this supplier's CM effective?", "CM holds the evidence. The determining authority named in the CM plan decides"],
       ["What is the as-built configuration of this unit?", "CM status accounting, from the reconciliation report"],
@@ -1653,7 +1653,7 @@ var MODULES = [
     C("Two answers that are almost always wrong", [
       "**Ask CM.** CM records most of these answers and owns few of them. Asking CM to decide design authority, or criticality, or whether a requirement is mandatory for safety, produces a recorded answer with no authority behind it. It will hold until the first time somebody tests it.",
       "**Ask whoever is in the room.** An answer given in a meeting and never written down is not an answer. It is a thing somebody will remember differently in a year, usually at an audit."]),
-    P("**Two habits make the table work.** Ask the owner rather than the nearest person. And write the answer where the next person will look for it, which is the assessment record, the register, or the classification log."),
+    P("**Two habits make the table work.** Ask the owner rather than the nearest person. And write the answer where the next person will look for it, which is the assessment record, the register, or the work type classification log."),
     S("Most delays on this work are not technical. They are a question sitting on the wrong desk.",
       "Getting it to the right one on the first try is worth more than any other habit in this course.")
   ],
@@ -1720,7 +1720,7 @@ var MODULES = [
  ]
 },
 {
- id:"M4", label:"Module 4", title:"Classifying the procurement", sub:"Reading a statement of work, the nine work types, and the recorded classification everything downstream depends on",
+ id:"M4", label:"Module 4", title:"Classifying the procurement", sub:"Reading a statement of work, the nine work types, and the recorded work type classification everything downstream depends on",
  sections:[
  {id:"M4-01", title:"Why flowdown exists", body:[
     P("Performing configuration management includes responsibility for the CM performance of the sub-suppliers. The governing obligation: **flow to sub-suppliers the same CM requirements imposed on the company, or suitable tailorings of them.**"),
@@ -1741,27 +1741,27 @@ var MODULES = [
    a:1, why:"\u201cSame requirements, or suitable tailorings\u201d sets the default at everything. Reduction is permitted but must be earned: suitability has to be established and recorded, never assumed."}},
  {id:"M4-02", title:"Two questions drive everything", body:[
     CARDS([
-      {h:"1. Who holds design authority?", b:"The company, the supplier, the vendor, or split, with the company controlling form, fit, function, interface and qualification while the supplier owns the internals. This determines whether the supplier can change anything, which decides whether change control applies."},
-      {h:"2. Who performs the build?", b:"The company, the supplier, or nobody: a process-only service. This determines whether there is an as-built configuration to reconcile, which decides whether the whole traceability and reconciliation apparatus applies."}], 2),
+      {h:"1. Who holds design authority?", b:"It could be the company, the supplier, the vendor, or split, with the company controlling form, fit, function, interface and qualification while the supplier owns the internals. This determines whether the supplier can change anything, which decides whether change control applies."},
+      {h:"2. Who performs the build?", b:"It could be the company, the supplier, or nobody: a process-only service. This determines whether there is an as-built configuration to reconcile, which decides whether the whole traceability and reconciliation apparatus applies."}], 2),
     P("Item type, whether hardware, software, commercial item or service, is a modifier on the answer rather than a third question."),
     S("Every other requirement in the matrix follows from those two facts.",
-      "Which is why classification is performed before derivation, and why a procurement whose classification cannot be determined is not released until it can.")
+      "Which is why work type classification is performed before derivation, and why a procurement whose classification cannot be determined is not released until it can.")
   ],
   check:{q:"Why are design authority and who-performs-the-build the two questions that drive classification?",
    o:[
      "Because they are the two facts most reliably stated in a purchase order",
      "Because they determine price and schedule risk",
-     "Because they determine whether change control applies and whether there is an as-built configuration to reconcile",
+     "Because they determine whether change control applies and whether there is an as-built configuration to reconcile at the supplier level",
      "Because the Acquirer requires both to be recorded"],
    a:2, why:"They determine what can go wrong. Design authority decides whether the supplier can change anything. Who builds decides whether there is an as-built to reconcile against released design."}},
  {id:"M4-03", title:"The words you will meet in this module", body:[
-    P("This module and the three that follow use a working vocabulary that will be unfamiliar if you have not written a subcontract before. None of it is difficult. All of it is used precisely, and a word used loosely here is how requirements go missing."),
+    P("This module and the three that follow use a working vocabulary that will be unfamiliar if you have not written a subcontract or statement of work before. None of it is difficult. All of it is used precisely, and a word used loosely here is how requirements go missing."),
     TABLE(["Term", "What it means here"], [
       ["Statement of work", "The document that tells a supplier what to do. CM requirements reach a supplier through it, or they do not reach the supplier at all. Often abbreviated SOW, and when it is a subcontract to a supplier you may see SSOW."],
       ["Flowdown", "Passing a requirement from your company down to a supplier. A requirement that exists at your tier and not at the tier doing the work is not protecting anything."],
       ["Work type", "One of nine categories describing what kind of work a supplier performs for you. It is decided by two questions and it determines what you impose."],
-      ["Classification", "The recorded decision that a given procurement is one or more work types. It is written on the classification log, with a name and a date."],
-      ["Requirement matrix", "The workbook that maps each work type to the requirements it receives. You read down the column for your work type."],
+      ["Classification", "Used in this training to mean work type classification, which is the recorded decision that a given procurement is one or more work types. It is written on the classification log, with a name and a date. Not to be confused with change classifications."],
+      ["Requirement matrix", "Used in this training to mean the workbook that maps each work type to the CM requirements it receives. You read down the column for your work type."],
       ["Supplier data deliverable (SDRL)", "A defined data item the supplier submits: content, frequency or trigger, and submittal terms. Identified by SDRL number in the matrix workbook. Every requirement is cited with one, unless it is a conduct or access obligation."],
       ["Procured item", "The hardware or software article your company accepts as a separate line on the acceptance record. Ask what the company signs for. Each answer is one procured item. A part the supplier installed into an assembly before shipping is **embodied**, and it is content of that assembly. The same part shipped loose is a procured item on its own. **A procured item is not a supplier data deliverable, and the word deliverable alone does not distinguish them.**"],
       ["Design authority", "The authority to establish and change the technical definition of an item. It can be split. Under a source control drawing the supplier holds it for the internals and your company holds it for form, fit, function, interface, and qualification."],
@@ -1775,8 +1775,8 @@ var MODULES = [
       ["As-built", "What was actually manufactured and installed in a specific unit. It is compared against the released design, and the comparison is the reconciliation."],
       ["Reconciliation", "Comparing as-built against released design and dispositioning every difference. It runs continuously at scale, and audits sample it."],
       ["Delta", "A difference the reconciliation finds. Every delta is dispositioned, meaning somebody decides what happens about it."],
-      ["Variance", "Approval to accept a departure from the released design, requested before delivery. Also called a deviation or waiver depending on timing and local convention."],
-      ["Nonconformance", "A condition that does not meet the released design. It is recorded, dispositioned by the required authority, and the disposition is then carried out and verified."],
+      ["Variance", "Approval to accept a departure from the released design or requirement, requested before delivery. Also called a deviation or waiver depending on timing and local convention."],
+      ["Nonconformance", "A condition that does not meet the released design or requirement. It is recorded, dispositioned by the required authority, and the disposition is then carried out and verified."],
       ["Effectivity", "The point at which a change takes effect, usually stated as a unit or line number. It answers the question: starting with which one?"],
       ["Unit identifier", "The number that identifies one physical item. It is a serial number where the item is tracked individually, or a lot or batch number where a whole lot is accepted together."],
       ["Traceability record", "The record that ties each delivered item to its part number, its unit identifier, its designations, and the assembly above it."],
@@ -1846,9 +1846,9 @@ var MODULES = [
       ["WT07", "Repair and overhaul", "As-maintained records, retrofit incorporation, and retention of unit identifiers and life through part-number changes.", "Company. Supplier where delegated.", "Supplier"],
       ["WT08", "Special process services", "Process work only, with no item design. Flowdown is process specification control and change notification.", "Company, through the process specification", "Not applicable"],
       ["WT09", "Installation build to company-provisioned materiel", "The supplier assembles a complete end item by executing installation work orders. The materiel is provided by the company rather than bought by the supplier.", "Company", "Supplier, for installation and integration"]]),
-    C("Two names that changed, and why it matters", [
-      "WT04 used to be called full CI development. That name never said the supplier builds the item. The type it is most easily confused with is WT03, the design agent, where the supplier develops a design and does not build. The two most confusable types were using the same word for the thing that separates them.",
-      "WT05 used to be called catalog item. That name never mentioned vendor items. A vendor-item-controlled procurement is the case people most often fail to classify, and the usual mistake is filing it as WT02. That mistake imposes a design-authority requirement set on a supplier that holds no design authority."]),
+    C("Common points of confusion", [
+      "WT04 is most easily confused with is WT03, the design agent, where the supplier develops a design and does not build.",
+      "WT05 is for commercial-off-the-shelf (COTS), catalog, and vendor items. A vendor-item-controlled procurement is the case people most often fail to classify, and the usual mistake is filing it as WT02. That mistake imposes a design-authority requirement set on a supplier that holds no design authority."]),
     P("Typical examples. Machined parts to released drawings are WT01. Source-controlled valves, actuators, and power supplies are WT02. Design houses producing drawings and models are WT03. Major subsystem development subcontracts are WT04. Catalog connectors and commercial computing are WT05. Operational flight program subcontracts and embedded firmware are WT06. Depot and OEM repair stations are WT07. Heat treat, coating, plating, and non-destructive inspection are WT08. Licensed or contract final assembly lines are WT09.")
   ],
   check:{q:"A supplier develops and builds an actuator under your source control drawing. You control form, fit, function, interface and qualification. They are the design activity for the internals. Which work type?",
@@ -1859,7 +1859,7 @@ var MODULES = [
      "WT04 Full CI design and build"],
    a:1, why:"Design authority is split and the supplier builds. That is WT02. WT01 puts no design authority at the supplier at all. WT03 has the company performing the build. WT04 has the supplier holding design authority against a company specification, with the company baselining at the allocated level."}},
  {id:"M4-06", title:"Company-provisioned materiel, and why WT09 exists", body:[
-    P("WT09 is the newest work type. It covers a supplier who assembles a whole end item, such as an aircraft, from materiel the supplier did not buy."),
+    P("WT09 covers a supplier who assembles a whole end item, such as an aircraft, from materiel the supplier did not buy."),
     P("The materiel arrives in one of three ways. It may be issued as a kit against a kit content list. It may be furnished loose, item by item, from a bonded store or straight to the line. Or the company may direct the purchase, raising the demand and choosing the source, with the supplier simply receiving and installing. All three are called company-provisioned materiel."),
     C("The sentence that defines the type", [
       "The company holds the demand. The supplier executes the installation.",
@@ -3206,7 +3206,7 @@ function viewStart(){
   return "<div class='hero'>"+
     "<div class='kick'>"+esc(CONFIG.companyName)+" \u00b7 Configuration Management</div>"+
     "<h1>Configuration Items and Supplier Configuration Management Flowdown</h1>"+
-    "<p class='subtitle'>What a Configuration Item (CI) is and how one is selected, and how Configuration Management (CM) requirements are imposed on sub-suppliers and proven to work.</p>"+
+    "<p class='subtitle'>What a Configuration Item (CI) is and how one is selected, and how Configuration Management (CM) requirements are imposed on suppliers and proven to work.</p>"+
     "<p class='scale'>Seven modules \u00b7 "+nS+" sections \u00b7 "+nE+" exercises</p>"+
     "<p>Work through the sections in order. Each ends with a question that checks the point it was making. The exercises at the end of each module are written, not multiple choice: they are what "+esc(CONFIG.trainerName)+" will actually read.</p></div>"+
     "<dl class='meta'>"+
