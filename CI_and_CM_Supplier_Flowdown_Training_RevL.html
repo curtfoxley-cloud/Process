@@ -261,7 +261,7 @@ var CONFIG = {
 
   /* ---- content currency: update these two whenever you revise the content ---- */
   contentRev:    "L",           // revision of this training file
-  alignedTo:     "CI Identification Process rev H draft and the part note code draft, full reconciliation of critical parts and product unit identifier content, checked 2026-09-17", // what the content was last reconciled against, in your own words.
+  alignedTo:     "CI Identification Process rev H draft and the part note code draft, full reconciliation of critical parts and product unit identifier content, with dedicated IUID and critical-item sections, checked 2026-09-18", // what the content was last reconciled against, in your own words.
                                    // e.g. "CI identification process rev H and the flowdown process rev D, checked 2026-09-16"
 
   /* ---- trainer view ----
@@ -294,6 +294,8 @@ var RULES = {
   R_UNIT_RECORD:     "The product unit record-structure test",
   R_UNIT_DRIVERS:    "Independent product unit recording drivers",
   R_TRACE_TO_END_ITEM:"Serialization and traceability records run up the product tree to the end item",
+  R_IUID:            "Item Unique Identification: when it applies, what it marks, what it reports",
+  R_CRITICAL_FAMILIES:"Critical items: the families the word covers, and which authority assigns each",
   R_SW_ID:           "Software and version identifiers",
   R_DOC_ID:          "Document identifiers",
   R_DRAWING_TYPES:   "Drawing types and what they say about design authority",
@@ -313,6 +315,7 @@ var RULES = {
   R_INFLUENCING:     "The influencing part",
 
   R_IDENT_ACTIVITIES:"The configuration identification activities",
+  R_PRODUCT_STRUCTURE:"Product structure, the levels of assembly, and how it differs from the CI structure",
   R_STRUCTURE:       "The CI structure and hierarchy",
   R_NO_DECOMPOSE:    "Supplier-designed items are not decomposed",
   R_MBSE:            "MBSE-to-CI structure alignment",
@@ -370,7 +373,7 @@ var STEPS = function(items,tone){return {t:"steps", x:items, tone:tone||""};};
 
 var MODULES = [
 {
- id:"M1", label:"Module 1", title:"Foundations", sub:"What Configuration Management is, what a CI is, how it is defined and identified, and how configuration control reaches suppliers",
+ id:"M1", label:"Module 1", title:"Foundations", sub:"What Configuration Management is, what a CI is, how it is defined and identified, how product unit records and Item Unique Identification work, and how configuration control reaches suppliers",
  sections:[
  {id:"M1-01", gov:["R_CM_TRIAD"], title:"What Configuration Management is", body:[
     P("Configuration Management keeps three descriptions of a product consistent with one another. Everything else in the discipline exists to protect that consistency."),
@@ -570,9 +573,10 @@ var MODULES = [
       ["Configuration identity alone", "**No physical unit identifier**", "Some software and complex electronic hardware carry identity on the loadable part number and the baseline. Do not record these as serialization obligations"],
       ["Nothing at item level", "**No independent unit identifier**", "The item is controlled within its parent CI\u2019s configuration documentation. Unless something below it carries a record. Then it is serialized anyway, and M1-09 says why"]]),
     C("The product unit record does not tell you whether an item is critical, and criticality does not tell you the product unit record", [
+      "**A word on the word critical, before it appears below.** This section uses **critical item** as a blanket term, meaning any item carrying one of the safety-related designations. That is how the phrase is used in industry, and it is too loose to write in a rationale. **Section M2-11 takes the word apart** into the families it covers, and Modules 2 onward always name the family. Here, read critical item as \u201can item some designation has flagged,\u201d and nothing more precise than that.",
       "Three separate determinations meet here. Whether the item is a CI. Whether the item is safety-critical. What product unit record it needs. Each has its own test. Run each one, because none of them answers either of the others. The safety-critical determination is the one Module 2 turns into a formal screen, and it is answered against the safety management system rather than against anything on the shop floor.",
       "**Going forward, from criticality to the record.** A critical item does not automatically get a serial number. Most critical items do carry a product unit record, and the test above decides which kind. A part whose approved basis for continued service is a per-unit life clock is serialized. A part accepted on lot conformance to an approved source is lot or batch controlled. **Lot control is not the weak version of serialization.** It is the right answer where the approved basis is conformance to an approved source rather than the history of one article. A nuclear safety-related component accepted under commercial grade dedication is exactly that case, and its failure would be catastrophic. Some critical items carry no product unit record at all, where the hazard is mitigated by design rather than by a per-unit or per-lot control.",
-      "**Going backward, from the record to criticality. This is the direction that costs more.** An item carrying a serial number is not thereby critical, and is not thereby a CI. Item unique identification serializes on serially managed status, on mission essential or controlled inventory status, or on unit acquisition cost. A cheap, low-consequence bracket is serialized if the inventory system manages it by serial. An assembly is serialized for containing something that was. Counterfeit avoidance drives traceability to the original component manufacturer and never looks at criticality at all.",
+      "**Going backward, from the record to criticality. This is the direction that costs more.** An item carrying a serial number is not thereby critical, and is not thereby a CI. IUID serializes on serially managed status, on mission essential or controlled inventory status, or on unit acquisition cost. A cheap, low-consequence bracket is serialized if the inventory system manages it by serial. An assembly is serialized for containing something that was. Counterfeit avoidance drives traceability to the original component manufacturer and never looks at criticality at all.",
       "**So you cannot read the safety-critical answer off the product unit record, in either direction.** A blank serial field is not evidence the item is not critical. A populated one is not evidence that it is. Run the safety-critical question against the safety management system every time, and let the product unit record-structure test answer its own question.",
       "**What this does not say.** It does not say critical items go unserialized. Most carry a product unit record and many are serialized. It says the record follows the test, not the label."]),
     S("Two clocks, one phrase. One exception.",
@@ -595,17 +599,14 @@ var MODULES = [
      "Both lot or batch with a date code, because a calendar limit attaches to the lot rather than to the article",
      "Both serial numbers, because a calendar replacement limit is a life limit like any other",
      "The sealant lot or batch with a date code. The cylinder a serial number",
-     "The sealant lot or batch. The cylinder a serial number only where the contract requires unique identification"],
-   a:2, why:"The two clocks rule sorts the sealant. Its limit is a shelf life on the material as supplied, it attaches to the manufacturing lot, and a lot number with a date code is what records it. The cylinder is the exception to that rule. Its limit sits in the airworthiness limitations against a discrete part, and the marking requirement for those parts does not care whether the limit runs in cycles, in hours or on the calendar. It gets a serial number on that basis. Reading the clock alone gets the cylinder wrong, which is the common error. The last option looks careful and is not: unique identification is a separate driver that may also apply, and the serial number here is already required without it."}},
+     "The sealant lot or batch. The cylinder a serial number only where the contract requires IUID"],
+   a:2, why:"The two clocks rule sorts the sealant. Its limit is a shelf life on the material as supplied, it attaches to the manufacturing lot, and a lot number with a date code is what records it. The cylinder is the exception to that rule. Its limit sits in the airworthiness limitations against a discrete part, and the marking requirement for those parts does not care whether the limit runs in cycles, in hours or on the calendar. It gets a serial number on that basis. Reading the clock alone gets the cylinder wrong, which is the common error. The last option looks careful and is not: IUID is a separate driver that may also apply, and the serial number here is already required without it."}},
 
  {id:"M1-09", gov:["R_UNIT_DRIVERS", "R_TRACE_TO_END_ITEM"], title:"Recording drivers, and the climb to the end item", body:[
     P("The previous section asked what the item needs. This section asks what somebody else already requires, and then how far the resulting records travel. Run both against every item, and take the union."),
     P("Eight requirements impose a product unit record on their own, regardless of criticality or CI status. Each is checked separately for every item, because each of them can impose a record the test in M1-08 would not have. Two of them bring a serial number. Six bring lot or batch records."),
     L([
-      "**Item unique identification.** Drives serialization. It is a contract requirement. It arrives through a clause in the contract rather than through the type design, and it does not apply to aircraft or subsystems delivered only under civil certification unless the contract requires it. It applies in three ways. **At or above the unit acquisition cost threshold**, which is five thousand dollars. **Below that threshold**, where the requiring activity determines the item is mission essential or controlled inventory. **Regardless of value**, to the five populations listed below.",
-      "**The five regardless-of-value populations.** Serially managed items. Parent items that contain an embedded item carrying a unique item identifier. Warranted serialized items. Special tooling and special test equipment for a major defense acquisition program, designated for preservation and storage. Items the requiring activity identifies as high risk. The serially managed population itself includes critical safety items, capital asset equipment, relocatable facilities, controlled inventory items, and depot level repairable items.",
-      "**What unique identification adds.** Every unique item identifier carries a serial number, so an item under unique identification is a serialized item. The identifier adds two things a serial number alone does not: a machine-readable mark, and a registry record. Lot recording alone never satisfies it. The marking stops at the parent item the contract names. **The records do not stop there,** for the reason in the callout below.",
-      "**Criticality and unique identification.** Mostly it does not look at criticality, so an item with no criticality designation at all can still be serialized by it. **There is one exception, and it runs the other way.** Customer-assigned critical safety items are identified as serially managed, so that designation does carry serialization with it. It is the only criticality designation in this course that does. Check unique identification separately for every other item, and confirm the clause is actually in the contract, because contracts and drawings written before the rule took effect may carry no marking requirement.",
+      "**Item Unique Identification, or IUID.** Drives serialization. It is a contract requirement rather than a design requirement, and it applies in three ways: at or above a unit acquisition cost threshold, below that threshold where the requiring activity names the item mission essential or controlled inventory, and regardless of value to five named populations. **Section M1-10 is that driver in full**, because it is the one with the most ways to get it wrong. Two facts carry from here. Every unique item identifier carries a serial number, so an item under IUID is a serialized item. And IUID mostly does not look at criticality, so an item with no criticality designation at all can still be serialized by it.",
       "**Airworthiness limitation marking.** Drives serialization. Triggers where a replacement time, inspection interval or related procedure appears in the airworthiness limitations section or the instructions for continued airworthiness. Work from what the limitations section actually contains, not from a criticality label.",
       "**Commercial grade dedication.** Drives lot or batch recording. Accepts a commercial item against identified critical characteristics on a lot basis.",
       "**Counterfeit avoidance.** Drives lot or batch recording, with a source chain. It traces a part back to its original component manufacturer through the lot. It is a contract requirement rather than a design requirement, so it arrives with the clause and not with the drawing. The electronic part definition it uses is broad: it reaches ordinary resistors, capacitors and diodes, not only microcircuits. Where traceability to an approved source cannot be established, inspection, testing and authentication are what replace it. **Serialization records which unit. Counterfeit avoidance records which source and which lot.** This one is frequently mistaken for a serialization requirement and is not one.",
@@ -618,17 +619,13 @@ var MODULES = [
       "**Some requirements set an item’s identity.** Serialization does. Lot or batch recording does. Unique identification does. Each one produces a number that distinguishes this unit, or this population, from another. One more requirement links those identities together: the traceability requirement, which builds the parent and child records that climb the tree.",
       "**Other requirements only name a condition.** Life limited is a condition. Special handling is a condition. So are the criticality designations. They tell you something true about the item and they produce no number at all.",
       "**A condition does not create a record by itself.** The requirement source behind it does. That is why the three part attribute designations never answer the record question on their own, and it is the same rule as the one above in a form you can apply at a parts list: the record follows the test and the drivers, not the label."]),
-    C("Two terms unique identification uses, carried word for word", [
-      "**Unique item identifier.** “A set of data elements marked on items that is globally unique and unambiguous. The term includes a concatenated unique item identifier or a DoD recognized unique identification equivalent.”",
-      "**Parent item.** “The item assembly, intermediate component, or subassembly that has an embedded item with a unique item identifier or DoD recognized unique identification equivalent.”",
-      "The second one is the term that matters most to CM, because a parent item is a position in the product tree rather than a kind of hardware. An ordinary assembly becomes a parent item the moment something inside it carries a unique item identifier."]),
     C("Records run up the product tree to the end item", [
       "A serialized valve installs in a manifold. The manifold installs in a hydraulic module. The module installs in the air vehicle. Your company keeps a record at each step.",
       "**Where an item is serialized or lot or batch recorded, serialization and traceability records are maintained up the product tree to the end item.** The rule applies whatever drove the record. There is no threshold and no shorter scope.",
       "**The end item is the top-level asset or system under contract.** It is typically the complete air vehicle or the complete weapon system. It is not a line replaceable unit.",
       "**Every physical parent below the end item is serialized.** A lot number alone does not establish location, so the parent of a lot-recorded item is serialized for the same reason a serialized item’s parent is.",
       "This is company direction rather than a regulatory requirement, and it is worth knowing which is which. Quality system traceability reaches the next higher assembly. Unique identification marking stops at the parent item the contract names. **The climb to the end item goes further than either, on purpose.**"]),
-    P("**Who does what.** Design Engineering puts the requirement on the parts list. CM reviews and verifies the record structure for each item, then reconciles the design requirement against the record the build actually captured. RM&SH supplies the basis for life limits and inspection intervals. System Safety concurs on safety-critical designations. Logistics identifies the unique identification triggers and the marking the maintenance program drives. Supplier Requirements Engineering flows the part attribute designations and the marking requirements to suppliers."),
+    P("**Who does what.** Design Engineering puts the requirement on the parts list. CM reviews and verifies the record structure for each item, then reconciles the design requirement against the record the build actually captured. RM&SH supplies the basis for life limits and inspection intervals. System Safety concurs on safety-critical designations. Logistics identifies the IUID triggers and the marking the maintenance program drives. Supplier Requirements Engineering flows the part attribute designations and the marking requirements to suppliers."),
     S("Run the test. Run the eight drivers. Then climb the tree.",
       "The test tells you what the item needs. The drivers tell you what somebody else already requires. The climb tells you what its parents need. An assembly the test would leave unrecorded still gets a serial number if anything below it carries a record. The answer is the union of all three, and it is recorded per item, not inherited from the CI.")
   ],
@@ -638,8 +635,51 @@ var MODULES = [
      "Yes, provided the serial number appears in the technical data package",
      "No. The serial number shows that something required one, not what required it",
      "No. The item must first be designated a CI before the safety-critical question can be answered"],
-   a:2, why:"This is the backward direction, and it is the expensive one. A serial number is evidence that something required a product unit record. It is not evidence of what required it. Item unique identification triggers on unit acquisition cost, on mission essential or controlled inventory status, on serially managed status, on warranty, on high-risk designation, on qualifying special tooling and test equipment, and on being a parent item that contains something already carrying a unique item identifier. A low-consequence item can be serialized on cost alone. A backshell can be serialized for containing something else, or for sitting between a recorded part and the end item, since records climb the product tree. One designation does run the other way: a customer-assigned critical safety item is serially managed, so it is serialized. That is an inference from the designation to the serial number, not from the serial number back to a hazard, and this backshell carries no such designation. The reverse error is just as common: a blank serial field is not evidence an item is not critical, because a critical item may be lot-controlled or carry no product unit record at all. The last option inverts the order. The safety-critical question is part of how you decide whether the item is a CI, so it cannot wait until after."}},
- {id:"M1-10", gov:["R_SW_ID"], title:"Software identifiers", body:[
+   a:2, why:"This is the backward direction, and it is the expensive one. A serial number is evidence that something required a product unit record. It is not evidence of what required it. IUID triggers on unit acquisition cost, on mission essential or controlled inventory status, on serially managed status, on warranty, on high-risk designation, on qualifying special tooling and test equipment, and on being a parent item that contains something already carrying a unique item identifier. A low-consequence item can be serialized on cost alone. A backshell can be serialized for containing something else, or for sitting between a recorded part and the end item, since records climb the product tree. One designation does run the other way: a customer-assigned critical safety item is serially managed, so it is serialized. That is an inference from the designation to the serial number, not from the serial number back to a hazard, and this backshell carries no such designation. The reverse error is just as common: a blank serial field is not evidence an item is not critical, because a critical item may be lot-controlled or carry no product unit record at all. The last option inverts the order. The safety-critical question is part of how you decide whether the item is a CI, so it cannot wait until after."}},
+ {id:"M1-10", gov:["R_IUID", "R_UNIT_DRIVERS"], title:"Item Unique Identification", body:[
+    P("The previous section listed Item Unique Identification as one of the eight recording drivers. It gets its own section because it is the driver most often misunderstood, and because getting it wrong is expensive in both directions. Programs mark items the contract never asked for. Programs also deliver items with no mark and no registry record, and find out at receipt."),
+    P("**Item Unique Identification is abbreviated IUID.** This course writes IUID and not “unique identification,” because the short form loses the point. IUID is a specific Department of Defense system with a specific clause behind it. It is not a general habit of identifying things uniquely."),
+    S("IUID marks an item so a machine can read it, and registers that mark so the Government can find the item again.",
+      "Two obligations, not one. The mark goes on the item. The record goes to the DoD IUID Registry. A program that marks and does not report has done half of it, and the half it did cannot be checked from a desk."),
+    C("Three terms, carried word for word from the contract clause", [
+      "**DoD item unique identification** means “a system of marking items delivered to DoD with unique item identifiers that have machine-readable data elements to distinguish an item from all other like and unlike items. For items that are serialized within the enterprise identifier, the unique item identifier shall include the data elements of the enterprise identifier and a unique serial number. For items that are serialized within the part, lot, or batch number within the enterprise identifier, the unique item identifier shall include the data elements of the enterprise identifier; the original part, lot, or batch number; and the serial number.”",
+      "**Unique item identifier**, abbreviated **UII**, means “a set of data elements marked on items that is globally unique and unambiguous. The term includes a concatenated unique item identifier or a DoD recognized unique identification equivalent.”",
+      "**Parent item** means “the item assembly, intermediate component, or subassembly that has an embedded item with a unique item identifier or DoD recognized unique identification equivalent.”",
+      "The third one is the term that matters most to CM, because a parent item is a **position in the product tree** rather than a kind of hardware. An ordinary bracket becomes a parent item the moment something inside it carries a UII."]),
+    P("**IUID is a contract requirement.** It applies when the contract includes the clause at DFARS 252.211-7003, Item Unique Identification and Valuation. It does not arrive through the type design, and it does not arrive through a criticality designation. It does not apply to aircraft or subsystems delivered only under FAA certification, unless the contract requires it. Where the prime contract requires IUID for an item a supplier provides, your company flows that clause down to the subcontract, including subcontracts for commercial products and commercial services."),
+    P("DFARS 211.274-2(a) sets the policy. It applies in three ways, and the third way is the one people miss."),
+    TABLE(["When IUID applies", "The test", "Authority"], [
+      ["At or above the value threshold", "The Government’s unit acquisition cost for a delivered item is $5,000 or more. The contract line item establishes that cost", "DFARS 211.274-2(a)(1)"],
+      ["Below the threshold, by determination", "The requiring activity determines that IUID is required for a mission essential or controlled inventory item. The contract identifies these items", "DFARS 211.274-2(a)(2)"],
+      ["Regardless of value, for five populations", "**DoD serially managed items.** Reparable and nonreparable alike, including a subassembly, component or part embedded within another. The contract lists embedded serially managed items in an attachment", "DFARS 211.274-2(a)(3)(i)"],
+      ["", "**Parent items.** Any item that contains an embedded item carrying a UII", "DFARS 211.274-2(a)(3)(ii)"],
+      ["", "**Warranted serialized items.** A serialized item delivered under a warranty", "DFARS 211.274-2(a)(3)(iii)"],
+      ["", "**Special tooling and special test equipment** for a major defense acquisition program, designated for preservation and storage", "DFARS 211.274-2(a)(3)(iv)"],
+      ["", "**High risk items.** Items the requiring activity identifies as vulnerable to supply chain threat, targeted by cyber threats, or susceptible to counterfeiting", "DFARS 211.274-2(a)(3)(v)"]]),
+    C("What DoD serially managed means, and why CM cares", [
+      "A **DoD serially managed item** is an item the primary inventory control activity identifies as serially managed under DoDI 8320.04. The populations include capital asset equipment, **Critical Safety Items**, relocatable facilities, special test equipment and special tooling that is part of a major defense acquisition program, controlled inventory items as appropriate, and depot level repairable items as determined by the item manager or the program manager.",
+      "**This is the route by which a Critical Safety Item gets its serial number.** The criticality designation does not serialize the item. The designation makes it serially managed. Serially managed status triggers IUID regardless of value. IUID carries a serial number. Three steps, and a trainee who compresses them will claim the wrong authority when a supplier asks why.",
+      "Section M2-12 walks that chain in full."]),
+    S("Every UII carries a serial number. Not every serial number is a UII.",
+      "An item under IUID is a serialized item, always. A serialized item is not necessarily under IUID. Lot or batch recording alone never satisfies IUID, because a lot number does not distinguish one article from another."),
+    P("**Marking.** The build environment marks the UII data elements on the item using a two-dimensional data matrix symbol complying with ISO/IEC 16022, ECC200. Marking follows MIL-STD-130, Identification Marking of U.S. Military Property, at its latest version. The build environment verifies each mark with an automatic identification technology device programmed to the requirements of Appendix A of MIL-STD-130. The issuing agency code is not placed on the item. Where an item is too small or otherwise impractical to mark, follow the alternative marking provisions of MIL-STD-130. Shipments, storage containers and packages holding uniquely identified items are labeled per MIL-STD-129, Military Marking for Shipment and Storage."),
+    P("**The serialization construct.** The enterprise chooses one of three methods, and the choice is made once rather than per item. Serialize within the enterprise identifier. Serialize within the original part, lot or batch number, within the enterprise identifier. Or use a DoD recognized unique identification equivalent. Each method gives every item its own identity."),
+    P("**Reporting.** The contractor reports each UII at the time of delivery, as part of the Material Inspection and Receiving Report. End items are reported through the receiving report capability in Wide Area WorkFlow. Embedded items are reported through the Wide Area WorkFlow embedded items capability, by direct data submission to the IUID Registry, or as a deliverable attachment. **For each embedded item, the report carries the UII of the parent item that contains it.** That pairing is the registry’s record of what is installed in what."),
+    C("Four things IUID is not", [
+      "**It is not a criticality designation.** It tells you the contract wanted this item tracked. It tells you nothing about consequence. A low-consequence bracket at $5,200 carries a UII. A catastrophic-consequence item on a civil-certified aircraft may carry none.",
+      "**It is not a design requirement.** It arrives with the clause, so it can appear on a program mid-life and can differ between two contracts for the same hardware. Confirm the clause is in the contract before you impose it, because contracts and drawings written before the rule took effect carry no marking requirement at all.",
+      "**It is not the same as traceability.** IUID establishes identity. It does not by itself build the parent and child records that link one identity to another.",
+      "**Its marking does not climb the product tree on its own.** The marking obligation stops at the parent item the contract names. Coordinate that level with the contracting activity, because the contract governs which assembly is the parent item. **The serialization and traceability records climb anyway**, to the end item, under the rule in M1-09. Two different scopes, and holding them apart is the whole skill here."])
+  ],
+  check:{q:"A supplier delivers a $900 harness assembly. It contains an embedded connector module that carries a unique item identifier. The supplier argues that IUID does not apply to the harness, because the harness costs well under the threshold and carries no criticality designation. Are they right?",
+   o:[
+     "Yes. Below the value threshold and with no criticality designation, IUID does not reach the harness",
+     "Yes, provided the connector module’s own UII was reported at delivery",
+     "No. The harness is a parent item, and a parent item carries IUID regardless of value",
+     "No. IUID applies to every item in a delivered assembly once any part of it is marked"],
+   a:2, why:"The harness contains an embedded item carrying a UII, which makes it a parent item, and a parent item requires IUID regardless of value. The supplier reasoned from the two triggers they knew and stopped. Value is one trigger. Mission essential or controlled inventory status is another. Five more apply regardless of value, and parent item is one of those five. At delivery the report carries the parent item's UII together with the UII of each embedded item, so reporting the module alone is exactly the gap. The last option overshoots: IUID does not spread to every part in the assembly, only to the embedded items the contract identifies and to the parent items that contain them."}},
+
+ {id:"M1-11", gov:["R_SW_ID"], title:"Software identifiers", body:[
     P("Software needs its own identity model because software changes without necessarily changing the physical article that loads it."),
     P("Software asks two primary questions: which software CI is this, and which version is it?"),
     TABLE(["The question", "The identifier that answers it", "The rule"], [
@@ -660,7 +700,7 @@ var MODULES = [
      "One serial number for the hardware and software together",
      "A new CAGE code for every software version"],
    a:1, why:"When code is managed separately, the device retains its PIN and applicable product unit identity, while the code has its own software CI identifier and version. The two identities allow their change and status threads to remain independent."}},
- {id:"M1-11", gov:["R_DOC_ID"], title:"Document identifiers", body:[
+ {id:"M1-12", gov:["R_DOC_ID"], title:"Document identifiers", body:[
     P("Configuration documentation is identified in its own right. The document identifier tells you which document you are looking at; it does not replace the identifier of the configuration the document defines."),
     TABLE(["The question", "The identifier that answers it", "The rule"], [
       ["Whose definition is this?", "Enterprise identifier: the design activity CAGE code", "A document number is only unique within the activity that assigned it, exactly as a part number is"],
@@ -678,7 +718,7 @@ var MODULES = [
      "The serial number of the unit it describes"],
    a:2, why:"The document identifier identifies which document it is. The revision or version identifier identifies which released version of that document is being used. CI and PIN identify the configuration, not the document revision."}},
 
- {id:"M1-12", gov:["R_PROCESS_OWNER"], title:"Process ownership: who owns what", body:[
+ {id:"M1-13", gov:["R_PROCESS_OWNER"], title:"Process ownership: who owns what", body:[
     P("Four processes govern this work. Each one owns something. Each one defers to the others for everything it does not own. Knowing which is which saves a great deal of time."),
     TABLE(["Process", "Owns", "Answers"], [
       ["CI identification", "What a CI is, the CI structure, the interface register, identifiers and documentation sets", "Is this a CI? At what level? What documentation defines it? Which boundaries exist?"],
@@ -700,7 +740,7 @@ var MODULES = [
      "Neither. Raise it to the program CM plan and let the plan settle it"],
    a:1, why:"Where two processes cover the same ground, the owner governs. The flowdown process owns the work types and their audit roles, so the conflict resolves in its favor and the restatement is brought back into line rather than argued with. Recency is not the test, because a recently revised restatement is still a restatement. The program CM plan records how CM is performed on one program and does not arbitrate between enterprise processes. The habit this section is really teaching is the one it closes on: when you do not know which process answers a question, the question is usually about ownership rather than about the answer."}},
 
- {id:"M1-13", gov:["R_FLOWDOWN_NEEDS_CI", "R_TRACE_TO_END_ITEM"], title:"Why CI identification and CM flowdown belong together", body:[
+ {id:"M1-14", gov:["R_FLOWDOWN_NEEDS_CI", "R_TRACE_TO_END_ITEM"], title:"Why CI identification and CM flowdown belong together", body:[
     P("You have the definition of a CI now. This is where it starts earning its keep."),
     P("This course teaches two things. Modules 1 to 3 are about identifying CIs. Modules 4 to 7 are about flowing configuration management requirements to suppliers. On a course outline they look like two subjects. They are not."),
     S("A supplier flowdown is a set of CI decisions written into a contract.",
@@ -728,7 +768,7 @@ var MODULES = [
      "The gap is corrected automatically at first article inspection"],
    a:1, why:"Work type tells you what the supplier does. It does not tell you what the item is. The requirements that depend on CI identity are precisely the ones that go missing: which CI the identifiers cite, whether audit obligations apply, what the as-built gets reconciled against, and what traceability records must contain. Suppliers price what they are asked for, so nobody raises the omission."}},
 
- {id:"M1-14", gov:["R_SAFETY_MANDATORY"], title:"Requirements mandatory for safety", body:[
+ {id:"M1-15", gov:["R_SAFETY_MANDATORY"], title:"Requirements mandatory for safety", body:[
     P("Some CM requirements are not the contract\u2019s to give away. On safety-significant product lines a defined set of roughly forty-four discrete requirements is performed regardless of what the contract flows down. The set is called requirements mandatory for safety. This section is where that set comes from. The next section is what a program does when it wants to skip one."),
     P("The set is not a list someone thought prudent. Every requirement on it traces to one of sixteen barriers. Every barrier is anchored to a documented aerospace event in which that barrier\u2019s failure killed people or destroyed the product. The set is the deduplicated list of requirements those sixteen barriers rest on."),
     P("The obligation reaches you down two separate pathways:"),
@@ -758,7 +798,7 @@ var MODULES = [
      "Obligated only after the hazard is re-assessed for this program"],
    a:1, why:"Two pathways run in parallel. The contract pathway binds where clauses are flowed. The safety pathway binds where a CM requirement is the control for a hazard the safety management system names, and that pathway does not run through the contract at all. Contract silence removes the contractual obligation. It does not remove the hazard. The Acquirer cannot waive an obligation that was never theirs, and the severity behind the barrier is fixed rather than re-rated program by program."}},
 
- {id:"M1-15", gov:["R_SAFETY_GATE"], title:"The safety disposition gate", body:[
+ {id:"M1-16", gov:["R_SAFETY_GATE"], title:"The safety disposition gate", body:[
     P("The previous section established that the safety pathway binds. This section is what happens when a program wants to not perform one of these requirements."),
     S("Contract silence removes the contractual obligation. It does not remove the hazard the requirement controls.",
       "So the question is never whether the requirement is obligated. The question is which door the program walks through, and who signs."),
@@ -819,7 +859,7 @@ var MODULES = [
    {id:"e", q:"The requirement is performed after all. What still has to be recorded about that decision, and what has to be recorded about keeping the barrier effective for the rest of the program?"}
   ]},
  {id:"M1-E5", title:"Exercise 5: Product unit records",
-  scen:"Seven items arrive on one parts list for a subassembly of a military derivative of a civil transport. The contract carries an item unique identification clause and a counterfeit avoidance clause. For each item below, work the product unit record-structure test from M1-08, then work the eight drivers and the climb to the end item from M1-09.\n\n(1) An oxygen cylinder with a five-year replacement time stated in the airworthiness limitations.\n\n(2) A roll of prepreg carrying a cure-date limit, later laid up into a safe-life principal structural element.\n\n(3) A heat-treated high-strength fastener with no life limit of any kind.\n\n(4) A circuit card assembly that is sensitive to electrostatic discharge.\n\n(5) A non-critical cast bracket accepted under reduced non-visual inspection.\n\n(6) A fitting accepted on premium selection, with a specimen of each individual part tested before use.\n\n(7) A capacitor bought under the counterfeit avoidance clause.",
+  scen:"Seven items arrive on one parts list for a subassembly of a military derivative of a civil transport. The contract carries an Item Unique Identification (IUID) clause and a counterfeit avoidance clause. For each item below, work the product unit record-structure test from M1-08, then work the eight drivers and the climb to the end item from M1-09.\n\n(1) An oxygen cylinder with a five-year replacement time stated in the airworthiness limitations.\n\n(2) A roll of prepreg carrying a cure-date limit, later laid up into a safe-life principal structural element.\n\n(3) A heat-treated high-strength fastener with no life limit of any kind.\n\n(4) A circuit card assembly that is sensitive to electrostatic discharge.\n\n(5) A non-critical cast bracket accepted under reduced non-visual inspection.\n\n(6) A fitting accepted on premium selection, with a specimen of each individual part tested before use.\n\n(7) A capacitor bought under the counterfeit avoidance clause.",
   parts:[
    {id:"a", q:"For each of the seven, name the product unit record: serial number, lot or batch, or none. Give the one-line reason."},
    {id:"b", q:"For each one, say whether the record came from the test itself or from one of the eight drivers. Name the driver where one applies."},
@@ -833,7 +873,7 @@ var MODULES = [
  ]
 },
 {
- id:"M2", label:"Module 2", title:"Selecting Configuration Items", sub:"Where candidates come from, what CM reads to nominate them, and the gates and criteria that decide",
+ id:"M2", label:"Module 2", title:"Selecting Configuration Items", sub:"Where candidates come from, what CM reads to nominate them, the gates and criteria that decide, and the families of critical item the word critical actually covers",
  sections:[
  {id:"M2-01", gov:["R_CI_DEF"], title:"What a Configuration Item is", body:[
     P("Module 1 introduced the definition. Here it is again, in full, because every section of this module is a way of applying it. Use it as written."),
@@ -855,7 +895,7 @@ var MODULES = [
       "The question is never \u201ccontrolled or not.\u201d It is \u201ccontrolled at what level, with what independence.\u201d"),
     C("What the rest of this module does", [
       "**Sections M2-02 to M2-07 are about finding candidates.** Where they come from, and how CM reads specifications, FMECAs, hazard analyses and engineering drawings to nominate them.",
-      "**Sections M2-08 to M2-16 are about deciding.** Three qualifying gates, then a seven-criteria screen, then the part designations that answer parts of the screen for you.",
+      "**Sections M2-08 to M2-20 are about deciding.** Three qualifying gates, then a seven-criteria screen, then the part designations that answer parts of the screen for you.",
       "Nomination and screening are separate steps, and this module keeps them separate on purpose. A candidate you never wrote down cannot be rejected on the record."])
   ],
   check:{q:"A program lead says a bracket is obviously a CI, because it is critical to structural integrity and everybody on the program knows it matters. What is missing from that statement?",
@@ -873,7 +913,7 @@ var MODULES = [
     P("The method is top-down decomposition of the system engineering architecture. Say architecture rather than product structure, because product structure reads as the engineering bill of material, and the CI structure does not follow the bill of material. The top tier of candidates normally matches the contract line items and the work breakdown structure. That is where the money and the deliverables sit. Separate management is nearly always warranted there. Lower-level candidates are nominated wherever separate management looks warranted, and settled by the screen rather than by argument."),
     P("Gather these before you start:"),
     L([
-      "The product structure and the architecture model.",
+      "The architecture model, which is what you decompose. The product structure, which tells you what physically exists. **They are different hierarchies and M3-04 says why that matters.**",
       "The contract, its statement of work and its data requirements, including any Acquirer-directed designations.",
       "The hazard analyses and the safety-critical item lists.",
       "The supportability planning products."]),
@@ -982,8 +1022,7 @@ var MODULES = [
     P("This is the most consequential of the three documents, and the one CM engineers read least well. A specification tells you what exists. A FMECA tells you what fails. **A hazard analysis tells you what is protecting you.** That matters to CM more than either of the others, because a configuration change can remove a protection without anybody noticing that a protection was there."),
     C("Where these documents come from", [
       "System safety work in defense programs runs to **MIL-STD-882E**, the standard practice for system safety. It defines a set of analysis tasks, and the ones CM meets most often are the **subsystem hazard analysis (SSHA)** and the **system hazard analysis (SHA)**. The subsystem analysis looks inside a subsystem at component failure modes, human errors, and single point and common mode failures. The system analysis looks at the interfaces and interactions between subsystems.",
-      "882E also defines two terms CM must keep apart, and both are carried here word for word. A **safety-critical function** is “a function whose failure or malfunction could result in a catastrophic or critical mishap.” A **safety-critical item** is “a hardware or software item that has been determined through analysis to potentially contribute to a hazard with Catastrophic or Critical mishap potential, or that may be implemented to mitigate a hazard with Catastrophic or Critical mishap potential.” A function is not an item. Only the second one is something you can put in a CI index.",
-      "**Read the second half of the item definition.** It covers items implemented to mitigate a hazard, not only items that could contribute to one. A fire bottle, a crew oxygen system and an ejection seat component reach the definition through that half. Section M2-13 comes back to what that means for protective equipment.",
+      "882E also defines two terms CM must keep apart. A **Safety-Critical Function** is a function. A **Safety-Critical Item** is hardware or software. A function is not an item, and only the item can go in a CI index. **Section M2-13 carries both definitions word for word** and works out what each one obliges. What you need here is the habit: when a hazard analysis names a function, ask which items implement it.",
       "The living record is the **hazard tracking system**. It is not a report issued once. It is revised as hazards are identified, as controls are implemented, and as risk is accepted, which is why a revision to it is a re-identification trigger.",
       "882E is explicit that system safety personnel are not responsible for hazard management in other disciplines, and that the disciplines coordinate. Its planning task names **configuration control and data management** among the functions whose interrelationship with the hazard effort must be defined. CM is named in the standard. Reading these reports is part of that relationship."]),
     P("Here is an extract from a fictional analysis on a flight control system. Read the **control column first.** That is the CM habit that separates a useful reading from a filing exercise."),
@@ -1049,9 +1088,9 @@ var MODULES = [
     P("Section M2-01 gave you the definition. This is where you apply it."),
     P("The screen runs in two steps. Step 1 is three qualifying gates. All three must pass. Step 2 is the criteria screen. The gates come from the first sentence of the definition. The criteria come from the second."),
     STEPS([
-      {h:"Gate 1: the item gate", b:"Is the candidate an item, rather than a function, a task, a failure mode, a feature, or a location? Only an item can be a CI. If NO: the candidate cannot be designated as a CI. It is a signal that items worth screening exist nearby. Ask for the items that implement it, screen those, and stop. Section M2-13 is about getting from a label to the items behind it."},
+      {h:"Gate 1: the item gate", b:"Is the candidate an item, rather than a function, a task, a failure mode, a feature, or a location? Only an item can be a CI. If NO: the candidate cannot be designated as a CI. It is a signal that items worth screening exist nearby. Ask for the items that implement it, screen those, and stop. Section M2-17 is about getting from a label to the items behind it."},
       {h:"Gate 2: the end-use function gate", b:"Does the candidate satisfy a system end-use function? If NO: not a CI candidate. Record the rationale, identify the parent CI whose documentation controls it, and stop. Raw materials, bulk commodities and structure with no defined functional role fail here. A structural component that carries flight, ground or pressurization loads passes. Load-carrying structure is not excluded by this gate, and a defensible no for such a part comes from the criteria screen instead."},
-      {h:"Gate 3: the supplier-designed parent gate", b:"Also called the procurement level gate, which is what it does. The CI Identification Process calls it the supplier-designed parent gate, so use that name when you record a verdict. Is the candidate a child of a commercial, catalog or vendor item, and is it procured inseparable from that parent? If YES: screen the procured parent instead. Do not decompose a supplier-designed item. Record the parent that was screened in its place, and stop. Section M2-15 is about why this gate exists."},
+      {h:"Gate 3: the supplier-designed parent gate", b:"Also called the procurement level gate, which is what it does. The CI Identification Process calls it the supplier-designed parent gate, so use that name when you record a verdict. Is the candidate a child of a commercial, catalog or vendor item, and is it procured inseparable from that parent? If YES: screen the procured parent instead. Do not decompose a supplier-designed item. Record the parent that was screened in its place, and stop. Section M2-19 is about why this gate exists."},
       {h:"Step 2: the criteria screen", b:"Designate as a CI if the candidate meets or impacts one or more of seven criteria, plus the software rule. One YES is sufficient."}]),
     S("Three gates, then the screen. A candidate that fails any gate never reaches the criteria.",
       "Which gate a candidate failed is a fact the record has to carry, because the three failures mean different things. Gate 1 says you were screening the wrong kind of thing. Gate 2 says the candidate has no function of its own. Gate 3 says you were screening at the wrong level."),
@@ -1116,49 +1155,159 @@ var MODULES = [
      "System Safety concurrence on the rationale, dispositioned through the safety gate",
      "A design change that removes the safety criticality from the item"],
    a:2, why:"The safety-critical screen is mandatory for safety, so a proposal not to perform it goes through the safety disposition gate and is recorded. And a safety-critical item not designated a CI needs System Safety concurrence on the rationale. CM does not make that call alone."}},
- {id:"M2-11", gov:["R_EXT_DESIGNATIONS", "R_GATES"], title:"Part designations that answer the safety-critical screen for you", body:[
-    P("CM teams and safety teams often talk past each other. CM asks: what are the safety-critical parts? Safety asks back: what types of critical parts do you mean? Both questions are fair. Neither can be answered as asked. This section and the next four give you the vocabulary that fixes the exchange. They sort every safety label into three tiers: the ones that answer the screen outright, the ones that answer it once translated onto an item, and the ones that never land on an item at all."),
-    P("Start with the easiest case. Some part designations land directly on a part. Their own definitions state a consequence that meets the safety-critical screen. When one of these lands on an item, the screening question is already answered."),
+ {id:"M2-11", gov:["R_CRITICAL_FAMILIES", "R_EXT_DESIGNATIONS"], title:"The word critical, and the families under it", body:[
+    P("CM teams and safety teams often talk past each other. CM asks: what are the critical parts? Safety asks back: what kind of critical do you mean? Both questions are fair. Neither can be answered as asked."),
+    S("Critical is not a designation. It is a category of designations, and the members do not agree with each other.",
+      "Two of them are assigned by a customer. One comes out of an analysis. One comes from a certification basis. One comes from the quality system and is not about safety at all. They carry different obligations, and an item can hold several at once."),
+    P("**Critical Items** is the broad term. It covers a number of part classifications and designations related to safety. Some are distinctive to customer requirements or to an applicable regulatory agency. Others rest on engineering governance and analysis rather than on any customer or regulator definition. The families you will actually meet are these."),
+    TABLE(["Family", "Who assigns it", "What it obliges", "Where this course covers it"], [
+      ["**Critical Safety Item**, or CSI", "The customer’s design control activity, under the defense acquisition rules", "Source approval and supply chain integrity, with heightened quality assurance surveillance. A serial number follows, by a route worth learning", "M2-12"],
+      ["**Safety-Critical Item**, or SCI", "Your own System Safety analysis", "Design rigor and process rigor. No marking and no record requirement of its own", "M2-13"],
+      ["**Fracture critical traceable part**, and the separate **fracture critical part**", "The aircraft structural integrity program on a defense airframe", "Fracture control. One of the two categories carries serialization. The other does not", "M2-14"],
+      ["**Safe-life principal structural element**", "The certification basis, through the airworthiness limitations", "A mandatory replacement time, tracked per unit", "M2-14"],
+      ["Engine, propeller, auxiliary power unit and rotorcraft **critical parts**", "Civil certification", "Control of identified critical characteristics, and usually an airworthiness limitation", "M2-15 and M2-16"],
+      ["A **quality-system critical item**", "Your own quality system", "Nothing about safety by itself. The flag covers producibility, service life, and form, fit and function as well", "M2-15"],
+      ["A **critical** or **key characteristic**", "Design Engineering, on a drawing", "Process control on a feature. It is not a part designation at all", "M2-17"]]),
+    C("Three terms, and the two pairs people swap", [
+      "**Critical Safety Item is not Safety-Critical Item.** The same words in a different order, and two different things. Different authority, different object, different obligation. The system safety standard settles it in its own text: its safety-critical item term is independent of the critical safety item term in the public laws. Say the whole term, in the right order, every time.",
+      "**A quality-system critical item is not a safety designation.** It is broader than safety and it is flagged for other reasons as often as not. Establish why an item was flagged before you treat the flag as evidence of consequence.",
+      "**And criticality is not a critical item.** A failure-mode criticality code designates a failure mode, not an item. It reaches an item only once you know which hardware the mode lives in."]),
+    S("Never write the word critical on its own. Write which family.",
+      "A rationale that says “the part is critical” cannot be checked, cannot be flowed to a supplier, and cannot be defended two years later. A rationale that says “Critical Safety Item, assigned by the design control activity” can be all three. This is the cheapest discipline in the course and the one most often skipped."),
+    P("The next three sections take the families that carry the most obligation and the most confusion, one at a time. **The three sections after those sort every label in the table, and every label this course does not name, by how it reaches criterion (b).** Three tiers: the ones that answer the safety-critical screen outright, the ones that answer it only once translated onto an item, and the ones that never land on an item at all.")
+  ],
+  check:{q:"An assessor writes a selection rationale that reads: “Designated as a CI. The part is critical.” What is wrong with it, beyond being short?",
+   o:[
+     "Nothing is wrong. Criticality is criterion (b), so the rationale names its criterion",
+     "It names no family, so nobody can tell which authority assigned it or what it obliges",
+     "It should cite criticality from the FMECA, which is where critical items are defined",
+     "It should have been written by System Safety rather than by CM"],
+   a:1, why:"Critical is a category of designations rather than a designation. The word alone does not say who assigned it, what it obliges, or whether it bears on safety at all. A Critical Safety Item obliges source approval and brings a serial number. A Safety-Critical Item obliges design and process rigor and brings no record of its own. A quality-system critical item may have been flagged for producibility. The rationale has to name the family and the assigning authority, or a reader cannot check it. Criticality from a failure mode analysis is a separate thing again: it designates a failure mode rather than an item. And CI selection is a CM decision, so CM writes the rationale, with the concurrences that apply."}},
+
+ {id:"M2-12", gov:["R_EXT_DESIGNATIONS", "R_IUID"], title:"Critical Safety Items", body:[
+    P("A Critical Safety Item is the most heavily regulated designation in this course. It is assigned by your customer, it carries obligations that reach into your supply chain, and it is the one designation that brings a product unit record with it."),
+    C("Aviation critical safety item, carried word for word", [
+      "DFARS 209.270-2 defines an **aviation critical safety item** as a part, an assembly, installation equipment, launch equipment, recovery equipment, or support equipment for an aircraft or aviation weapon system if the part, assembly, or equipment contains a characteristic any failure, malfunction, **or absence** of which could cause any of the following:",
+      "\u201c(1) A catastrophic or critical failure resulting in the loss of or serious damage to the aircraft or weapon system;\u201d",
+      "\u201c(2) An unacceptable risk of personal injury or loss of life; or\u201d",
+      "\u201c(3) An uncommanded engine shutdown that jeopardizes safety.\u201d",
+      "**Read the word absence.** A missing part is inside the definition, the same as a part that breaks. That is not how most consequence definitions are written, and it is why a Critical Safety Item designation reaches assembly and installation errors rather than only failures.",
+      "**Read the third limb.** An uncommanded engine shutdown that jeopardizes safety reaches items no injury pathway would have caught."]),
+    P("Section 802 of Public Law 108-136 is the statutory basis. DFARS 209.270 and DFARS PGI 209.270 establish the qualification requirements, the source approval process and the procedures. The contract clause at DFARS 252.209-7010, also published at 48 CFR 252.209-7010, carries the definitions and the heightened quality assurance surveillance requirement. **The obligation is about sources, not only about parts.** A Critical Safety Item is bought from an approved source, against an approved process, with surveillance the contract names."),
+    C("Who designates it, and who does not", [
+      "**The design control activity designates Critical Safety Items.** DFARS 252.209-7010 defines the design control activity, for an aviation critical safety item, as “the systems command of a military department that is specifically responsible for ensuring the airworthiness of an aviation system or equipment, in which an aviation critical safety item is to be used.”",
+      "So the designation is the customer’s. System Safety and engineering support provide inputs to it. **Your company does not make the designation and does not re-make it.** CM records it, cites it as the basis, and keeps screening against the other criteria.",
+      "**It does not reach civil-certified equipment on its own.** Critical Safety Item identification does not apply to aircraft or subsystems purchased, operated and maintained in accordance with FAA certification, unless the United States Air Force Engineering Support Activity requires it. Critical Safety Item policies do not override or duplicate FAA approaches where those approaches apply and satisfy the military objectives. On a military derivative of a civil type, establish which regime the item is actually under before you record anything."]),
+    P("**Now the part that gets mis-cited.** A Critical Safety Item is serialized. The designation is not what serializes it. Three steps run between the two, and each step has its own authority."),
+    STEPS([
+      {h:"The designation makes the item serially managed", b:"DoDI 8320.04 directs the primary inventory control activity to identify Critical Safety Items as DoD serially managed items. That is an inventory management act, and it follows the designation rather than being part of it."},
+      {h:"Serially managed status triggers IUID", b:"DFARS 211.274-2(a)(3)(i) requires Item Unique Identification for any DoD serially managed item, regardless of value. A Critical Safety Item that costs forty dollars is still in scope."},
+      {h:"IUID carries a serial number", b:"Every unique item identifier includes a serial number. So the item is serialized, it carries a machine-readable mark, and its identifier is reported to the registry. Section M1-10 covers all three."}]),
+    S("Cite the chain, not the shortcut.",
+      "“It is a Critical Safety Item, so it is serialized” is true and unusable. A supplier who asks which requirement obliges the mark needs DoDI 8320.04, then the IUID clause, then MIL-STD-130. Name them in that order and the question is answered. Name only the designation and you will be asked again."),
+    C("The records a Critical Safety Item actually carries", [
+      "**A serial number, through IUID.** With the machine-readable mark and the registry record that IUID brings.",
+      "**Lot or batch recording, with traceability to an approved source.** This runs in addition, never instead. Lot and heat control is typical for structural and rotating hardware.",
+      "**The climb to the end item**, like any other recorded item. Serialization and traceability records run up the product tree, and the marking obligation stops where the contract says the parent item is.",
+      "**Critical Safety Item, ship** is the same statutory construct applied to ship systems. The serial number arrives by the same route. Heat and lot traceability with objective quality evidence runs in addition."]),
+    P("**Two more labels will arrive attached to this one.** A **flight safety critical aircraft part** is a legacy defense term you will meet on older drawings, and it historically carried marking and traceability requirements of its own. Confirm what the drawing actually imposes, and where the part maps to the current Critical Safety Item construct, the serial number follows from that. **Map it rather than assuming equivalence.** A **critical application item** code is a supply-system code on a stock number rather than an engineering designation, so establish the engineering basis behind it before you rely on it.")
+  ],
+  check:{q:"A supplier asks which requirement obliges the machine-readable mark on a forty-dollar Critical Safety Item fitting. What is the correct answer?",
+   o:[
+     "The Critical Safety Item designation itself obliges the mark, as part of the heightened surveillance",
+     "Nothing does. IUID has a $5,000 threshold, so a forty-dollar item falls below it",
+     "The designation makes it serially managed, serially managed status triggers IUID regardless of value, and IUID marking follows MIL-STD-130",
+     "The airworthiness limitations oblige it, because a Critical Safety Item always carries a limitation"],
+   a:2, why:"Three steps, each with its own authority, and the chain is what a supplier can act on. DoDI 8320.04 has the primary inventory control activity identify Critical Safety Items as DoD serially managed. DFARS 211.274-2(a)(3)(i) requires IUID for a serially managed item regardless of value, so the $5,000 threshold never enters. IUID marking then follows MIL-STD-130. The designation is where the chain starts and is not itself the marking requirement, which is why citing it alone gets the question asked again. And a Critical Safety Item does not necessarily carry an airworthiness limitation at all: that is a separate driver on a separate certification basis."}},
+
+ {id:"M2-13", gov:["R_EXT_DESIGNATIONS", "R_SAFETY_LINKAGE"], title:"Safety-Critical Items", body:[
+    P("A Safety-Critical Item comes out of your own system safety analysis. It is the designation CM meets most often on a defense program, and it is the one that obliges the least in the way of records. Those two facts together are why it gets mishandled."),
+    C("Two definitions from the system safety standard, carried word for word", [
+      "MIL-STD-882E defines a **Safety-Critical Item**, abbreviated SCI, as “a hardware or software item that has been determined through analysis to potentially contribute to a hazard with Catastrophic or Critical mishap potential, or that may be implemented to mitigate a hazard with Catastrophic or Critical mishap potential.”",
+      "It defines a **Safety-Critical Function**, abbreviated SCF, as “a function whose failure or malfunction could result in a catastrophic or critical mishap.”",
+      "**A function is not an item.** Only the item can go in a CI index. A safety-critical function is a signal that items worth screening sit nearby, and finding them is engineering analysis you ask for rather than perform.",
+      "**Read the second half of the item definition.** It covers items implemented to mitigate a hazard, not only items that could contribute to one. A fire bottle, a crew oxygen system and an ejection seat component reach the definition through that half."]),
+    C("It is not the Critical Safety Item, and the standard says so", [
+      "Safety-Critical Items are frequently confused with Critical Safety Items. MIL-STD-882E settles the point in its own text. It states that the definition of the term safety-critical item in that standard is independent of the definition of the term critical safety item in Public Laws 108-136 and 109-364.",
+      "**Independent means what it says.** An item can be one, the other, both, or neither. Neither designation implies the other, and neither can be inferred from the other.",
+      "Section M2-12 is the other one. Read the two side by side once and the pair stops being a trap."]),
+    S("A Safety-Critical Item designation drives design and process controls. It does not drive marking.",
+      "System Safety analysis outputs tell engineering what rigor the item needs. They do not tell the shop floor to put a number on it. No part marking scheme in this course identifies Safety-Critical Items as such."),
+    P("**So what product unit record does a Safety-Critical Item carry?** Whatever its own controls require, and not one thing more. The designation imposes none by itself. A Safety-Critical Item is serialized or lot and batch recorded where the item is life-limited, or where it holds some other recording requirement from the eight drivers in M1-09. Follow the control that was chosen to mitigate the hazard, and the record follows from that."),
+    TABLE(["The control the analysis chose", "The product unit record that follows", "Why"], [
+      ["A life limit in cycles or operating hours", "**Serial number**", "Remaining life is a per-unit quantity, so the unit has to stay individually identifiable"],
+      ["An acceptance requirement against identified critical characteristics", "**Lot or batch**", "Lot acceptance is what the control rests on. A nuclear safety-related component under commercial grade dedication is this case, and its failure would be catastrophic"],
+      ["A design feature, with no per-unit or per-lot control", "**Often none at item level**", "The hazard is mitigated by the design itself. The item is still a CI candidate and still carries its hazard reference"],
+      ["An inspection interval in the airworthiness limitations", "**Serial number**", "The marking requirement for airworthiness-limited parts attaches to the part, not to the safety designation"]]),
+    C("What CM does with a Safety-Critical Item", [
+      "**Screen it against criterion (b), the safety-critical screen.** The designation answers that criterion. Screen it against criterion (a) as well, which usually applies, and against the rest, which often do.",
+      "**Record the hazard reference against the CI in the index.** That single cross-reference is what lets somebody answer, two years from now, the question that matters: if we change this item, what were we relying on it for?",
+      "**Do not re-determine the consequence.** The analysis was performed by qualified people and accepted by an authority. CM records it.",
+      "**If criterion (b) is yes and the item is not designated as a CI, get System Safety concurrence.** That concurrence runs one way on purpose. A yes that leads to designation needs none, because designation is the outcome the criterion exists to produce. The concurrence is what makes a decision **not** to designate a safety-critical item visible."])
+  ],
+  check:{q:"A system safety analysis names a hydraulic accumulator as a Safety-Critical Item. The hazard control is a design feature: a burst disc sized so that overpressure vents rather than ruptures the shell. No life limit, no inspection interval, no lot acceptance requirement. What product unit record does the accumulator need?",
+   o:[
+     "A serial number, because Safety-Critical Items are serially managed",
+     "Possibly none at item level, because the designation imposes no record and the chosen control imposes none either",
+     "Lot or batch at heat level, because a pressure vessel always requires material traceability",
+     "A serial number, because criterion (b) was answered yes"],
+   a:1, why:"A Safety-Critical Item designation drives design and process controls rather than marking, so it imposes no product unit record of its own. The record follows the control that was actually chosen, and a design-based mitigation imposes none. Run the record-structure test and the eight drivers against the item anyway, because one of them may still apply for an unrelated reason, and the climb to the end item still applies to anything below it that is recorded. Serially managed status belongs to the Critical Safety Item chain and not to this one. And criterion (b) is a CI selection question, which never decides a product unit record."}},
+
+ {id:"M2-14", gov:["R_EXT_DESIGNATIONS", "R_UNIT_RECORD"], title:"Fracture critical parts, and safe-life structure", body:[
+    P("Two structural families sit here. One comes from the defense airframe world and one from civil certification. Both are about cracks. Both are widely miscategorized, and in both the error runs in the same direction: a trainee assumes the whole family is serialized, or assumes none of it is."),
+    C("Two fracture critical categories. Neither sits inside the other", [
+      "MIL-STD-1530D with Change 1 defines both terms, under the Aircraft Structural Integrity Program, and it defines them as **separate categories** rather than as a class and a subclass.",
+      "A **fracture critical traceable part** is \u201ca safety-of-flight structural component that is either single load path or sized by durability or damage tolerance requirements.\u201d",
+      "A **fracture critical part** is \u201ca safety-of-flight structural component that is not single load path and is not sized by durability or damage tolerance requirements, but that requires special emphasis due to the criticality.\u201d",
+      "The two definitions exclude each other. Figure 1 of the standard shows them as separate branches rather than one nested inside the other. **A part sits in one category. It never sits in both, and neither is a subclass of the other.**"]),
+    TABLE(["The category", "What it obliges", "Product unit record"], [
+      ["**Fracture critical traceable part**", "Serialization and lot or batch recording, named together as controls for this category in MIL-STD-1530D with Change 1", "**Serial number**, with heat and lot traceability in addition. The lot records support material and process traceability"],
+      ["**Fracture critical part**", "Fracture control resting on material properties and process condition", "**Lot or batch at heat level**, with process control on forging, machining and surface treatment. **No serialization obligation on this basis**"]]),
+    S("The traceable category carries the serialization obligation. Fracture critical status in general does not.",
+      "Cite the traceable category where the marking requirement is what matters. Cite the wrong one and a supplier will correctly tell you their part does not need a serial number. See the durability and damage tolerance control plan and the critical part and process selection and controls section of the standard for the governing detail."),
+    P("**A fracture critical engine component is a third thing again.** It sits under the engine structural integrity program on defense engines. Its governing standard was cancelled and only a handbook survives, and a handbook cannot be cited as a requirement, so the designation usually rests on statement of work language. Screen the item on consequence. **Record the contractual basis in the selection rationale**, so the next assessor can see where the designation came from. The record is typically a serial number for rotating hardware, because cycle-based life tracking needs per-unit identity."),
+    P("**Now the civil side.** A principal structural element is a structural element with a defined role in carrying flight, ground or pressurization loads, and whose failure could result in catastrophic failure of the airplane. What it obliges depends entirely on which evaluation path the applicant took, and that is the fact to establish before anything else."),
+    C("Safe-life principal structural elements", [
+      "A **safe-life principal structural element** is one for which the applicant establishes that compliance with the damage-tolerance requirements is impractical. Under 14 CFR 25.571(c), that structure must instead be shown by analysis supported by test evidence to withstand the repeated loads of variable magnitude expected during its service life **without detectable cracks**.",
+      "**The resulting safe-life limit is published as a mandatory replacement time in the airworthiness limitations**, in flight cycles or flight hours. That makes the part a life-limited part on the cycles and hours clock, and 14 CFR 45.15(c) then requires the serial number. **Landing gear is the common case**: shock struts, oleo cylinders, axles, side stays and drag braces.",
+      "**Do not confuse a safe-life replacement time with the limit of validity.** The limit of validity bounds the engineering data supporting the airplane’s structural maintenance program. It applies to the airplane. It is not a part replacement time.",
+      "Lot or batch recording applies to the raw material heat and lot of the safe-life element’s underlying detail parts. **It does not apply to the safe-life part itself**, which is serialized."]),
+    C("Damage-tolerant principal structural elements, which split two ways", [
+      "**By location.** Where the entry in the airworthiness limitations is a structural inspection at an airframe location, with no separately manufactured part, there is no item to designate. These are tracked by airplane and structural location, and control lives in the parent CI’s documentation.",
+      "**By part.** Where the element is a discrete, separately manufactured part carrying an inspection interval in the airworthiness limitations, 14 CFR 45.15(c) requires the serial number. An inspection interval alone is enough for the marking requirement, even with no replacement time attached.",
+      "**So the same three words can produce a serialized part or no item at all.** Establish the path. Do not read the label."]),
+    P("**One more case worth holding.** Constituent materials of a principal structural element that are too small to serialize are age and shelf-life limited before installation. Composite resins, structural adhesives and prepregs are the usual ones. They are lot and batch recorded with a date code while they sit in storage. **Once installed, they inherit the cycle and usage life of the higher-level assembly.** One material, two clocks, in sequence.")
+  ],
+  check:{q:"A drawing carries a principal structural element callout on a machined wing rib. Your assessor records “no item to designate, tracked by structural location” and moves on. When is that right, and when is it wrong?",
+   o:[
+     "Always right. A principal structural element is a location, so it never designates a part",
+     "Always wrong. A principal structural element is always a discrete part and always serialized",
+     "Right only for a damage-tolerant element identified by location. A safe-life element, or a discrete damage-tolerant part, is a serialized part",
+     "Right unless the rib is also a fracture critical traceable part under the structural integrity program"],
+   a:2, why:"The evaluation path decides, and the label does not disclose it. A safe-life element carries a mandatory replacement time in the airworthiness limitations, which makes it life-limited on the cycles and hours clock and requires the serial number. A damage-tolerant element that is a discrete separately manufactured part with an inspection interval also requires the serial number, because the marking rule triggers on an interval as readily as on a replacement time. Only the damage-tolerant element identified by structural location, with no separately manufactured part, has no item to designate. The fracture critical categories are a defense airframe construct under a different standard, so they are a separate question rather than the exception to this one."}},
+
+ {id:"M2-15", gov:["R_EXT_DESIGNATIONS", "R_GATES"], title:"Part designations that answer the safety-critical screen for you", body:[
+    P("The last four sections named the families and took the three hardest ones apart. **These next three sections sort every label**, including the ones this course has not named, by one question: how does it reach criterion (b), the safety-critical screen?"),
+    P("Start with the easiest tier. Some designations land directly on a part, and their own definitions state a consequence that meets the screen. When one of these lands on an item, the screening question is already answered."),
     TABLE(["Part designation", "Where you will meet it", "Why it always meets the safety-critical screen", "Product unit record it implies"], [
-      ["A critical safety item, aviation, assigned by the customer\u2019s engineering authority", "Military aviation programs", "Its definition is the safety-critical screen in different words. Failure, malfunction or absence could cause a catastrophic or critical failure, an unacceptable risk of injury or loss of life, or an uncommanded engine shutdown that jeopardizes safety", "Serialization, plus lot or batch with traceability to an approved source, which runs in addition rather than instead. The serial number does not come from the criticality designation itself: it comes from unique identification, because these items are identified as serially managed. Confirm the marking requirement is in the contract, because older contracts and drawings predate it"],
-      ["A critical safety item, ship", "Military ship systems", "The same statutory construct, applied to ship systems", "Serial number, on the same route as the aviation row. Heat and lot traceability with objective quality evidence runs in addition"],
-      ["A flight safety critical aircraft part", "A legacy military term. You will meet it on older drawings", "Legacy label for a part whose failure would cause loss of the aircraft or loss of life", "Historically accompanied by marking and traceability requirements. Confirm what the drawing actually imposes. Where the part maps to the current critical safety item construct, the serial number follows from that row. **Map it rather than assuming equivalence**"],
-      ["A safety-critical **item** from the system safety analysis", "Any program running a formal system safety program", "It names hardware or software that analysis found could contribute to a catastrophic or critical mishap, or that is implemented to mitigate one", "Not set by the external criticality designation. It follows from the control chosen to mitigate the hazard. A life limit gives a serial number. An acceptance requirement gives lot or batch. A design-based mitigation may give neither"],
-      ["A fracture critical traceable part", "Military airframe structure, under the aircraft structural integrity program", "Failure by cracking would cause loss of the aircraft", "Serial number. MIL-STD-1530D with Change 1 names serialization and traceability as controls for this category. Heat and lot traceability runs in addition"],
-      ["A fracture critical part", "Military airframe structure, under the aircraft structural integrity program", "Failure by cracking would cause loss of the aircraft", "Lot or batch at heat level, with process control on forging, machining and surface treatment. This category carries no serialization obligation on its own"],
-      ["A fracture critical engine component", "Military engines, under the engine structural integrity program. **Verify** against the governing contract", "Same consequence. Failure would be catastrophic", "Conditional, and typically a serial number for rotating hardware, because cycle-based life tracking needs per-unit identity. The governing standard was cancelled and only a handbook survives, and a handbook cannot be cited as a requirement, so the designation usually rests on statement of work language. Record the contractual basis in the selection rationale"],
+      ["A **Critical Safety Item**, aviation. **M2-12**", "Military aviation programs, assigned by the customer\u2019s design control activity", "Its definition is the safety-critical screen in different words. Failure, malfunction or absence could cause a catastrophic or critical failure, an unacceptable risk of injury or loss of life, or an uncommanded engine shutdown that jeopardizes safety", "Serialization, plus lot or batch with traceability to an approved source, which runs in addition rather than instead. The serial number does not come from the criticality designation itself: it comes from IUID, because these items are identified as serially managed. **M2-12** walks that chain. Confirm the marking requirement is in the contract, because older contracts and drawings predate it"],
+      ["A **Critical Safety Item**, ship. **M2-12**", "Military ship systems", "The same statutory construct, applied to ship systems", "Serial number, on the same route as the aviation row. Heat and lot traceability with objective quality evidence runs in addition"],
+      ["A flight safety critical aircraft part. **M2-12**", "A legacy defense term. You will meet it on older drawings", "Legacy label for a part whose failure would cause loss of the aircraft or loss of life", "Historically accompanied by marking and traceability requirements. Confirm what the drawing actually imposes. Where the part maps to the current critical safety item construct, the serial number follows from that row. **Map it rather than assuming equivalence**"],
+      ["A **Safety-Critical Item** from the system safety analysis. **M2-13**", "Any program running a formal system safety program", "It names hardware or software that analysis found could contribute to a catastrophic or critical mishap, or that is implemented to mitigate one", "Not set by the external criticality designation. It follows from the control chosen to mitigate the hazard. A life limit gives a serial number. An acceptance requirement gives lot or batch. A design-based mitigation may give neither"],
+      ["A **fracture critical traceable part**. **M2-14**", "Defense airframe structure, under the aircraft structural integrity program", "Failure by cracking would cause loss of the aircraft", "Serial number. MIL-STD-1530D with Change 1 names serialization and traceability as controls for this category. Heat and lot traceability runs in addition"],
+      ["A **fracture critical part**. **M2-14**", "Defense airframe structure, under the aircraft structural integrity program", "Failure by cracking would cause loss of the aircraft", "Lot or batch at heat level, with process control on forging, machining and surface treatment. This category carries no serialization obligation on its own"],
+      ["A fracture critical engine component. **M2-14**", "Defense engines, under the engine structural integrity program. **Verify** against the governing contract", "Same consequence. Failure would be catastrophic", "Conditional, and typically a serial number for rotating hardware, because cycle-based life tracking needs per-unit identity. The governing standard was cancelled and only a handbook survives, and a handbook cannot be cited as a requirement, so the designation usually rests on statement of work language. Record the contractual basis in the selection rationale"],
       ["An engine life-limited part", "Civil engine certification", "This population is defined by hazardous failure consequence. The life limit is how that consequence is managed", "Serial number. The clearest case there is: remaining life is a per-unit quantity and back-to-birth records depend on it"],
       ["An engine critical part", "Civil engine certification", "Primary failure is likely to result in a hazardous engine effect, which reaches the screen through both the injury limb and the loss-of-capability limb", "Serial number, driven by the airworthiness limitations entry. Heat and lot traceability in addition"],
       ["A propeller critical part, or an auxiliary power unit critical part", "Civil certification", "Primary failure is likely to produce a hazardous effect on the propeller or the unit", "Serial number where an airworthiness limitation attaches"],
       ["A rotorcraft critical part", "Civil rotorcraft certification", "Failure could have a catastrophic effect on the rotorcraft", "Serial number where an airworthiness limitation attaches, which is the usual outcome of an approved critical parts plan. Lot or batch runs in addition, not instead: control of the identified critical characteristics generates lot and process records on its own"],
       ["Fracture critical hardware, per the fracture control board", "Spaceflight programs", "Failure from a crack would produce a catastrophic hazard", "Serial number, with material traceability"],
       ["A safety-related structure, system or component", "Nuclear applications, on the quality list", "Required to perform a safety function, or to prevent or mitigate the consequences of an accident", "Lot or batch, under commercial grade dedication against identified critical characteristics. A catastrophic-consequence item that is legitimately not serialized"]]),
-    C("Aviation critical safety item, carried word for word", [
-      "The first row compresses a statutory definition. Here it is in full, because the parts that get compressed out are the parts people then argue about.",
-      "An aviation critical safety item is a part, an assembly, installation equipment, launch equipment, recovery equipment, or support equipment for an aircraft or aviation weapon system if the part, assembly, or equipment contains a characteristic any failure, malfunction, **or absence** of which could cause any of the following:",
-      "“(1) A catastrophic or critical failure resulting in the loss of or serious damage to the aircraft or weapon system;”",
-      "“(2) An unacceptable risk of personal injury or loss of life; or”",
-      "“(3) An uncommanded engine shutdown that jeopardizes safety.”",
-      "**Two things in that definition are routinely missed.** The word **absence** puts a missing part inside the definition, so a part left out is a failure mode the same as a part that breaks. And the third limb, the uncommanded engine shutdown, reaches items no injury pathway would have caught.",
-      "**The design control activity designates it.** That is the military systems command specifically responsible for the airworthiness of the system the item is used in. Systems Safety and engineering support feed that designation. Your company does not make it and does not re-make it.",
-      "**It does not reach civil-certified equipment on its own.** Critical safety item identification does not apply to aircraft or subsystems bought, operated and maintained under civil certification, unless the customer engineering support activity requires it. On a military derivative of a civil type, establish which regime the item is actually under before you record anything."]),
-    C("Two terms. The same words in a different order", [
-      "The first two rows of that table are **the critical safety item** and **the safety-critical item**. They are different things, and the words are the same words in a different order. This is the single most common vocabulary error in this subject.",
-      "A **critical safety item** is designated by the customer’s design control activity under the defense acquisition rules. Its obligation is source approval and supply chain integrity. It is serialized, through unique identification.",
-      "A **safety-critical item** comes out of the system safety analysis. Its obligation is design and process rigor. It carries no marking or record requirement of its own.",
-      "The system safety standard settles the question itself. It states that its safety-critical item term is independent of the critical safety item term in the public laws. **Different authority. Different object. Different obligation.**",
-      "There is a third term that joins the confusion from outside safety. A **quality-system critical item** is broader than safety: it takes in producibility, service life, and form, fit and function. Establish why an item was flagged before you treat the flag as a safety designation."]),
-    C("Two fracture critical categories. Neither sits inside the other", [
-      "This is the pair most often got wrong, and the error runs in a predictable direction. MIL-STD-1530D with Change 1 defines both terms, and it defines them as separate categories rather than as a class and a subclass.",
-      "A **fracture critical traceable part** is “a safety-of-flight structural component that is either single load path or sized by durability or damage tolerance requirements.”",
-      "A **fracture critical part** is “a safety-of-flight structural component that is not single load path and is not sized by durability or damage tolerance requirements, but that requires special emphasis due to the criticality.”",
-      "The two definitions exclude each other. A part sits in one category. It never sits in both, and neither is a subclass of the other.",
-      "**The traceable category carries the serialization obligation. Fracture critical status in general does not.** Cite the traceable category where the marking requirement is what matters. Both categories carry heat and lot traceability."]),
     C("Read the fourth column across before you assume", [
       "Every row above satisfies criterion (b), the safety-critical screen. Every row also carries a product unit record, and the records are nothing alike. They run from serialization driven by a per-unit life clock, to lot control under commercial grade dedication on an item whose failure would be catastrophic.",
       "**Both are real control. Lot control is not the weak version of serialization.** It is the correct answer where the approved basis for continued service is conformance to an approved source rather than the history of one article.",
       "**Determine the product unit record from the test in M1-08 in Module 1, never from the external criticality designation.** The external criticality designation answers a selection question. It does not answer a product unit record question, and reading one off the other is how programs serialize populations that gain nothing from it and lot-control populations that needed a per-unit history.",
-      "**The critical safety item rows are the one place where a designation does carry a product unit record with it,** because those items are identified as serially managed and unique identification follows. Even there the serial number arrives through unique identification rather than through the safety designation, and every other row is still determined by the test.",
+      "**The critical safety item rows are the one place where a designation does carry a product unit record with it,** because those items are identified as serially managed and IUID follows. Even there the serial number arrives through IUID rather than through the safety designation, and every other row is still determined by the test.",
       "A row marked **Verify** rests on terminology that is program-specific, contract-specific, or subject to recent revision. Confirm it against the governing contract or the current issue of the cited document before you rely on it. The legacy flight safety critical aircraft part label needs the same care: map it onto the current construct rather than assuming the two are equivalent."]),
     S("When one of these lands on an item, the safety-critical screen is met. CM records the external criticality designation. CM does not re-determine it.",
       "The consequence judgment was made by qualified people. It was accepted by an authority. Your job is to record it, cite the external criticality designation as the basis, and keep screening, because the other criteria still matter. A customer-assigned designation also engages criterion (d), the Acquirer-designation screen. Sustainment reach usually engages criterion (g), the logistics screen. List every criterion that applies, by letter and by name."),
@@ -1176,12 +1325,12 @@ var MODULES = [
      "The external criticality designation is returned to the customer for clarification"],
    a:1, why:"The external criticality designation is evidence of a function with system-level consequence, so gate 2 is satisfied. A load-carrying fitting satisfies that gate on its own terms as well. Failing the part at gate 2 is the one move that skips the safety criterion entirely, which is exactly why that move is not free. A written safety concurrence and a safety disposition make the decision visible, at the right altitude."}},
 
- {id:"M2-12", gov:["R_EXT_DESIGNATIONS"], title:"Designations that answer the screen only once translated", body:[
+ {id:"M2-16", gov:["R_EXT_DESIGNATIONS"], title:"Designations that answer the screen only once translated", body:[
     P("The previous section held conditions that answer the safety-critical screen the moment they land on an item. **This section holds the conditions that do not.** Each one reaches the screen only once it has been translated onto an item, or only where the underlying limitation attaches to a discrete part."),
     P("**Establish the translation before you record a determination.** These are the conditions assessors most often treat as automatic, in one direction or the other, and they are neither. Treating one as automatic yes designates items that did not need it. Treating one as automatic no is how a safe-life landing gear component gets filed as a location."),
     TABLE(["Condition", "How it reaches the safety-critical screen", "What to establish first"], [
       ["A published airworthiness limitation", "Where the limitation attaches to a discrete part. A zonal or structural inspection task has no item to designate, and control lives in the parent CI’s documentation", "What the limitations section actually contains, not what the label says. A part can be called critical and carry no entry at all"],
-      ["A principal structural element", "Where the evaluation path produces a discrete part. A safe-life element with a mandatory replacement time in the airworthiness limitations is a discrete part, and it meets the screen on the catastrophic failure limb", "Which of three evaluation paths applies, before you record anything. **Safe-life:** a discrete part. It is serialized, because remaining life is a per-unit quantity. Landing gear is the common case. **Damage-tolerant, identified by structural location:** no item to designate, and control lives in the parent CI’s documentation. **Damage-tolerant, but a discrete separately manufactured part** with an inspection interval in the airworthiness limitations: serialized. On every path, the underlying detail parts and constituent materials carry lot or batch records at heat level"],
+      ["A principal structural element", "Where the evaluation path produces a discrete part. A safe-life element with a mandatory replacement time in the airworthiness limitations is a discrete part, and it meets the screen on the catastrophic failure limb", "Which of three evaluation paths applies, before you record anything. **Section M2-14 works all three**, and the answer ranges from a serialized part to no item at all"],
       ["A premium selection material, with elevated design values", "The label describes a material acceptance basis, not a consequence. It attaches to a discrete part, so it passes gates 1 and 2. Whether it reaches the screen depends on what the part does", "The part’s own consequence. Elevated design values are usually sought where margins are tight, so screen these parts with care. The drawing note carrying the test procedure and acceptance criteria is the control, so treat it as configuration documentation and flow it to spares, repairs and material review"],
       ["A critical application item code", "A supply-system code applied to a stock number rather than an engineering designation. It fits once translated onto the item it codes", "The engineering basis behind the code, before you rely on it"],
       ["A critical component under a bilateral airworthiness arrangement", "Where the arrangement’s definition maps onto an item with a stated consequence", "The definition in force. Terms vary by arrangement"],
@@ -1194,7 +1343,6 @@ var MODULES = [
       "**Three. How is the limit expressed?** This decides the kind of life record you keep. It does not change the identifier. Answer it only when the second answer was yes.",
       "**The third question is the one most often misread.** A calendar-limited part on a discrete part is still serialized, as M1-08 says. Calendar time changes the life record, not the identifier.",
       "A part often carries both a replacement limit and an inspection interval. Inspect every five thousand cycles, replace at thirty thousand, for example. The replacement limit sets the life record. The interval adds nothing to it."]),
-    P("One caution on the safe-life case. **Do not confuse a safe-life replacement time with the limit of validity.** The limit of validity bounds the engineering data behind the airplane’s structural maintenance program. It applies to the airplane. It is not a part replacement time."),
     P("One caution before moving on. Both tiers under-catch. The safety-critical screen also covers loss of primary system capability. No external criticality designation scheme keys on lost capability without an injury pathway. Items in that class appear on no safety list. They come from your own decomposition, or they come from nowhere.")
   ],
   check:{q:"An entry in the airworthiness limitations reads: inspect the wing rear spar attach fitting every 8,000 flight cycles. No replacement time is stated anywhere against it. What has that entry established about the fitting?",
@@ -1204,7 +1352,7 @@ var MODULES = [
      "Nothing at part level, because an inspection interval names no item",
      "It is life-limited, and lot or batch control with a date code is sufficient"],
    a:1, why:"Work the three questions and they come apart cleanly. First, what does the entry attach to? A discrete, separately manufactured part, so the marking requirement applies and the fitting carries a serial number. That requirement triggers on a replacement time, an inspection interval **or** a related procedure, so an interval alone is enough for the serial number. Second, does the entry carry a mandatory replacement limit? It does not, so nothing here makes the part life-limited. The third question never gets asked, because it only applies once the second answer is yes. The zonal answer would be right for an inspection task on a wing zone with no separately manufactured part, and this entry names a part."}},
- {id:"M2-13", gov:["R_EXT_DESIGNATIONS", "R_CANDIDATES"], title:"When the safety designation is not a part classification", body:[
+ {id:"M2-17", gov:["R_EXT_DESIGNATIONS", "R_CANDIDATES"], title:"When the safety designation is not a part classification", body:[
     P("Not every safety label lands on a part. Many land on something else. A function. A maintenance task. A development assurance level. A feature on a drawing. A location on the airframe. None of these is an item. So none of them can be a CI. And none of them designates a CI on its own."),
     P("The last two sections gave you two tiers. Conditions that answer the safety-critical screen the moment they land on an item, and conditions that answer it once translated onto an item. **This is the third tier, and it is the one where there is no item to translate onto yet at all.**"),
     P("But each one is a signal. It tells you that parts worth screening exist nearby. Your job is to get from the label to the parts. **You do not work that out yourself. You ask.** Identifying the hardware behind a function is engineering analysis. A good guess is still a guess, and a guess misses the parts you did not think of."),
@@ -1214,7 +1362,7 @@ var MODULES = [
       ["A development assurance level", "A function, or a development baseline", "Nothing, on its own. A top-level function can be built from parts that do not meet the safety-critical screen. Software is a CI by rule regardless of level. **Do not use the assurance level as a proxy for criterion (b).** The level is reduced by architecture and independence. Criterion (b) is consequence only, and it contains no likelihood or redundancy term"],
       ["An automotive or industrial integrity level", "A safety function and its implementation", "The items implementing the function, where your program uses these schemes. **Do not use the integrity level as a proxy either.** The level discounts by severity, exposure and controllability. A catastrophic-severity hazard with low exposure scores a low integrity level and still meets criterion (b) in full"],
       ["A critical or key characteristic", "A feature or process parameter on a part", "Screen the **parent part**, not the characteristic. Its presence is strong evidence the parent is a candidate. Also ask why it was flagged: the quality-system term covers producibility and fit as well as safety"],
-      ["Fatigue critical structure, fatigue critical baseline structure, or a damage-tolerant principal structural element identified by structural location", "A structural element, or a location on the airframe", "The parts within the element, screened individually. A safe-life principal structural element is the different case: it is a discrete part, and it belongs in the second tier in M2-12 rather than here"]]),
+      ["Fatigue critical structure, fatigue critical baseline structure, or a damage-tolerant principal structural element identified by structural location", "A structural element, or a location on the airframe", "The parts within the element, screened individually. A safe-life principal structural element is the different case: it is a discrete part, and section M2-14 covers it"]]),
     S("Ask for the parts behind the mitigations, not only the parts behind the hazards.",
       "A hazard log read only for causes returns the parts that can start an accident. It does not return a cargo fire suppression bottle, a crew oxygen system, or an ejection seat component. Those items protect people during an accident that something else caused. Ask for them by name: the items implementing protective functions and hazard mitigations."),
     C("Do protective items pass the safety-critical screen?", [
@@ -1236,7 +1384,7 @@ var MODULES = [
      "Ask safety and engineering to name the items that implement the function, then screen those",
      "Screen the flight control computer, since that is where such functions usually live"],
    a:2, why:"A function is not an item, so it cannot be designated as a CI. But it is a strong signal. The correct move is a named request: which items implement this function? Guessing at the hardware is doing engineering that belongs to another team, even when the guess is a good one. And it misses the items you did not think of."}},
- {id:"M2-14", gov:["R_EXT_DESIGNATIONS", "R_UNIT_RECORD"], title:"Life-limited parts", body:[
+ {id:"M2-18", gov:["R_EXT_DESIGNATIONS", "R_UNIT_RECORD"], title:"Life-limited parts", body:[
     P("Many aerospace parts carry a life limit. A compressor disc is limited by engine cycles. A landing gear component is limited by landing cycles or flight hours. An elastomeric seal is limited by cure date. A sealant or adhesive is limited by shelf life. The word is the same in all four cases. The reasons are not."),
     C("Life-limited part, and life status", [
       "**Life-limited part.** “Any part for which a mandatory replacement limit is specified in the type design, the Instructions for Continued Airworthiness, or the maintenance manual.”",
@@ -1268,7 +1416,7 @@ var MODULES = [
      "No. The limit is a maintenance control and designates nothing on its own",
      "No, and no further screening is needed once the limit is identified"],
    a:2, why:"The limit says the material ages in storage. It says nothing about what happens if the seal fails, which is what the safety-critical screen asks. A seal like this usually fails every screen and is controlled within its parent CI\u2019s documentation. But that is a screening outcome you record, not something the life limit decided for you. The last option makes the opposite error: the limit ends no assessment either."}},
- {id:"M2-15", gov:["R_INFLUENCING", "R_NO_DECOMPOSE"], title:"Critical influencing parts", body:[
+ {id:"M2-19", gov:["R_INFLUENCING", "R_NO_DECOMPOSE"], title:"Critical influencing parts", body:[
     P("This one is narrow, and it comes almost entirely from engines. It is worth a section because it is the case that defeats a careless screen."),
     P("The approved life of an engine life-limited part, a compressor disc for example, is calculated from a model. That model assumes things about the disc\u2019s working environment: the loads on it, the temperatures it sees, how it is clamped and spaced. Other parts set those conditions. A spacer, an air seal, a tie bolt. In engine work these are called **critical influencing parts**."),
     P("An influencing part carries no life limit of its own. Its own failure is not hazardous. What it does is hold up the assumptions behind somebody else\u2019s stamped life."),
@@ -1302,7 +1450,7 @@ var MODULES = [
      "No. The engine is the CI, and a supplier-designed item is not decomposed",
      "No, and the manufacturer\u2019s information can be disregarded"],
    a:2, why:"Decomposing a vendor-controlled item into CIs claims a level of control your company does not hold and cannot exercise. The engine is the CI. What the influencing-part information changes is your flowdown: you need to know when the vendor changes one, which makes the change and discontinuance notification requirement load-bearing rather than routine. Disregarding the information is the other error, because it is exactly what tells you which notices matter."}},
- {id:"M2-16", gov:["R_GATES", "R_CRITERIA"], title:"Worked examples: is it a CI?", body:[
+ {id:"M2-20", gov:["R_GATES", "R_CRITERIA"], title:"Worked examples: is it a CI?", body:[
     P("The three gates, then the criteria screen, in that order, every time. Most of the difficulty in practice is not the rule. It is being honest about which gate a candidate actually fails, which is why every row below names the gate rather than saying \u201cthe gate.\u201d"),
     TABLE(["Candidate item", "How it screens", "Verdict"], [
       ["Hydraulic reservoir assembly storing and conditioning fluid for the flight control system", "Passes all three gates: it is an item, it performs a defined system function, and it is not a child of a procured parent. Meets the system-functioning screen: the system cannot operate without it. Also the logistics screen: provisioning and maintenance documentation", "**CI.** Designate as a CI, and list both criteria"],
@@ -1395,7 +1543,7 @@ var MODULES = [
  ]
 },
 {
- id:"M3", label:"Module 3", title:"Structuring and maintaining the identification", sub:"The CI structure, the interface register, the documentation determination, and what happens when any of them changes",
+ id:"M3", label:"Module 3", title:"Structuring and maintaining the identification", sub:"Product structure against CI structure, the CI hierarchy, the interface register, the documentation determination, and what happens when any of them changes",
  sections:[
  {id:"M3-01", gov:["R_RATIONALE", "R_MAINTENANCE"], title:"The selection assessment record", body:[
     P("You have now been told several times to record the rationale for every candidate. Here is the artifact that instruction refers to. One assessment per candidate, and it is short."),
@@ -1441,7 +1589,7 @@ var MODULES = [
       "If a piece of software will be specified, tested, versioned and fielded on its own, it is its own CI. If it travels with its neighbors in all four, it is a unit within theirs."),
     P("Two rules sit alongside the judgment. **Elements of the software development environment that form part of the system get product-unique identifiers**: compilers, linkers, loaders, developmental libraries, configuration settings, automation scripts. They are identified not because they satisfy an end-use function but because the build cannot be reproduced without them. **Firmware follows the arrangement, not the technology.** Where the code and its device are controlled together on a single altered item drawing, one part number represents the device with the code in it. Where they are controlled separately, the code is its own software CI with its own version identifiers."),
     C("The same-CI question arises for software too", [
-      "One software CI with several versions, or several software CIs? That is the same question section M3-14 answers for hardware, and the same triggers answer it. Run them, with two substitutions.",
+      "One software CI with several versions, or several software CIs? That is the same question section M3-15 answers for hardware, and the same triggers answer it. Run them, with two substitutions.",
       "**Read version identifier for PIN. Read build or load for variant.** Make the swap yourself as you work through the triggers, and record the verdict as a software CI, or CSCI, which is the same thing under the name the standard uses.",
       "**The product unit record structure is different, and it is not a substitution.** Software carries identity on the loadable part number and the baseline. It never carries a physical unit identifier, so the product unit record-structure test in M1-08 in Module 1 lands on \u201cconfiguration identity only\u201d for every software CI you will ever screen."])
   ],
@@ -1468,13 +1616,12 @@ var MODULES = [
      "A compliance finding, but no operational effect",
      "Reduced audit scope, since each CI is small"],
    a:1, why:"Over-designation is not over-control; it is a different kind of loss of control. Board time goes to triviality, status accounting stops being read, and genuine changes wait behind noise."}},
- {id:"M3-04", gov:["R_STRUCTURE"], title:"The CI structure", body:[
-    P("Selection produces a set of CIs. Structure puts them in an order, and the order does real work, because it defines the parents, the boundaries and the reporting lines everything downstream uses."),
-    C("CM builds and owns the CI structure", [
-      "Systems Engineering decomposes the system architecture. That is their product and CM does not write it.",
-      "**CM builds the CI hierarchy** and owns it. The hierarchy mirrors the architecture decomposition as closely as the selection criteria allow, because two structures that disagree produce two versions of the truth.",
-      "They are not always identical, and that is expected. The architecture decomposes function. The CI structure organizes what is separately specified, contracted, accepted and supported. Where the two diverge, CM records why the CI structure sits where it does.",
-      "CM assigns each CI its parent, its children, its owning design activity and its control tier, and maintains the CI index. If the structure is wrong, that is a CM finding."]),
+ {id:"M3-04", gov:["R_PRODUCT_STRUCTURE"], title:"Product structure, and why the CI structure is not it", body:[
+    P("Three different hierarchies run on one program. All three are trees. All three get called **the structure** in a meeting. None of them is the other two, and confusing them is the most expensive vocabulary error in this module."),
+    P("This section is the first of the three, because the other two are defined against it. Take it slowly. The next section builds the CI structure, and it will go wrong if this one is fuzzy."),
+    C("Product Structure", [
+      "The hierarchical organization of a product and its components used to organize product configuration information over the lifecycle.",
+      "**Every part is in it.** The last fastener is in it. A CI is in it. An item nobody screened is in it. The product structure is the physical map of the product, and nothing physical is outside it."]),
     P("A product structure is built by decomposing the system into its levels of assembly. The conventional five, top to bottom:"),
     STEPS([
       {h:"System or end item", b:"The final combination of end products, component parts, software and materials, ready for its intended use."},
@@ -1482,18 +1629,52 @@ var MODULES = [
       {h:"Assembly", b:"Parts or subassemblies joined to perform a specific function, and capable of disassembly."},
       {h:"Subassembly", b:"Two or more parts forming a portion of an assembly, replaceable as a whole but with individually replaceable parts."},
       {h:"Part", b:"One piece, or pieces joined so that they are not normally taken apart without destroying their designed use."}], "tl"),
+    P("**The engineering bill of material is the product structure as the product data system holds it.** It lists every part number, the quantity of each, and what each one goes into. It is the thing most people picture when they hear product structure, and on most programs it is the only one of the three hierarchies that is complete."),
+    P("Here are the three, side by side. Read the last column first."),
+    TABLE(["The hierarchy", "What it decomposes", "Who owns it", "What is in it", "What it is used for"], [
+      ["**The system architecture**", "Function. What the system has to do, broken into what its parts have to do", "Systems Engineering", "Functions, and the elements that realize them", "Allocating requirements, and defining the interfaces between them"],
+      ["**The product structure**, as held in the engineering bill of material", "Physical assembly. What goes into what", "Design Engineering, in the product data system", "**Every part**, down to the last fastener", "Building the product, buying it, and answering what is inside this"],
+      ["**The CI structure**", "Management need. What is separately specified, contracted, accepted and supported", "Configuration Management", "**Only designated CIs**, each with its parent and its children", "Change streams, baselines, status accounting, audits, and what a supplier is told to do"]]),
+    S("The CI structure is not the engineering bill of material with some rows deleted.",
+      "It is a different decomposition, built on a different question, for a different purpose. The bill of material asks what goes into what. The CI structure asks what needs managing on its own. Those two questions have different answers, and the second one is a judgment rather than a fact."),
+    C("Two ways a program gets this wrong, and what each costs", [
+      "**Copy the bill of material whole.** Every part number becomes a CI. That is over-designation with a spreadsheet behind it, and M3-03 already priced it: board time consumed by triviality, status accounting nobody reads, real changes queued behind fastener changes.",
+      "**Copy the shape of it.** The CI count stays sensible, but the boundaries follow manufacturing convenience rather than management need. A change to one function now lands in three CIs, because that is how the assembly was built up rather than how the function was allocated. Nobody can cut the change in cleanly, and nobody can say why the boundary sits there.",
+      "**The bill of material is organized for building the product.** Building it is not the only thing the structure has to serve. Specifying, contracting, accepting, supporting and auditing it all pull in their own directions, and the CI structure is where those pulls get resolved."]),
+    C("So what does the CI structure follow?", [
+      "**The architecture model, where the program has one.** The CI hierarchy mirrors the model’s decomposition method, because the two are one decomposition seen twice. Section M3-09 covers that in full.",
+      "**Specification or certification decomposition methods, where there is no model.** Work down from how the requirements are allocated, or from how the certification basis divides the product.",
+      "**Not the bill of material, in either case.** It is a fallback for neither. Where a program has no model and no allocated requirements to work from, the answer is to get one of those, not to reach for the bill of material."]),
+    C("How the two structures meet", [
+      "**Every part sits somewhere in the product structure. Not everything in the product structure is a CI**, and the items that are not are controlled within their parent CI’s configuration documentation.",
+      "So the product structure is where a non-CI **lives**. The CI structure is where a CI is **managed**. An item has a place in the first whether or not it has a place in the second, and that is the sentence that makes “not a CI” mean something other than “uncontrolled.”",
+      "**Which is why a rejected candidate has to name its parent.** “Not a CI” is only half an answer. The other half is which CI’s documentation controls it, and an assessment that stops at the first half has left the item genuinely uncontrolled rather than controlled elsewhere.",
+      "**Three verdicts need a parent named, not one.** An item that fails gate 2 names the parent CI whose documentation controls it. An item that meets no criterion names the same thing. And an item that fails gate 3 names the **higher parent item that was procured as a unit and screened in its place**, which is a different fact and is recorded as one. The checklist relabels the field to ask for it."])
+  ],
+  check:{q:"A new CM engineer proposes to build the CI structure by exporting the engineering bill of material and deleting the rows that failed the screen. What is wrong with the method, beyond the effort involved?",
+   o:[
+     "Nothing is wrong. The bill of material is the authoritative product structure, so the CI structure is a subset of it",
+     "It produces the right CIs in the wrong order, which only matters once baselines are established",
+     "It builds one decomposition out of another built for a different purpose, so the boundaries follow how the product is assembled rather than what needs managing on its own",
+     "It is acceptable only where the program has no architecture model to mirror"],
+   a:2, why:"The two hierarchies answer different questions. The bill of material asks what goes into what, and it is organized for building the product. The CI structure asks what needs separate management, which is a judgment about specification, contract, acceptance and support. Deleting rows from the first does not produce the second: it produces CI boundaries drawn where the assembly happens to break, so a change to one function can land in three CIs with no clean effectivity address. The CI structure mirrors the architecture model where one exists, and specification or certification decomposition where none does. The bill of material is not the fallback for a program without a model, which is the trap in the last option."}},
+
+ {id:"M3-05", gov:["R_STRUCTURE"], title:"The CI structure", body:[
+    P("Selection produces a set of CIs. Structure puts them in an order, and the order does real work, because it defines the parents, the boundaries and the reporting lines everything downstream uses."),
+    P("The previous section said what this structure is not. This one builds it."),
+    C("CM builds and owns the CI structure", [
+      "Systems Engineering decomposes the system architecture. That is their product and CM does not write it.",
+      "**CM builds the CI hierarchy** and owns it. The hierarchy mirrors the architecture decomposition as closely as the selection criteria allow, because two structures that disagree produce two versions of the truth.",
+      "They are not always identical, and that is expected. The architecture decomposes function. The CI structure organizes what is separately specified, contracted, accepted and supported. Where the two diverge, CM records why the CI structure sits where it does.",
+      "CM assigns each CI its parent, its children, its owning design activity and its control tier, and maintains the CI index. If the structure is wrong, that is a CM finding."]),
     S("CIs may be designated at any level of assembly.",
-      "The levels describe the product. They do not tell you where the CIs go: that is the selection judgment of the previous section. What they give you is a shared vocabulary for arguing about it."),
+      "The levels of assembly in M3-04 describe the product. They do not tell you where the CIs go: that is the selection judgment of M3-03. What they give you is a shared vocabulary for arguing about it."),
     P("For each CI, record its parent, its children, and the owning design activity. Then two control designations that decide who is in charge of what:"),
     CARDS([
       {h:"Acquirer-controlled", b:"The CIs the Acquirer specifies, baselines and controls. Their designation is the Acquirer\u2019s to make, their product baseline is the Acquirer\u2019s to establish, and changes to them run to the Acquirer\u2019s approval authority."},
       {h:"Supplier-controlled", b:"Below the Acquirer-controlled level, **the Supplier determines** which items to place under internal configuration management and what documentation types to use. This is not a gap in control: it is control exercised by your company, on its own authority, against the same criteria."},
       {h:"Sub-tier developed", b:"An item developed by a sub-supplier is a CI **from your company\u2019s point of view**, and equivalent CM requirements are flowed down to the organization that builds it. That sentence is the entire premise of Modules 4 to 7."}]),
     P("Each CI also carries a **type**: hardware, software, or firmware. The first two are what they sound like. Firmware is the case where code and the device it lives in are managed as one thing. Flag it in the index. It is the type people forget has two natures."),
-    C("Where everything that is not a CI lives", [
-      "Every part sits somewhere in the product structure. Not everything in the product structure is a CI, and the items that are not are controlled within their parent CI\u2019s configuration documentation.",
-      "**Which is why a rejected candidate has to name its parent.** \u201cNot a CI\u201d is only half an answer. The other half is which CI\u2019s documentation controls it, and an assessment that stops at the first half has left the item genuinely uncontrolled rather than controlled elsewhere.",
-      "**Three verdicts need a parent named, not one.** An item that fails gate 2 names the parent CI whose documentation controls it. An item that meets no criterion names the same thing. And an item that fails gate 3 names the **higher parent item that was procured as a unit and screened in its place**, which is a different fact and is recorded as one. The checklist relabels the field to ask for it."])
   ],
   check:{q:"An assembly sits two levels below the lowest Acquirer-controlled CI. Who decides whether it is placed under configuration management, and against what?",
    o:[
@@ -1502,7 +1683,7 @@ var MODULES = [
      "The Supplier, applying the same criteria and determining the documentation types to use",
      "The sub-supplier who builds it, under their own CM system"],
    a:2, why:"Below the Acquirer-controlled level the Supplier determines which items to place under internal configuration management and what documentation types apply. The authority changes hands; the criteria and the discipline do not. And where the item is developed by a sub-supplier, it is a CI from your company\u2019s point of view with equivalent requirements flowed down, not a matter left to their own system."}},
- {id:"M3-05", gov:["R_IDENT_ACTIVITIES", "R_MBSE"], title:"The nine activities", body:[
+ {id:"M3-06", gov:["R_IDENT_ACTIVITIES", "R_MBSE"], title:"The nine activities", body:[
     P("The process is **iterative, not sequential-once.** Selection begins early, typically before or at the system functional and requirements reviews, and is revisited as the design matures and at every baseline establishment."),
     TABLE(["#", "Activity", "Principal output"], [
       ["1", "Candidate CI identification", "Candidate list; the decomposition basis for the CI structure"],
@@ -1510,7 +1691,7 @@ var MODULES = [
       ["3", "CI structure and hierarchy", "Parent/child and owning design activity; Acquirer- vs Supplier-controlled designation"],
       ["4", "Interface identification and recording", "Interface register; coverage verification; signed no-interface determinations"],
       ["5", "Acquirer review and concurrence", "Submittal; concurrence or direction records; concurred CI list"],
-      ["6", "Identifier assignment", "PINs, unit identifiers with their product unit record structure, nomenclature, software and version identifiers, document identifiers, and unique item identification marking where the contract requires it. Also the recorded part attribute designations, safety-critical, life-limited and special handling, each with its assigning authority"],
+      ["6", "Identifier assignment", "PINs, unit identifiers with their product unit record structure, nomenclature, software and version identifiers, document identifiers, and IUID marking where the contract requires it. Also the recorded part attribute designations, safety-critical, life-limited and special handling, each with its assigning authority"],
       ["7", "Configuration documentation determination", "Documentation type recorded against each CI"],
       ["8", "Baseline establishment", "FBL, ABL, PBL per CI with approved change status"],
       ["9", "Maintenance and iteration", "Updated index, register and submittals; status accounting records of every change"]]),
@@ -1535,7 +1716,7 @@ var MODULES = [
      "Two authoritative decompositions of one product, with no way to choose",
      "The model should be rebuilt to match the contract"],
    a:2, why:"Where modeling is used the CI structure mirrors the model: they are two views of one decomposition. Divergence makes every subsequent structural decision contestable. The fix is realignment by CM and Systems Engineering jointly, not a unilateral change to either."}},
- {id:"M3-06", gov:["R_BASELINES", "R_IDENT_ACTIVITIES"], title:"When the work happens", body:[
+ {id:"M3-07", gov:["R_BASELINES", "R_IDENT_ACTIVITIES"], title:"When the work happens", body:[
     P("The activities are iterative, but they are not evenly spread across a program. Each has a normal moment, and each has something that must already exist by the time it arrives."),
     STEPS([
       {h:"System requirements and functional reviews", b:"Candidate identification and the first pass of selection. The **functional baseline** is established at or after the system functional review, documented by the functional configuration documentation. The proposed CI list goes to the Acquirer for review and concurrence around here, and interface coverage is verified at that submittal."},
@@ -1556,7 +1737,7 @@ var MODULES = [
      "Only the system specification; CI-level documentation follows critical design review",
      "Its selection assessment, and nothing further until critical design review"],
    a:1, why:"The allocated baseline is established at or after a CI\u2019s preliminary design review, and a baseline is made of its documentation, so the allocated set has to be there and approved. The detailed design belongs to critical design review and the product baseline; the selection assessment should have been done considerably earlier."}},
- {id:"M3-07", gov:["R_MBSE"], title:"What MBSE is, in one page", body:[
+ {id:"M3-08", gov:["R_MBSE"], title:"What MBSE is, in one page", body:[
     P("The next section says the CI structure mirrors the model. This one says what a model is, because the rest of the course assumes you already know."),
     P("Model-based systems engineering replaces the document as the authoritative description of the system. The system is described once, in a model, and the documents are views generated from it."),
     STEPS([
@@ -1581,7 +1762,7 @@ var MODULES = [
      "The model is not authoritative, so the CI structure should follow the bill of material instead",
      "Valves and sensors can never be CIs"],
    a:1, why:"Mirroring means the CI hierarchy follows the same decomposition method the model uses, so the two do not diverge. It does not mean every model element becomes a CI. The model goes as deep as the architect found useful, which is usually deeper than the CI structure needs. Each element at the designation level is screened, and a recorded no is an ordinary result. The bill of material is organized for building the product and is not the fallback. And a valve or a sensor can certainly be a CI where it passes a screen."}},
- {id:"M3-08", gov:["R_MBSE"], title:"Where the model is the decomposition", body:[
+ {id:"M3-09", gov:["R_MBSE"], title:"Where the model is the decomposition", body:[
     P("On a program using model-based systems engineering, the CI structure does not get to be its own idea. The CI parent-and-child hierarchy mirrors the decomposition method of the architecture model, because the two are one decomposition seen twice."),
     CARDS([
       {h:"The preferred schemes", b:"Decomposition by ATA chapter, or by the standard numbering system used across the technical data suite, implemented in the program\u2019s modeling conventions. Each CI carries the corresponding chapter or numbering reference as an attribute in the index, so the CI structure and the technical data agree about where an item sits."},
@@ -1609,8 +1790,8 @@ var MODULES = [
      "Mirrors the functional thread decomposition, with the mapping convention recorded",
      "Follows the engineering bill of material instead, as a neutral basis both sides can accept",
      "Is held until the model is rebuilt to a preferred scheme"],
-   a:1, why:"The preference is real but it is a preference. The obligation is that the CI structure and the model remain one decomposition. Mirroring a non-preferred scheme satisfies it; building a preferred-scheme CI structure alongside a functional-thread model creates precisely the divergence the rule exists to prevent. The product structure is the fallback for programs with no model at all, not a neutral third option."}},
- {id:"M3-09", gov:["R_INTERFACES"], title:"Interfaces: coverage, not content", body:[
+   a:1, why:"The preference is real but it is a preference. The obligation is that the CI structure and the model remain one decomposition. Mirroring a non-preferred scheme satisfies it; building a preferred-scheme CI structure alongside a functional-thread model creates precisely the divergence the rule exists to prevent. And the bill of material is not the fallback for a program with no model: that fallback is specification or certification decomposition, as the third card says."}},
+ {id:"M3-10", gov:["R_INTERFACES"], title:"Interfaces: coverage, not content", body:[
     P("This is where CM engineers most often misunderstand their own role. The split is not between an active function and a passive one. It is between the **boundary set** and the **boundary content**, and CM owns the first."),
     CARDS([
       {h:"Systems Engineering owns the content", b:"Identifies what crosses each boundary: internal interface requirements between CIs, and external interfaces with other systems, facilities and support equipment. Human Factors identifies the human system interfaces at those boundaries, which are interfaces like any other and are registered like any other. **System Safety identifies the interfaces that carry a hazard risk control**, and that is where the safety-related flag on a register row comes from. Signs the no-interface determinations. Verifies technical adequacy through the technical review process. CM does not derive interface requirements. **This identification is mandatory for safety.** The obligation sits on the company, so CM does not get to treat it as somebody else\u2019s problem."},
@@ -1622,7 +1803,7 @@ var MODULES = [
     C("Four interface requirements are mandatory for safety", [
       "On a safety-significant product line these four are performed regardless of what the contract flows down, or dispositioned through the safety disposition gate.",
       "**Identify** the internal and external interface requirements. Systems Engineering does the identifying. The obligation is the company\u2019s.",
-      "**Incorporate** the interface information into the functional, allocated and product documentation. That is the documentation determination, covered in section M3-11.",
+      "**Incorporate** the interface information into the functional, allocated and product documentation. That is the documentation determination, covered in section M3-12.",
       "**Maintain configuration control** of baselined interface requirements. That is baseline establishment, covered in M1-05 in Module 1.",
       "**Provide a representative** to the Acquirer\u2019s interface control working group where one exists. Conditional on the group existing, and mandatory once it does.",
       "**The interface register and the coverage verification records are CM\u2019s evidence that the first one was performed.** They are what the program safety-requirement disposition record points at. A register with blank rows is not a filing lapse on a safety-mandatory requirement. It is the absence of the evidence."]),
@@ -1638,7 +1819,7 @@ var MODULES = [
      "Confirm it after reviewing the interface control document for that boundary",
      "Refer the question to the Acquirer for a determination"],
    a:1, why:"CM verifies coverage, not adequacy. Accepting would put CM outside its competence and, worse, create a record suggesting interface content had been reviewed when it had not. Offer what CM actually holds."}},
- {id:"M3-10", gov:["R_INTERFACES"], title:"How to read an interface control document", body:[
+ {id:"M3-11", gov:["R_INTERFACES"], title:"How to read an interface control document", body:[
     P("The previous section said CM owns the boundary set and Systems Engineering owns the content. This section is the document itself. You will register it, cite it and check its revision, so you have to be able to read it."),
     P("An interface control document defines a boundary between two things. Read it as a boundary, not as a specification for either side."),
     TABLE(["What to find", "What it tells you"], [
@@ -1668,7 +1849,7 @@ var MODULES = [
      "A revision to the parent CI\u2019s interface documentation only",
      "A new interface control document, in every case"],
    a:1, why:"A split creates a boundary that did not exist before, and the register holds one row per boundary in the CI structure. Both siblings being documented tells you each side is defined. It does not tell you what crosses between them. The row is required, and it is satisfied by either identified interface documentation or a no-interface determination signed by Systems Engineering. An ICD is one way to satisfy it and not the only way."}},
- {id:"M3-11", gov:["R_CI_INDEX"], title:"Determining the documentation, and the records you keep", body:[
+ {id:"M3-12", gov:["R_CI_INDEX"], title:"Determining the documentation, and the records you keep", body:[
     P("For each CI, determine the documentation that defines its performance, functional, and physical attributes: interfaces included. This is not a filing decision. The documentation type follows three facts about the item: its maturity, who owns the design, and the level at which it is controlled."),
     CARDS([
       {h:"Performance specifications", b:"For Acquirer-controlled items on performance-based contracts: what the item must do and how that is verified, leaving the design solution to the Supplier."},
@@ -1682,7 +1863,7 @@ var MODULES = [
       "The owning design activity and its CAGE code, the PIN, and the specification reference.",
       "The safety-critical flag with its hazard reference: the product-level binding of the hazard log.",
       "**The three part attribute designations: safety-critical, life-limited and special handling.** Each with its designation type, and with the assigning authority named wherever a customer or a regulator assigned it rather than your company.",
-      "**The unique identification result**, recorded beside the designation and its assigning authority.",
+      "**The IUID result**, recorded beside the designation and its assigning authority. Whether IUID applies, and the unique item identifier where it does.",
       "Baseline status per baseline, audit designation status, and the item\u2019s status."]),
     S("De-designated rows are retained, never deleted, and where one CI carries several part-number variants, the CI-to-PIN variant mapping is recorded in full.",
       "An index that shows only the current answer cannot show how the program got there. And every change and record made under the old designation still points at that identifier. Delete the row and they point at nothing."),
@@ -1706,7 +1887,7 @@ var MODULES = [
      "Retained, with the status changed to de-designated",
      "Retained only if the CI was safety-critical"],
    a:2, why:"Designation history is part of the traceability record. Changes, status entries, and audit results made while the item was a CI all reference that identifier: deleting or exporting the row orphans them. The status field exists precisely so the index can hold the full history and still answer \u201cwhat is a CI today?\u201d with a filter."}},
- {id:"M3-12", gov:["R_CONCURRENCE"], title:"Acquirer concurrence", body:[
+ {id:"M3-13", gov:["R_CONCURRENCE"], title:"Acquirer concurrence", body:[
     S("Potential CIs must be selected AND submitted for Acquirer review and selection concurrence.",
       "A program that has selected excellent CIs and never submitted them is non-compliant."),
     P("Read the underlying requirement carefully: it requires potential CIs to be selected **and submitted** for Acquirer review and concurrence. Selection alone does not satisfy it."),
@@ -1723,7 +1904,7 @@ var MODULES = [
      "Non-compliant: the requirement is to select and to submit for concurrence",
      "Compliant for Supplier-controlled CIs only"],
    a:2, why:"Selection alone does not satisfy the requirement. Treat submittal as part of selection rather than a follow-on task, and resubmit on every iteration, because designation authority for Acquirer-controlled CIs is not yours."}},
- {id:"M3-13", gov:["R_SAME_OR_SEPARATE"], title:"Same CI or separate CIs: the principle", body:[
+ {id:"M3-14", gov:["R_SAME_OR_SEPARATE"], title:"Same CI or separate CIs: the principle", body:[
     P("Two or more items carry different part numbers and look closely related. Same function, same subsystem, same vendor. Do they share one CI identifier with part-number variants, or get designated as separate CIs? This is the most common judgment call you will be asked to make."),
     P("The question runs two ways, and the two ways take different paths. **Path A** compares two or more distinct items against each other. **Path B** handles one part number installed in more than one place. Decide which one you are in before you start, because the triggers differ and answering path A triggers on a path B problem produces a confident wrong answer."),
     S("The CI identifier follows function and the management need for separate control. The PIN follows form, fit and function.",
@@ -1741,7 +1922,7 @@ var MODULES = [
      "Two CIs, one PIN: different functions, different effectivity, one design",
      "One CI with two PINs, because the two installations differ"],
    a:2, why:"Different end-use functions and different parents drive separate CIs, and the two installations need independent effectivity addresses. Nothing about that creates a non-interchangeable condition, so the PIN does not split. Creating a second part number to \u201cmake the records match\u201d is designating identity to solve a bookkeeping discomfort."}},
- {id:"M3-14", gov:["R_SAME_OR_SEPARATE"], title:"The triggers, and four cautions", body:[
+ {id:"M3-15", gov:["R_SAME_OR_SEPARATE"], title:"The triggers, and four cautions", body:[
     P("The assessment runs in four stages. Establish where you are. Clear the scope questions. Pass the qualifying gates. Then run the separation triggers. Any single trigger separates on its own, so the triggers are a logical OR, and every one of them is run and recorded even after the first has fired."),
     P("The labels below are the labels used in the same-CI decision aid in the CI Identification Process. Use them when you record a verdict, because a rationale citing S4 can be checked and one citing \u201cthe specification gate\u201d cannot. **C1, P1 and P2 are this course\u2019s labels** for the questions the aid asks before its gates, so if you do not find those three on the aid itself, you have not lost anything."),
     TABLE(["Stage", "Node", "Question", "Trigger \u2192 result"], [
@@ -1761,7 +1942,7 @@ var MODULES = [
     S("P1 looks like gate 3, the supplier-designed parent gate, and behaves oppositely.",
       "On the checklist, the procurement question is gate 3 and it **ends** the screen. You stop and go screen the parent instead. Here, P1 **re-frames** the comparison at the procured level and the assessment continues. Same fact, two different consequences, and knowing gate 3 well is exactly what makes people get P1 wrong."),
     S("Establish C1 before you run anything.",
-      "The same verdict means different work depending on where you started. Separate CIs against items not yet designated is a first designation. The same verdict against one existing CI is a split. The same verdict again where the items are already separate confirms what you have. Three different pieces of work, one verdict, and section M3-17 covers the two that restructure."),
+      "The same verdict means different work depending on where you started. Separate CIs against items not yet designated is a first designation. The same verdict against one existing CI is a split. The same verdict again where the items are already separate confirms what you have. Three different pieces of work, one verdict, and section M3-18 covers the two that restructure."),
     CARDS([
       {h:"S3: safety separates on ANY item, not all", b:"A safety-critical variant sharing a CI with a non-critical one either forces the whole CI to inherit safety obligations, or blurs hazard-to-CI traceability. Both are worse than a second CI number. If all are safety-critical, they are also separated, because each needs distinct hazard traceability. Answer S3 from the safety management system. Do not re-determine the consequence here. **And do not consolidate a safety-critical item with a non-safety-critical item into a shared CI identifier without System Safety concurrence.** The trigger runs in both directions."},
       {h:"S4: the interface control document caution", b:"Appearing on the same interface control document is NOT evidence of a common interface. If the document distinctly calls out separate interfaces for each item, analyze that before you answer no. Distinct callouts usually mean different mating definitions and different interface change traffic."},
@@ -1781,7 +1962,7 @@ var MODULES = [
      "Answer S5 not established and hold, then get the verification and interface facts",
      "Escalate to the Acquirer for direction on the verdict"],
    a:2, why:"S5 is frequently where the decision actually turns, and the interface control document caution on S4 applies squarely to \u201cslightly different interfaces.\u201d Recognizing that you cannot yet decide is the correct answer here. Naming the fact you need, and who owns it, is the rest of it."}},
- {id:"M3-15", gov:["R_ONE_PIN_MANY_CI"], title:"One part number in more than one place", body:[
+ {id:"M3-16", gov:["R_ONE_PIN_MANY_CI"], title:"One part number in more than one place", body:[
     P("The triggers in the previous section compare two or more distinct items against each other. That is decision path A. It does not fit the reverse case, because in the reverse case there is only one item."),
     S("One part number, installed in more than one place, runs a different path.",
       "Path A asks what is different between two items. Here nothing is different about the item. What differs is where it sits and what it is doing there. So the comparison is between the item instances and their next higher items together, never between the items alone."),
@@ -1814,7 +1995,7 @@ var MODULES = [
      "Confirm that status accounting supports position-keyed CI identity, and record it",
      "Obtain System Safety concurrence, since one installation may later be classified safety-critical"],
    a:2, why:"The triggers give you the verdict. The confirmation is what makes the verdict recordable, because from here the CI identifier resolves only from the item and its installed position together, and the as-built record and status accounting both have to carry it that way. Creating a second part number is the error this whole section exists to prevent: nothing here made the two installations non-interchangeable, and inventing a part number to make the records look symmetrical is designating identity to solve a bookkeeping discomfort."}},
- {id:"M3-16", gov:["R_SAME_OR_SEPARATE"], title:"Worked examples: same CI or separate?", body:[
+ {id:"M3-17", gov:["R_SAME_OR_SEPARATE"], title:"Worked examples: same CI or separate?", body:[
     P("Three walks. The first two are path A, comparing items against each other. The third is path B, one part number in more than one place. Notice in each how few triggers actually do any work: the verdict nearly always turns on one, and your job is to find which."),
     STEPS([
       {h:"Two fuel pump variants, one safety-critical", b:"Same end-use function, same parent, and one specification could comfortably define both. Same verification basis. But hazard analysis classifies failure of the high-pressure variant as capable of causing loss of primary system capability, and the low-pressure variant\u2019s as not. **S3 triggers on ANY item being safety-critical, not all of them. Separate CIs.** Sharing one identifier would either force the non-critical variant to inherit the safety obligations, or blur hazard-to-CI traceability. Both are worse than a second CI number."},
@@ -1840,7 +2021,7 @@ var MODULES = [
      "An item whose nomenclature the Acquirer directs be split",
      "Two items with the same function whose verification bases differ"],
    a:1, why:"Different end-use functions and different parents drive separate CI identifiers, but nothing about installing one item in two places creates a non-interchangeable condition, so the part number does not split. The first option is the mirror image: one CI carrying several part-number variants. The identifiers are decoupled on purpose, and they move for different reasons."}},
- {id:"M3-17", gov:["R_SPLIT_CONSOLIDATE", "R_MAINTENANCE"], title:"De-designation, splits and consolidations", body:[
+ {id:"M3-18", gov:["R_SPLIT_CONSOLIDATE", "R_MAINTENANCE"], title:"De-designation, splits and consolidations", body:[
     P("A CI structure is not a ratchet. Three mid-life changes have mechanics worth knowing before you meet one, because each touches identifiers, boundaries and records at the same time."),
     S("The same-CI decision detects all three at node C1.",
       "That is what the current-designation question is for. A separate-CIs verdict against items not yet designated is a first designation. The same verdict against one existing CI is a split. The same verdict where the items are already separate confirms what you have. Run C1 first and the assessment tells you which of the three you are in."),
@@ -1865,7 +2046,7 @@ var MODULES = [
      "The Acquirer decides, the item returns to its parent\u2019s documentation, and the row is retained",
      "The item cannot be de-designated once a baseline has been established against it"],
    a:2, why:"Designation authority for Acquirer-controlled CIs rests with the Acquirer, and so does the authority to remove it: the proposal is submitted and concurred like any other selection change. And de-designation moves an item to a different level of control rather than out of control: the parent whose documentation now governs it must be identified, exactly as it would be for a candidate rejected at the end-use gate."}},
- {id:"M3-18", gov:["R_WHO_TO_ASK"], title:"Who to ask", body:[
+ {id:"M3-19", gov:["R_WHO_TO_ASK"], title:"Who to ask", body:[
     P("The who-does-what sections run from a function to its duties. This one runs the other way, because that is the direction a question actually arrives in. You have a question. You do not know whose desk it belongs on."),
     TABLE(["The question you have", "Who answers it"], [
       ["Is this a CI, and at what level?", "CM performs CI identification, Systems Engineering provides input on level structure"],
@@ -1882,7 +2063,7 @@ var MODULES = [
       ["What is the as-built configuration of this unit?", "CM status accounting, from the reconciliation report"],
       ["Who assigned this safety-critical or life-limited part designation?", "One of three cases, and the statement of work names which. Establish it before writing anything against anyone"],
       ["What is this part's life limit, and which clock runs it?", "RM&SH supplies the basis for the limit and the inspection interval. The parts list states it. CM reconciles the two"],
-      ["Does item unique identification apply to this item?", "The contract decides. Logistics identifies the triggers. The contracting activity names the parent item"],
+      ["Does IUID apply to this item?", "The contract decides. Logistics identifies the triggers. The contracting activity names the parent item"],
       ["What product unit record does this item need?", "CM reviews and verifies it, against the record-structure test and the eight drivers. Design Engineering puts the requirement on the parts list"],
       ["What does this drawing note mean?", "Design Engineering, or the Responsible Engineer for the CI"],
       ["Can we ship with this open?", "Quality, and the approving authority for the disposition"]]),
@@ -2039,7 +2220,7 @@ var MODULES = [
       ["System Safety", "Receives safety-relevant supplier findings and escapes into the safety data stream; concurs on dispositions affecting hazard controls; supports evaluation of tailoring proposals at the supplier tier"],
       ["Program Management", "Resources the flowdown and effectiveness work; approves award restrictions and other actions carrying schedule or cost consequence; escalates unresolved supplier CM performance"],
       ["Independent CM and Safety Assurance", "Evaluates a proposed equivalent control where a supplier or program wants to tailor a requirement mandatory for safety: independent of the program bearing the decision, which is the entire point of the role"],
-      ["Risk-acceptance authority", "Signs risk acceptances for safety-mandatory requirements not flowed to a supplier, at the authority level the safety management system names for the pre-anchored severity. For catastrophic and severe, that is the accountable executive (M1-15)"],
+      ["Risk-acceptance authority", "Signs risk acceptances for safety-mandatory requirements not flowed to a supplier, at the authority level the safety management system names for the pre-anchored severity. For catastrophic and severe, that is the accountable executive (M1-16)"],
       ["Enterprise CM functional lead", "Owns the work type taxonomy, the requirement matrix and the deliverable definitions, and maintains them as the requirement set changes, or as the requirements mandatory for safety change"],
       ["The supplier", "Complies with or suitably tailors what is flowed; submits the required deliverables; flows requirements recursively to its own sub-tiers and returns their product data with traceability to next higher assemblies; participates in audits per its work-type role"]]),
     S("Name the handoffs and you have named the failure modes.", "A statement of work released without passing through CM. A part attribute authorship case nobody stated, so engineering never approved what the supplier never proposed. An escape found by receiving that never reached the findings log. None of these is a hard judgment call, each is a handoff that had no owner."),
@@ -2107,6 +2288,9 @@ var MODULES = [
       ["Nonconformance", "A condition that does not meet the released design or requirement. It is recorded, dispositioned by the required authority, and the disposition is then carried out and verified."],
       ["Effectivity", "The point at which a change takes effect, usually stated as a unit or line number. It answers the question: starting with which one?"],
       ["Unit identifier", "Short for product unit identifier: a serial, lot, or batch number that distinguishes one unit, or group of units, of a product from another. A serial number where the item is tracked individually, a lot or batch number where a whole lot is accepted together. Unit identifiers are never revised or re-used once assigned, even when the PIN changes (M1-07)."],
+      ["Item Unique Identification (IUID)", "A Department of Defense system of marking items with machine-readable unique item identifiers and reporting them to the DoD IUID Registry. It arrives through a contract clause rather than through the type design. Write IUID, not \u201cunique identification.\u201d M1-10 covers when it applies, what it marks and what it reports."],
+      ["Unique item identifier (UII)", "The globally unique, unambiguous set of data elements marked on an item under IUID. Every UII carries a serial number, so an item under IUID is a serialized item. Not every serialized item carries a UII."],
+      ["Parent item", "The assembly, intermediate component or subassembly that holds an embedded item carrying a UII. It is a position in the product tree rather than a kind of hardware, and the contract governs which assembly it is. IUID marking stops there. Traceability records do not (M1-09)."],
       ["Special handling", "One of the three part attribute designations. An item requires special handling where controlled handling, packaging or storage is necessary to keep it conforming. Electrostatic discharge sensitivity, hazardous material content, and limits on temperature, humidity, shock or security classification are the common causes. It drives lot or batch recording. It is not a criticality designation and it is not a serialization driver."],
       ["Traceability record", "The record that ties each delivered item to its part number, its unit identifier, its designations, and the assembly above it. The chain does not stop at that assembly: it runs up the product tree to the end item (M1-09)."],
       ["End item", "The top-level asset or system under contract, typically the complete air vehicle or weapon system. It is where the traceability chain terminates. **It is not a line replaceable unit.**"],
@@ -2114,7 +2298,7 @@ var MODULES = [
       ["Sub-tier", "A supplier of your supplier (M4-02). Requirements flow to it too, through your supplier, which is what recursion means."]]),
     C("Four words to be careful with", [
       "**Deliverable.** This word names two different things and the course uses it for both. A **procured item** is the article the supplier delivers and your company accepts. A **supplier data deliverable**, or SDRL, is data the supplier submits. Say which one you mean every time. A statement of work that says every deliverable requires a reconciliation report has said something false about one of them.",
-      "**Severity.** Two scales use this word and they are not the same one. **Barrier severity** is the band a requirement mandatory for safety sits in, catastrophic or severe. The barrier safety case assigns it (M1-15). It is looked up, and a program cannot re-rate it. **Hazard severity** is the category the safety analysis assigns to a specific hazard, catastrophic through negligible. Say which one you mean. And neither of them tells you what product unit record an item needs.",
+      "**Severity.** Two scales use this word and they are not the same one. **Barrier severity** is the band a requirement mandatory for safety sits in, catastrophic or severe. The barrier safety case assigns it (M1-16). It is looked up, and a program cannot re-rate it. **Hazard severity** is the category the safety analysis assigns to a specific hazard, catastrophic through negligible. Say which one you mean. And neither of them tells you what product unit record an item needs.",
       "**Designated.** Always say which kind, because there are four. Being a CI, being audited, carrying a part attribute, and carrying an external criticality label are separate decisions, made by different screens, at different times. A part inside a procured vendor item can be life-limited and serialized without ever being a CI, and that is ordinary rather than an anomaly.",
       "**Critical safety item, against safety-critical item.** The same words in a different order, and two different things. A **critical safety item** is designated by the customer’s design control activity, and its obligation is source approval and supply chain integrity. A **safety-critical item** comes out of the system safety analysis, and its obligation is design and process rigor. M2-11 sets them side by side. Say the whole term, in the right order, every time.",
       "**Life limited.** This means two different things. An item limited by flight cycles or operating hours is tracked per unit. An item limited by shelf life or cure date is tracked by lot with a date code. The phrase is identical and the product unit record structure is usually opposite. One exception runs the other way: a calendar replacement limit on a discrete part in the airworthiness limitations is serialized anyway. This is the two-clocks rule from M1-08 in Module 1. The product unit record-structure test there governs here too."])
@@ -2299,7 +2483,7 @@ var MODULES = [
       ["R-08", "Vendor change and discontinuance notification", "S-13", "No"],
       ["R-23", "Change incorporation and verification: document, evaluate, disposition, record and report changes and variances; incorporate approved changes; verify the incorporation", "S-07, S-08", "Yes"],
       ["R-22", "Change embodiment and effectivity control: embody approved changes at the company-directed effectivity, and record incorporation per unit", "S-16", "Yes"],
-      ["R-09", "Identification and marking: enterprise identifier, part number, unit identifier, nomenclature, and any required unique identification marking", "S-06", "Yes"],
+      ["R-09", "Identification and marking: enterprise identifier, part number, unit identifier, nomenclature, and any required IUID marking", "S-06", "Yes"],
       ["R-10", "Part traceability record for delivered items", "S-06", "Yes"],
       ["R-24", "Identify as a CI any item within supplier scope whose failure could cause serious injury, loss of life, or loss of primary system capability, and propose the designation for company approval", "S-01", "Yes"],
       ["R-11", "Identify, document and control interface requirements at boundaries allocated to the supplier", "Within S-01 or the technical data package", "Yes"],
@@ -3720,7 +3904,7 @@ function fmt(s){
    sentence. Nothing here depends on the order: radio values, STATE.checks.picks
    and check.a are all authored indices throughout.
    ---------------------------------------------------------------------------- */
-var OPTION_SALT = 101;  // chosen so the correct answer lands 26/25/25/25 across the 101 sections
+var OPTION_SALT = 349;  // chosen so the correct answer lands 27/27/26/27 across the 107 sections
 function optionOrder(id, n){
   var h = 2166136261;                            // FNV-1a over the section id
   for(var i=0;i<id.length;i++){ h = Math.imul(h ^ id.charCodeAt(i), 16777619); }
@@ -3879,15 +4063,15 @@ function viewStart(){
     "<p class='scale'>Seven modules \u00b7 "+nS+" sections \u00b7 "+nE+" exercises</p>"+
     "<p>Work through the sections in order. Each ends with a question that checks the point it was making. The exercises at the end of each module are written, not multiple choice: they are what "+esc(CONFIG.trainerName)+" will actually read.</p></div>"+
     "<dl class='meta'>"+
-    "<dt>Module 1</dt><dd>"+esc(MODULES[0].title)+". What CM is, what a CI is, how it is identified and documented, who owns the processes, and why CI identification and supplier flowdown belong together. "+MODULES[0].sections.length+" sections, "+MODULES[0].exercises.length+" exercises.</dd>"+
-    "<dt>Module 2</dt><dd>"+esc(MODULES[1].title)+". Where CI candidates come from, what CM reads to nominate them, and the gates and criteria that decide. "+MODULES[1].sections.length+" sections, "+MODULES[1].exercises.length+" exercises.</dd>"+
-    "<dt>Module 3</dt><dd>"+esc(MODULES[2].title)+". The CI structure, the interface register, the documentation determination, and what happens when any of them changes. "+MODULES[2].sections.length+" sections, "+MODULES[2].exercises.length+" exercises.</dd>"+
-    "<dt>Module 4</dt><dd>"+esc(MODULES[3].title)+". Who is who in the supply chain, the flowdown process in outline, reading a statement of work, classifying a procurement into work types, the flowdown matrix, the classification log, and configuration audits in one page. "+MODULES[3].sections.length+" sections, "+MODULES[3].exercises.length+" exercises.</dd>"+
-    "<dt>Module 5</dt><dd>"+esc(MODULES[4].title)+". What each work type owes, how conditional requirements resolve, and how the requirements are written into the statement of work. "+MODULES[4].sections.length+" sections, "+MODULES[4].exercises.length+" exercises.</dd>"+
-    "<dt>Module 6</dt><dd>"+esc(MODULES[5].title)+". The deliverables you receive and score, the evidence that accrues, and the determination that follows. "+MODULES[5].sections.length+" sections, "+MODULES[5].exercises.length+" exercises.</dd>"+
-    "<dt>Module 7</dt><dd>"+esc(MODULES[6].title)+". What the two configuration audits are, how a CI earns one, and what a supplier is agreeing to when the clause fires. "+MODULES[6].sections.length+" sections, "+MODULES[6].exercises.length+" exercises.</dd>"+
+    "<dt>Module 1</dt><dd>"+esc(MODULES[0].title)+". "+esc(MODULES[0].sub)+". "+MODULES[0].sections.length+" sections, "+MODULES[0].exercises.length+" exercises.</dd>"+
+    "<dt>Module 2</dt><dd>"+esc(MODULES[1].title)+". "+esc(MODULES[1].sub)+". "+MODULES[1].sections.length+" sections, "+MODULES[1].exercises.length+" exercises.</dd>"+
+    "<dt>Module 3</dt><dd>"+esc(MODULES[2].title)+". "+esc(MODULES[2].sub)+". "+MODULES[2].sections.length+" sections, "+MODULES[2].exercises.length+" exercises.</dd>"+
+    "<dt>Module 4</dt><dd>"+esc(MODULES[3].title)+". "+esc(MODULES[3].sub)+". "+MODULES[3].sections.length+" sections, "+MODULES[3].exercises.length+" exercises.</dd>"+
+    "<dt>Module 5</dt><dd>"+esc(MODULES[4].title)+". "+esc(MODULES[4].sub)+". "+MODULES[4].sections.length+" sections, "+MODULES[4].exercises.length+" exercises.</dd>"+
+    "<dt>Module 6</dt><dd>"+esc(MODULES[5].title)+". "+esc(MODULES[5].sub)+". "+MODULES[5].sections.length+" sections, "+MODULES[5].exercises.length+" exercises.</dd>"+
+    "<dt>Module 7</dt><dd>"+esc(MODULES[6].title)+". "+esc(MODULES[6].sub)+". "+MODULES[6].sections.length+" sections, "+MODULES[6].exercises.length+" exercises.</dd>"+
     "<dt>Prerequisites</dt><dd>None. Work the modules in order. Modules 4 to 7 assume Modules 1 to 3.</dd>"+
-    "<dt>Time</dt><dd>The modules are not the same length. Most take one to two hours plus the exercises. Modules 2 to 5 are the longest, at sixteen to eighteen sections each. Allow closer to three hours for each of those. Very few people do the whole course in one sitting, and it is not designed to be.</dd></dl>"+
+    "<dt>Time</dt><dd>The modules are not the same length. Most take one to two hours plus the exercises. Modules 2 to 5 are the longest, at sixteen to twenty sections each. Allow closer to three hours for each of those. Very few people do the whole course in one sitting, and it is not designed to be.</dd></dl>"+
     "<div class='callout'><div class='lab'>How your work is kept</div><p>"+save+"</p>"+
     "<p>When you are done, go to <strong>Review and send</strong>. It shows your score, gathers every answer into one record, and gives you the ways to send it.</p></div>"+
     "<div class='callout teal'><div class='lab'>Where are the document numbers?</div>"+
