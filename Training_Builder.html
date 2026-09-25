@@ -156,6 +156,10 @@ h1.et{font-family:var(--serif);font-size:27px;line-height:1.2;margin:0 0 6px}
 .fmtbar{display:flex;gap:4px;align-items:center}
 .fmtbar button{width:28px;height:26px;border:1px solid #46545F;background:transparent;color:#DCE3E7;border-radius:4px;padding:0}
 .fmtbar button:hover{background:#2C3841}
+.dec-ctl{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:6px}
+.dec-l{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--slate);font-weight:600}
+.dec-l select{border:1px solid var(--rule);border-radius:4px;padding:3px 5px;font-size:12.5px;max-width:220px;background:#fff}
+.dec-l.ck input{width:15px;height:15px;accent-color:var(--rust)}
 .mini{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--slate);margin:14px 0 6px;font-weight:700}
 
 /* modal */
@@ -205,6 +209,7 @@ body.resmode #bCmp{display:none}
   <div class="spacer"></div>
   <button class="tbtn" id="bCmp" title="Compare this training with an older revision and draft the revision log">Compare…</button>
   <button class="tbtn" id="bRes" title="Load trainee files, see scores, grade written answers, and sign off">Results</button>
+  <button class="tbtn edonly" id="bPrint" title="Make a printable handout or a trainer answer key">Print…</button>
   <button class="tbtn edonly" id="bHealth" title="Check the training for problems">Health check<span class="badge ok" id="hBadge">0</span></button>
   <button class="tbtn edonly" id="bPv" title="Show or hide the live preview">Preview</button>
   <button class="tbtn pri edonly" id="bExport" title="Download the finished training as one .html file">Export training</button>
@@ -554,6 +559,163 @@ body{padding-bottom:var(--mkb,0px)}
 .glwhere{margin-top:6px;font-size:12px;color:var(--slate);display:flex;flex-wrap:wrap;gap:4px;align-items:center}
 .glnav{font-family:var(--mono);font-size:11px;border:1px solid var(--rule);background:var(--paper);border-radius:3px;padding:1px 6px;color:var(--rust-ink)}
 .glnav:hover{background:var(--rust-soft)}
+
+/* ---------- put-in-order checks ---------- */
+.ordl{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.oi{display:flex;align-items:center;gap:10px;background:var(--paper);border:1px solid var(--rule);border-radius:5px;padding:7px 8px 7px 10px;font-size:14px;cursor:grab;transition:background .15s}
+.ordl.locked .oi{cursor:default}
+.oi .on{flex:0 0 24px;height:24px;border-radius:50%;background:var(--surface-2);color:var(--ink-2);font-family:var(--mono);font-size:11.5px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.oi .ot{flex:1;min-width:0}
+.oi .oc{display:flex;gap:4px;flex:0 0 auto}
+.ob{width:30px;height:28px;border:1px solid var(--rule);background:var(--paper);border-radius:4px;font-size:13px;color:var(--ink-2);padding:0}
+.ob:hover:not([disabled]){background:var(--rust-soft);border-color:var(--rust)}
+.ob[disabled]{opacity:.3;cursor:default}
+.ob:focus-visible{outline:2px solid var(--rust);outline-offset:1px}
+.oi.drag{opacity:.45;border-style:dashed}
+.oi.moved{background:var(--rust-soft)}
+.oi.right{border-color:var(--teal);background:var(--teal-soft)}
+.oi.right .on{background:var(--teal);color:#fff}
+.oi.wrong{border-color:var(--alert);background:var(--alert-soft)}
+.oi.wrong .on{background:var(--alert);color:#fff}
+.oi .om{font-weight:700;flex:0 0 auto;padding-right:4px}
+.oi.right .om{color:var(--teal)} .oi.wrong .om{color:var(--alert)}
+.ordend{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--slate);margin:6px 0}
+.ordright{margin:0 0 8px;font-size:13.5px}
+.ordright ol{margin:4px 0 0;padding-left:22px}
+
+/* ---------- decomposition checks ---------- */
+.dtree{overflow-x:auto;padding:6px 2px 10px;margin:0 0 10px}
+.dtree ul{display:flex;justify-content:center;list-style:none;margin:0;padding:18px 0 0;position:relative}
+.dtree > ul{padding-top:0}
+.dtree li{position:relative;padding:18px 5px 0;text-align:center;list-style:none;display:flex;flex-direction:column;align-items:center;min-width:0}
+.dtree > ul > li{padding-top:0}
+.dtree li::before,.dtree li::after{content:"";position:absolute;top:0;right:50%;width:50%;height:18px;border-top:1.5px solid #8998A2}
+.dtree li::after{right:auto;left:50%;border-left:1.5px solid #8998A2}
+.dtree li:only-child::before,.dtree li:only-child::after{display:none}
+.dtree li:only-child{padding-top:18px}
+.dtree li:only-child::after{display:block;border-top:0;width:0;left:50%}
+.dtree li:first-child::before,.dtree li:last-child::after{border:0 none}
+.dtree li:last-child::before{border-right:1.5px solid #8998A2;border-radius:0 5px 0 0}
+.dtree li:first-child::after{border-radius:5px 0 0 0}
+.dtree > ul > li::before,.dtree > ul > li::after{display:none}
+.dtree > ul > li{padding-top:0}
+.dtree ul ul::before{content:"";position:absolute;top:0;left:50%;height:18px;border-left:1.5px solid #8998A2}
+.db{display:inline-flex;flex-direction:column;align-items:center;gap:4px;background:var(--paper);border:1.5px solid var(--ink-2);border-radius:4px;padding:7px 10px;font-size:13px;line-height:1.3;max-width:170px;min-width:70px;font-family:inherit;color:inherit;text-align:center}
+.db .dn{font-weight:600}
+.db.root{background:var(--ink);color:#fff;border-color:var(--ink)}
+.db.given{background:var(--surface-2);border-style:dashed}
+.db.mv{cursor:grab}
+.db.over,.dtray.over,.dbin.over{outline:3px solid var(--rust);outline-offset:2px}
+.db.drag,.dchip.drag{opacity:.4}
+.db.flag{cursor:pointer}
+.db.flag:hover{background:var(--surface)}
+.db.flag.on{border-color:var(--alert);background:var(--alert-soft);box-shadow:0 0 0 2px var(--alert-soft)}
+.db .dm{font-family:var(--mono);font-size:11px;font-weight:700}
+.db.right{border-color:var(--teal);background:var(--teal-soft)} .db.right .dm{color:var(--teal)}
+.db.wrong{border-color:var(--alert);background:var(--alert-soft)} .db.wrong .dm{color:var(--alert)}
+.db.missed{border-color:var(--amber);background:var(--amber-soft);border-style:dashed} .db.missed .dm{color:var(--amber)}
+.db .dlab{font-family:var(--mono);font-size:11px;background:var(--surface-2);color:var(--ink-2);border-radius:3px;padding:1px 6px}
+.db.root .dlab{background:#3D4B55;color:#fff}
+.db .dfix{font-size:11px;color:var(--alert)}
+.dls{font-size:12px;max-width:150px;border:1px solid var(--rule);border-radius:4px;padding:2px 4px;background:#fff;color:var(--ink)}
+.dtray,.dbin{display:flex;flex-wrap:wrap;gap:6px;align-items:center;border:1.5px dashed #AEB9BF;border-radius:6px;padding:10px 12px;margin:0 0 8px;min-height:46px;background:var(--surface)}
+.dbin{border-color:#D9B8B8;background:#FBF4F4}
+.dtl{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--slate);margin-right:6px;font-weight:700}
+.dchip{display:inline-block;background:var(--paper);border:1.5px solid var(--ink-2);border-radius:4px;padding:5px 9px;font-size:13px;font-weight:600;cursor:grab}
+.dchip.right{border-color:var(--teal);background:var(--teal-soft);cursor:default}
+.dchip.wrong{border-color:var(--alert);background:var(--alert-soft);cursor:default}
+.dbin.locked{cursor:default}
+.dnone{font-size:13px;color:var(--slate)}
+.dlist{margin:6px 0 0;font-size:13px}
+.dlist summary{cursor:pointer;color:var(--slate)}
+.dgrid{display:grid;grid-template-columns:1fr;gap:6px;margin-top:8px}
+.dgrid label{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--paper);border:1px solid var(--rule);border-radius:4px;padding:6px 9px}
+.dgrid select{max-width:55%;border:1px solid var(--rule);border-radius:4px;padding:3px 5px;font-size:12.5px}
+@media(max-width:640px){
+  .dtree ul{display:block;padding:0 0 0 16px}
+  .dtree > ul{padding-left:0}
+  .dtree li{display:block;text-align:left;padding:6px 0 0 14px;border-left:1.5px solid #8998A2}
+  .dtree > ul > li{border-left:0;padding-left:0}
+  .dtree li::before{display:block!important;border:0;border-top:1.5px solid #8998A2;width:12px;height:0;top:22px;left:0;right:auto;border-radius:0}
+  .dtree li::after,.dtree ul ul::before{display:none!important}
+  .dtree > ul > li::before{display:none!important}
+  .dtree li:last-child{border-left-color:transparent}
+  .dtree li:last-child::before{border-left:1.5px solid #8998A2;height:17px;top:5px;width:12px;border-top:0;border-bottom:1.5px solid #8998A2}
+  .db{max-width:none;flex-direction:row;flex-wrap:wrap;text-align:left}
+}
+.db.root.given{background:var(--ink);color:#fff;border-color:var(--ink);border-style:solid}
+
+/* ---------- printable versions ---------- */
+.linkbtn{background:none;border:0;padding:0;color:var(--rust-ink);text-decoration:underline;font-size:inherit;cursor:pointer}
+body.printmode{background:#fff;padding-bottom:0}
+body.printmode .chrome, body.printmode .shell, body.printmode #mkBot, body.printmode .toast, body.printmode #glTip{display:none!important}
+#printdoc{max-width:820px;margin:0 auto;padding:0 28px 60px;color:var(--ink);font-size:14.5px;line-height:1.55}
+.ptool{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--ink);color:#fff;padding:10px 16px;margin:0 -28px 20px;border-radius:0 0 6px 6px}
+.ptool b{font-family:var(--serif);font-size:16px}
+.ptool span{font-size:12.5px;color:#B4C0C7;flex:1}
+.pframe{width:100%;border-collapse:collapse}
+.pframe > thead td, .pframe > tfoot td{padding:0}
+.pframe > tbody > tr > td{padding:6px 0}
+.pframe .mk{font-family:var(--sans);font-weight:700;font-size:11.5px;letter-spacing:.05em;text-align:center;padding:3px 10px;margin:0 0 3px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.pframe > tfoot .mk{margin:3px 0 0}
+.pcover{padding:30px 0 10px}
+.pck{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--rust-ink);margin:0 0 10px}
+.pt{font-family:var(--serif);font-size:34px;line-height:1.15;margin:0 0 8px}
+.psub{font-family:var(--serif);font-size:18px;color:var(--ink-2);margin:0 0 16px}
+.pkind{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;border:1.5px solid var(--ink);border-radius:3px;padding:5px 10px;margin:0 0 18px}
+.pkind.key{background:var(--alert);border-color:var(--alert);color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.pmeta{border-collapse:collapse;margin:0 0 18px;font-size:14px}
+.pmeta th{text-align:left;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--slate);font-weight:400;padding:6px 18px 6px 0;vertical-align:bottom}
+.pmeta td{padding:6px 0;min-width:260px}
+.pfill{border-bottom:1px solid var(--ink-2)}
+.ptoc{border:1px solid var(--rule);border-radius:6px;padding:12px 16px;margin:0 0 18px}
+.ptm{margin:6px 0}
+.ptm div{display:flex;flex-direction:column;font-size:12.5px;color:var(--ink-2);padding-left:14px}
+.plab{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--rust-ink);font-weight:700;margin:0 0 6px}
+.pmod{break-before:page;page-break-before:always;padding-top:10px}
+.pml{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--rust-ink)}
+.pmt{font-family:var(--serif);font-size:27px;margin:2px 0 6px}
+.psec{margin:22px 0 0}
+.psec h3{font-family:var(--serif);font-size:20px;margin:0 0 8px;break-after:avoid;page-break-after:avoid}
+.psec h3 + .lede, .psec h3 + p{break-before:avoid;page-break-before:avoid}
+.pid{font-family:var(--mono);font-size:11px;color:var(--rust-ink);background:var(--rust-soft);padding:2px 7px;border-radius:3px;margin-right:10px;vertical-align:3px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.pcheck{border:1px solid var(--rule);border-left:3px solid var(--rust);border-radius:5px;padding:10px 14px;margin:14px 0 0;break-inside:avoid;page-break-inside:avoid}
+.pq{font-weight:600;margin:0 0 8px}
+.pinst{font-size:12.5px;color:var(--slate);margin:0 0 8px}
+.popt{display:flex;gap:10px;align-items:flex-start;padding:3px 0;font-size:14px}
+.pbox{flex:0 0 15px;width:15px;height:15px;border:1.5px solid var(--ink-2);border-radius:2px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;margin-top:2px}
+.plet{flex:0 0 16px;font-family:var(--mono);font-size:12.5px}
+.pnum{flex:0 0 30px;height:22px;border-bottom:1.5px solid var(--ink-2);text-align:center;font-weight:700}
+.pright{color:var(--teal);font-weight:600}
+.pright .pbox{border-color:var(--teal);background:var(--teal-soft);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.pkey{background:var(--teal-soft);border-radius:4px;padding:8px 11px;margin:8px 0 0;font-size:13.5px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.pkey b{display:block;color:var(--teal);margin-bottom:2px}
+.pkey ol{margin:4px 0 0;padding-left:22px}
+.pwhy{background:var(--surface)}
+.pcodes{display:flex;flex-wrap:wrap;gap:6px 14px;margin:6px 0 0}
+.pcode{display:inline-flex;gap:6px;align-items:center;font-family:var(--mono);font-size:12.5px;font-weight:700}
+.ptab{width:100%;border-collapse:collapse;margin:8px 0 0;font-size:13.5px}
+.ptab th{text-align:left;font-size:11px;background:var(--surface-2);color:var(--ink);font-weight:700;padding:6px 9px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.ptab td{padding:9px 9px 5px;border-top:1px solid var(--rule)}
+.ptab td.pfill{width:50%}
+.pblank{display:inline-block;width:90px;border-bottom:1.5px solid var(--ink-2);height:16px}
+.pex{margin:14px 0 0}
+.pex h4{font-family:var(--serif);font-size:17px;margin:0 0 6px}
+.ppart{margin:12px 0 0;break-inside:avoid;page-break-inside:avoid}
+.plines div{border-bottom:1px solid #AEB9BF;height:28px}
+.pend{margin-top:30px}
+#printdoc .dtree{overflow:visible}
+#printdoc .callout,#printdoc .stmt,#printdoc .cards,#printdoc .steps,#printdoc .tw,#printdoc .tree,#printdoc .fig,#printdoc .pnote,#printdoc .pinst{break-inside:avoid;page-break-inside:avoid}
+#printdoc .stmt,#printdoc .db.root,#printdoc .callout,#printdoc .pnote,#printdoc th,#printdoc .chip,#printdoc .db{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+@page{margin:14mm 13mm 16mm}
+@page{@bottom-right{content:"Page " counter(page) " of " counter(pages);font-family:Arial,sans-serif;font-size:9pt;color:#5C6D78}}
+@media print{
+  html,body{background:#fff}
+  .ptool{display:none!important}
+  #printdoc{max-width:none;padding:0;font-size:11pt}
+  .pcover{padding-top:0}
+  .pt{font-size:26pt}
+}
 </script>
 <script type="text/plain" id="tplEngine">/* ==========================================================================
    ENGINE: everything below this line is the course player. The content is in
@@ -786,7 +948,7 @@ function exStatus(modId){
   return filled===total ? "done" : "work";
 }
 function mod(id){ for(var i=0;i<MODULES.length;i++) if(MODULES[i].id===id) return MODULES[i]; return null; }
-function hasCheck(s){ return !!(s.check && s.check.q && s.check.o && s.check.o.length>1); }
+function hasCheck(s){ return !!(s.check && s.check.q && ((s.check.o && s.check.o.length>1) || (s.check.dec && s.check.dec.blocks && s.check.dec.blocks.length>1))); }
 
 function counts(){
   var totalChecks=0, answered=0, right=0;
@@ -909,7 +1071,7 @@ function glStrings(o, out){
 }
 function glWhere(gi){
   var g=GL[gi], ks=glKeys(g), out=[];
-  var re=new RegExp("(?<![A-Za-z0-9])("+ks.map(reEsc).join("|")+")(?:e?s)?(?![A-Za-z0-9])","gi");
+  var re; try{ re=new RegExp("(?<![A-Za-z0-9])("+ks.map(reEsc).join("|")+")(?:e?s)?(?![A-Za-z0-9])","gi"); }catch(x){ return out; }
   MODULES.forEach(function(m){ m.sections.forEach(function(s){
     var txt=glStrings([s.title, s.lede||"", s.body], []).join("\n"), mm, hit=false;
     re.lastIndex=0; while((mm=re.exec(txt))){ if(glFind(mm[1])===gi){ hit=true; break; } }
@@ -967,6 +1129,149 @@ function glInit(){
     if((e.key==="Enter"||e.key===" ") && e.target.classList && e.target.classList.contains("gl")){ e.preventDefault(); show(e.target); }
   });
   window.addEventListener("scroll", function(){ if(cur) tip.style.display="none"; }, true);
+}
+/* ==========================================================================
+   PRINT: a paper version of the whole course. "handout" has no answers;
+   "key" is the trainer answer key. Markings repeat at the top and bottom of
+   every printed page.
+   ========================================================================== */
+if(typeof PRINT_MODE==="undefined") var PRINT_MODE="";
+function pL(k){ return String.fromCharCode(65+k); }
+function pLines(n){ var h="<div class='plines'>"; for(var i=0;i<n;i++) h+="<div></div>"; return h+"</div>"; }
+function pOrderStart(s){ var n=s.check.o.length, a=optionOrder(s.id, n).slice(), id=true; for(var i=0;i<n;i++) if(a[i]!==i) id=false; if(id && n>1) a.push(a.shift()); return a; }
+function pDec(s, key){
+  var c=s.check, d=c.dec, all=decAll(d), h="";
+  var rightTree=function(){ return decTree(all, function(i){ return (i>0 && !all[i].decoy) ? all[i].p : null; }, function(i){ return decBoxHtml(all[i].n, i===0?"root":""); }); };
+  if(d.mode==="build"){
+    var hasDecoys=all.some(function(b){ return b.decoy; });
+    var given=all.map(function(b,i){ return i; }).filter(function(i){ return i>0 && all[i].given; });
+    h+="<div class='pinst'>Write the block each one goes under."+(hasDecoys?" Write <b>BIN</b> for a block that is not part of this product.":"")+"</div>";
+    h+=decTree(all, function(i){ return (i>0 && all[i].given) ? all[i].p : null; }, function(i){ return decBoxHtml(all[i].n, i===0?"root":"given"); });
+    var mov=decMovable(s, all);
+    h+="<table class='ptab'><thead><tr><th>Block</th><th>Goes under</th></tr></thead><tbody>"+mov.map(function(i){
+      var ans = !key ? "" : (all[i].decoy ? "<b>BIN</b> · "+esc(d.bin||"not part of this product") : "<b>"+fmt(all[all[i].p].n)+"</b>");
+      return "<tr><td>"+fmt(all[i].n)+"</td><td class='pfill'>"+ans+"</td></tr>"; }).join("")+"</tbody></table>";
+    if(key) h+="<div class='pkey'><b>The right decomposition</b>"+rightTree()+"</div>";
+  } else if(d.mode==="errors"){
+    var errs=decErrors(all);
+    h+="<div class='pinst'>This decomposition has mistakes. Circle every block that is wrong.</div>";
+    h+=decTree(all, function(i){ return i===0 ? null : decShownParent(all[i]); }, function(i){
+      var e=key && errs.indexOf(i)>=0; return decBoxHtml(all[i].n, (i===0?"root":"")+(e?" missed":""), e?"<span class='dm'>✗ mistake</span>":""); });
+    if(key) h+="<div class='pkey'><b>Mistakes: "+errs.map(function(i){ return esc(plain(all[i].n)); }).join("; ")+"</b>The right decomposition:"+rightTree()+"</div>";
+  } else {
+    var labs=d.labels||[];
+    h+="<div class='pinst'>Write the right label in each box. Labels: <b>"+labs.map(esc).join(" · ")+"</b></div>";
+    h+=decTree(all, function(i){ return i===0 ? null : all[i].p; }, function(i){
+      var b=all[i], show=key||b.given;
+      return decBoxHtml(b.n, (i===0?"root":"")+(b.given?" given":""), show ? "<span class='dlab'>"+esc(labs[+b.lab]||"")+"</span>" : "<span class='pblank'></span>"); });
+  }
+  return h;
+}
+function pCheck(s, key){
+  var c=s.check, h="<div class='pcheck'><div class='plab'>Check yourself · "+esc(s.id)+"</div><div class='pq'>"+fmt(c.q)+"</div>";
+  if(isDec(s)) h+=pDec(s,key);
+  else if(isOrder(s)){
+    var ord=pOrderStart(s);
+    h+="<div class='pinst'>Number the items in order, 1 to "+c.o.length+(c.top?" (1 = "+esc(plain(c.top))+")":"")+".</div>";
+    h+=ord.map(function(i){ return "<div class='popt'><span class='pnum'>"+(key?(i+1):"")+"</span><span>"+fmt(c.o[i])+"</span></div>"; }).join("");
+    if(key) h+="<div class='pkey'><b>Right order</b><ol>"+c.o.map(function(t){ return "<li>"+fmt(t)+"</li>"; }).join("")+"</ol></div>";
+  } else {
+    var multi=isMulti(s), right=multi?c.a:[c.a], ord=optionOrder(s.id, c.o.length), letters=[];
+    if(multi) h+="<div class='pinst'>Tick all that apply.</div>";
+    ord.forEach(function(i,k){ var r=right.indexOf(i)>=0; if(r) letters.push(pL(k));
+      h+="<div class='popt"+(key&&r?" pright":"")+"'><span class='pbox'>"+(key&&r?"✓":"")+"</span><b class='plet'>"+pL(k)+"</b><span>"+fmt(c.o[i])+"</span></div>"; });
+    if(key) h+="<div class='pkey'><b>Answer: "+letters.join(", ")+"</b></div>";
+  }
+  if(key && c.why) h+="<div class='pkey pwhy'>"+fmt(c.why)+"</div>";
+  return h+"</div>";
+}
+function pDrill(m, key){
+  var L=DRILL.labels||{}, h="<div class='psec'><h3><span class='pid'>"+esc(m.id)+"-DR</span>"+esc(DRILL.title||"Drill")+"</h3>";
+  if(DRILL.lede) h+="<p>"+fmt(DRILL.lede)+"</p>";
+  if(DRILL.assumptions && DRILL.assumptions.length) h+=block({t:"callout", lab:DRILL.assumptionsLab||"Standing assumptions", x:DRILL.assumptions});
+  m.drill.forEach(function(d){
+    h+="<div class='pcheck'><div class='plab'>"+esc(L.line||"Line")+" "+esc(d.id)+(d.find?" · "+esc(L.find||"Find")+" "+esc(d.find):"")+(d.pn?" · "+esc(L.pn||"Part no.")+" "+esc(d.pn):"")+"</div>"+
+      "<div class='pq' style='font-family:var(--mono)'>"+esc(d.nm)+"</div>"+(d.facts&&d.facts.length?"<ul class='pl'>"+d.facts.map(function(f){ return "<li>"+fmt(f)+"</li>"; }).join("")+"</ul>":"")+
+      "<div class='pcodes'>"+CODES.concat(DRILL.noneLabel===""?[]:["NONE"]).map(function(cd){ var on=key && (cd==="NONE" ? !d.a.length : d.a.indexOf(cd)>=0);
+        return "<span class='pcode"+(on?" pright":"")+"'><span class='pbox'>"+(on?"✓":"")+"</span>"+esc(cd==="NONE"?(DRILL.noneLabel||"No code"):cd)+"</span>"; }).join("")+"</div>"+
+      (key ? "<div class='pkey'><b>"+esc(DRILL.takesLabel||"The line takes")+": "+esc(ansText(d.a))+"</b>"+fmt(d.why)+"</div>" : "")+"</div>";
+  });
+  return h+"</div>";
+}
+function pExercises(m, key){
+  var h="<div class='psec'><h3><span class='pid'>"+esc(m.id)+"-EX</span>Exercises</h3>";
+  if(!key) (COURSE.exIntro||[]).forEach(function(t){ h+="<p>"+fmt(t)+"</p>"; });
+  m.exercises.forEach(function(x){
+    h+="<div class='pex'><h4>"+fmt(x.title)+"</h4>"+(x.scen?"<div class='scen'>"+fmt(x.scen)+"</div>":"");
+    x.parts.forEach(function(pt){
+      h+="<div class='ppart'><div class='pq'>"+esc(pt.id)+".&nbsp; "+fmt(pt.q)+"</div>"+
+        (key ? "<div class='pkey'><b>Grading note</b>"+(pt.key?fmt(pt.key):"<i>No grading note written.</i>")+"</div>" : pLines(6))+"</div>";
+    });
+    h+="</div>";
+  });
+  return h+"</div>";
+}
+function printHtml(mode){
+  var key = mode==="key";
+  var mTop=MK.filter(function(m){ return (m.kind||"banner")==="banner" && (m.where==="top"||m.where==="both"||!m.where); }),
+      mBot=MK.filter(function(m){ return (m.kind||"banner")==="banner" && (m.where==="bottom"||m.where==="both"); });
+  var bTop=MK.filter(function(m){ return m.kind==="block" && (m.where==="top"||m.where==="both"||!m.where); }),
+      bBot=MK.filter(function(m){ return m.kind==="block" && (m.where==="bottom"||m.where==="both"); });
+  var nS=0; MODULES.forEach(function(m){ nS+=m.sections.length; });
+  var h="";
+  // cover
+  h+="<section class='pcover'>"+bTop.map(function(m){ return mkDiv(m,"mkblock"); }).join("")+
+    "<div class='pck'>"+esc(CONFIG.companyName)+(COURSE.kicker?" · "+esc(tok(COURSE.kicker)):"")+"</div>"+
+    "<h1 class='pt'>"+fmt(COURSE.heroTitle||COURSE.title)+"</h1>"+(COURSE.subtitle?"<p class='psub'>"+fmt(COURSE.subtitle)+"</p>":"")+
+    "<div class='pkind"+(key?" key":"")+"'>"+(key?"Trainer answer key · contains the answers · do not give to trainees":"Trainee handout")+"</div>"+
+    "<table class='pmeta'><tr><th>Revision</th><td>"+esc(CONFIG.contentRev||"")+"</td></tr><tr><th>Printed</th><td>"+esc(new Date().toLocaleDateString())+"</td></tr>"+
+    "<tr><th>Contents</th><td>"+MODULES.length+" module"+(MODULES.length===1?"":"s")+" · "+nS+" sections</td></tr>"+
+    (key?"":"<tr><th>Name</th><td class='pfill'></td></tr><tr><th>Date</th><td class='pfill'></td></tr>")+"</table>";
+  if(!key && COURSE.intro) h+="<p>"+fmt(COURSE.intro)+"</p>";
+  h+="<div class='ptoc'><div class='plab'>Contents</div>"+MODULES.map(function(m){
+      return "<div class='ptm'><b>"+esc(m.label)+": "+fmt(m.title)+"</b><div>"+m.sections.map(function(s){ return "<span>"+esc(s.id)+" "+fmt(s.title)+"</span>"; }).join("")+
+        ((m.drill||[]).length?"<span>"+esc(m.id)+"-DR "+esc(DRILL.title||"Drill")+"</span>":"")+(m.exercises.length?"<span>"+esc(m.id)+"-EX Exercises</span>":"")+"</div></div>"; }).join("")+
+    (GL.length?"<div class='ptm'><b>Glossary</b></div>":"")+"</div>";
+  (COURSE.meta||[]).forEach(function(r){ if(r.k&&r.v&&!key) h+="<p><b>"+esc(tok(r.k))+".</b> "+fmt(r.v)+"</p>"; });
+  h+="</section>";
+  // modules
+  MODULES.forEach(function(m){
+    h+="<section class='pmod'><div class='pml'>"+esc(m.label)+"</div><h2 class='pmt'>"+fmt(m.title)+"</h2>"+(m.sub?"<p class='lede'>"+fmt(m.sub)+"</p>":"");
+    m.sections.forEach(function(s){
+      h+="<div class='psec'><h3><span class='pid'>"+esc(s.id)+"</span>"+fmt(s.title)+"</h3>"+(s.lede?"<p class='lede'>"+fmt(s.lede)+"</p>":"");
+      (s.body||[]).forEach(function(b){ h+=block(b); });
+      if(hasCheck(s)) h+=pCheck(s, key);
+      h+="</div>";
+    });
+    if((m.drill||[]).length) h+=pDrill(m, key);
+    if(m.exercises.length) h+=pExercises(m, key);
+    h+="</section>";
+  });
+  // glossary
+  if(GL.length){
+    h+="<section class='pmod'><h2 class='pmt'>Glossary</h2><dl class='gldl'>"+GL.slice().sort(function(a,b){ return a.t.localeCompare(b.t,undefined,{sensitivity:"base"}); }).map(function(g){
+      return "<dt>"+esc(g.t)+((g.alt&&g.alt.length)?"<span>"+esc(g.alt.join(" · "))+"</span>":"")+"</dt><dd>"+fmt(g.d)+"</dd>"; }).join("")+"</dl></section>";
+  }
+  if(key && (REVISIONS||[]).length){
+    h+="<section class='pmod'><h2 class='pmt'>Revision history</h2>"+(CONFIG.alignedTo?"<p><b>Last reconciled against:</b> "+esc(CONFIG.alignedTo)+"</p>":"")+
+      REVISIONS.map(function(r){ return "<h4>Revision "+esc(r.rev)+" · "+esc(r.date)+"</h4><ul class='pl'>"+(r.items||[]).map(function(t){ return "<li>"+fmt(t)+"</li>"; }).join("")+"</ul>"; }).join("")+"</section>";
+  }
+  if(bBot.length) h+="<section class='pend'>"+bBot.map(function(m){ return mkDiv(m,"mkblock"); }).join("")+"</section>";
+  // repeating markings: table header/footer groups repeat on every printed page
+  var th=mTop.map(function(m){ return mkDiv(m,"mk"); }).join(""), tf=mBot.map(function(m){ return mkDiv(m,"mk"); }).join("");
+  return "<table class='pframe'>"+(th?"<thead><tr><td>"+th+"</td></tr></thead>":"")+(tf?"<tfoot><tr><td>"+tf+"</td></tr></tfoot>":"")+"<tbody><tr><td>"+h+"</td></tr></tbody></table>";
+}
+function printDoc(mode, fromCourse){
+  var old=document.getElementById("printdoc"); if(old) old.parentNode.removeChild(old);
+  document.body.classList.add("printmode");
+  var d=document.createElement("div"); d.id="printdoc";
+  d.innerHTML="<div class='ptool'><b>"+(mode==="key"?"Trainer answer key":"Printable handout")+"</b><span>Use your browser’s Print, or Save as PDF.</span>"+
+    "<button class='btn pri' id='pPrint'>Print or save as PDF</button>"+(fromCourse?"<button class='btn' id='pBack'>← Back to the course</button>":"")+"</div>"+printHtml(mode);
+  document.body.appendChild(d);
+  document.title=(COURSE.docTitle||COURSE.title||"Training")+(mode==="key"?" · answer key":" · handout");
+  document.getElementById("pPrint").addEventListener("click", function(){ window.print(); });
+  var bk=document.getElementById("pBack"); if(bk) bk.addEventListener("click", function(){ d.parentNode.removeChild(d); document.body.classList.remove("printmode"); document.title=COURSE.docTitle||COURSE.title||"Training"; draw(); window.scrollTo(0,0); });
+  window.scrollTo(0,0);
 }
 /* ==========================================================================
    MARKINGS: banners pinned to the top and bottom of every page, and notice
@@ -1060,6 +1365,7 @@ function viewStart(){
   if(GL.length) h+="<p class='note'>Words with a dotted underline, like <span class='gl' data-g='-1' tabindex='0'>this</span>, have a definition. Point at one, or tap it, to read it."+
     (GLO.page!==false ? " Every term is also on the <strong>Glossary</strong> page." : "")+"</p>";
   h+=(COURSE.closing?"<p class='note'>"+fmt(COURSE.closing)+"</p>":"");
+  if(COURSE.printLink!==false) h+="<p class='note'>Need it on paper? <button class='linkbtn' id='btnPrintCopy'>Open a printable copy of the whole course</button>. It has no answers, and lines for the written exercises.</p>";
   return h;
 }
 
@@ -1074,8 +1380,252 @@ function viewSection(m,s,p){
   if(hasCheck(s)) h+=checkHtml(s);
   return h;
 }
+/* ---- decomposition checks ---------------------------------------------------
+   A tree of plain labelled boxes, top block first. Three modes:
+     build  - place each block under its parent (decoys go in the bin)
+     errors - the tree is shown with mistakes; click every block that is wrong
+     label  - the tree is shown; pick the right label for each block
+   It is right only when every block is right.
+   ---------------------------------------------------------------------------- */
+var DEC_TMP = {};
+var DEC_NONE = -9, DEC_BIN = -2;
+function isDec(s){ return !!(s.check && s.check.dec); }
+function decAll(d){ return d.blocks.map(function(b,i){ return {n:b.n, p:(i===0?-1:+b.p), given:!!b.given, lab:b.lab, shown:b.shown, decoy:false}; })
+  .concat(d.mode==="label" ? [] : (d.decoys||[]).map(function(x){ return {n:x.n, p:DEC_BIN, decoy:true, shown:x.shown}; })); }
+function decTree(all, parentOf, box){
+  function kids(j){ var k=[]; for(var i=0;i<all.length;i++) if(i!==j && parentOf(i)===j) k.push(i); return k; }
+  function node(i, seen){
+    if(seen[i]) return ""; seen[i]=1;
+    var k=kids(i);
+    return "<li>"+box(i)+(k.length?"<ul>"+k.map(function(c){ return node(c, seen); }).join("")+"</ul>":"")+"</li>";
+  }
+  return "<div class='dtree'><ul>"+node(0,{})+"</ul></div>";
+}
+function decBoxHtml(txt, cls, extra, attrs){ return "<div class='db"+(cls?" "+cls:"")+"'"+(attrs||"")+"><span class='dn'>"+fmt(txt)+"</span>"+(extra||"")+"</div>"; }
+function decInDesc(arr, i, j){ // is j a descendant of i under arrangement arr?
+  var guard=0; while(j>0 && guard++<50){ if(arr[j]===i) return true; j=arr[j]; if(j<0) return false; } return false;
+}
+function decErrors(all){ var e=[]; all.forEach(function(b,i){ if(i===0) return; if(b.decoy) e.push(i); else if(b.shown!=null && b.shown!=="" && +b.shown!==b.p) e.push(i); }); return e; }
+function decShownParent(b){ return b.decoy ? (b.shown!=null && b.shown!=="" ? +b.shown : null) : (b.shown!=null && b.shown!=="" ? +b.shown : b.p); }
+function decInit(s, all){
+  var d=s.check.dec, n=all.length;
+  if(d.mode==="build"){ var a=all.map(function(b,i){ return i===0 ? -1 : (b.given ? b.p : DEC_NONE); }); return a; }
+  if(d.mode==="errors") return [];
+  return all.map(function(b,i){ return b.given ? +b.lab : -1; });
+}
+function decMovable(s, all){
+  var idx=[]; all.forEach(function(b,i){ if(i>0 && !b.given) idx.push(i); });
+  var ord=(PER_TRAINEE ? orderFor(s.id+"#dec", idx.length) : optionOrder(s.id+"#dec", idx.length));
+  return ord.map(function(k){ return idx[k]; });
+}
+function decHtml(s){
+  var c=s.check, d=c.dec, all=decAll(d), rec=STATE.checks[s.id], locked=!!rec, id=s.id;
+  var arr = locked ? rec.picks : (DEC_TMP[id] || (DEC_TMP[id]=decInit(s, all)));
+  var h="<div class='check dec' data-check='"+esc(id)+"'><div class='lab'>Check yourself</div><div class='q'>"+fmt(c.q)+"</div>";
+  if(d.mode==="build"){
+    var hasDecoys=all.some(function(b){ return b.decoy; });
+    var inTree=function(i){ if(i===0) return true; var g=0, j=i; while(g++<50){ var p=arr[j]; if(p===0) return true; if(p==null||p<0) return false; j=p; } return false; };
+    if(!locked){
+      h+="<div class='multi'>Place every block under its parent. Drag a block onto a box, or use the lists below."+(hasDecoys?" Blocks that do not belong go in the bin.":"")+"</div>";
+      h+=decTree(all, function(i){ return (i>0 && inTree(i)) ? arr[i] : null; }, function(i){
+        var b=all[i], mv=(i>0 && !b.given);
+        return decBoxHtml(b.n, (i===0?"root":"")+(b.given&&i>0?" given":"")+(mv?" mv":""), "", " data-dec='"+esc(id)+"' data-bi='"+i+"'"+(mv?" draggable='true'":""));
+      });
+      var loose=decMovable(s, all).filter(function(i){ return arr[i]===DEC_NONE || (arr[i]>=0 && !inTree(i)); });
+      h+="<div class='dtray' data-dec='"+esc(id)+"' data-drop='tray'><span class='dtl'>Not placed yet</span>"+(loose.length ? loose.map(function(i){ return "<span class='dchip' draggable='true' data-dec='"+esc(id)+"' data-bi='"+i+"'>"+fmt(all[i].n)+"</span>"; }).join("") : "<span class='dnone'>Every block is placed.</span>")+"</div>";
+      if(hasDecoys){ var binned=decMovable(s, all).filter(function(i){ return arr[i]===DEC_BIN; });
+        h+="<div class='dbin' data-dec='"+esc(id)+"' data-drop='bin'><span class='dtl'>🗑 "+esc(d.bin||"Not part of this product")+"</span>"+binned.map(function(i){ return "<span class='dchip' draggable='true' data-dec='"+esc(id)+"' data-bi='"+i+"'>"+fmt(all[i].n)+"</span>"; }).join("")+"</div>"; }
+      h+="<details class='dlist'><summary>Place blocks with lists instead of dragging</summary><div class='dgrid'>";
+      decMovable(s, all).forEach(function(i){
+        var opts="<option value='"+DEC_NONE+"'>— not placed —</option>";
+        all.forEach(function(b,j){ if(j===i || !inTree(j) || decInDesc(arr, i, j)) return; opts+="<option value='"+j+"'"+(arr[i]===j?" selected":"")+">under "+esc(plain(b.n))+"</option>"; });
+        if(hasDecoys) opts+="<option value='"+DEC_BIN+"'"+(arr[i]===DEC_BIN?" selected":"")+">"+esc(d.bin||"Not part of this product")+"</option>";
+        h+="<label><span>"+fmt(all[i].n)+"</span><select data-dsel='"+esc(id)+"' data-bi='"+i+"'>"+opts.replace("value='"+DEC_NONE+"'>","value='"+DEC_NONE+"'"+(arr[i]===DEC_NONE?" selected":"")+">")+"</select></label>";
+      });
+      h+="</div></details>";
+    } else {
+      var right=function(i){ return arr[i]===all[i].p; };
+      h+="<div class='multi'>Your decomposition</div>";
+      h+=decTree(all, function(i){ return (i>0 && arr[i]>=0) ? arr[i] : null; }, function(i){
+        var b=all[i]; if(i===0 || b.given) return decBoxHtml(b.n, (i===0?"root":"given"));
+        return decBoxHtml(b.n, right(i)?"right":"wrong", "<span class='dm'>"+(right(i)?"✓":"✗")+"</span>");
+      });
+      var binned2=all.map(function(b,i){ return i; }).filter(function(i){ return arr[i]===DEC_BIN; });
+      if(binned2.length) h+="<div class='dbin locked'><span class='dtl'>🗑 "+esc(d.bin||"Not part of this product")+"</span>"+binned2.map(function(i){ return "<span class='dchip "+(right(i)?"right":"wrong")+"'>"+fmt(all[i].n)+" "+(right(i)?"✓":"✗")+"</span>"; }).join("")+"</div>";
+    }
+  } else if(d.mode==="errors"){
+    var errs=decErrors(all), flagged=arr||[];
+    h+="<div class='multi'>"+(locked?"Your answer":"This decomposition has mistakes. Click every block that is wrong, then check.")+"</div>";
+    h+=decTree(all, function(i){ return i===0 ? null : decShownParent(all[i]); }, function(i){
+      var b=all[i], f=flagged.indexOf(i)>=0, e=errs.indexOf(i)>=0;
+      if(i===0) return decBoxHtml(b.n, "root");
+      if(!locked) return "<button type='button' class='db flag"+(f?" on":"")+"' data-dflag='"+esc(id)+"' data-bi='"+i+"' aria-pressed='"+(f?"true":"false")+"'><span class='dn'>"+fmt(b.n)+"</span>"+(f?"<span class='dm'>⚑</span>":"")+"</button>";
+      var cls = f&&e ? "right" : (!f&&e ? "missed" : (f&&!e ? "wrong" : ""));
+      return decBoxHtml(b.n, cls, cls ? "<span class='dm'>"+(cls==="right"?"⚑ ✓":(cls==="missed"?"missed":"⚑ ✗"))+"</span>" : "");
+    });
+    if(locked) h+="<div class='legend'><span><i class='lr'></i>mistake found</span><span><i class='lm'></i>mistake missed</span><span><i class='lw'></i>was not a mistake</span></div>";
+  } else {
+    var labs=d.labels||[];
+    h+="<div class='multi'>"+(locked?"Your labels":"Choose the right label for each block.")+"</div>";
+    h+=decTree(all, function(i){ return i===0 ? null : all[i].p; }, function(i){
+      var b=all[i];
+      if(b.given) return decBoxHtml(b.n, (i===0?"root ":"")+"given", "<span class='dlab'>"+esc(labs[+b.lab]||"")+"</span>");
+      if(!locked){
+        var o="<option value='-1'>— label —</option>"+labs.map(function(l,k){ return "<option value='"+k+"'"+(arr[i]===k?" selected":"")+">"+esc(l)+"</option>"; }).join("");
+        return decBoxHtml(b.n, (i===0?"root":""), "<select class='dls' data-dlab='"+esc(id)+"' data-bi='"+i+"'>"+o+"</select>");
+      }
+      var ok=arr[i]===+b.lab;
+      return decBoxHtml(b.n, (ok?"right":"wrong"), "<span class='dlab'>"+esc(labs[arr[i]]||"no label")+" "+(ok?"✓":"✗")+"</span>"+(ok?"":"<span class='dfix'>Right: "+esc(labs[+b.lab]||"")+"</span>"));
+    });
+  }
+  h+="<div class='btnrow' style='margin-top:12px;margin-bottom:0'>"+(locked?"":"<button class='btn pri' data-ckgo='"+esc(id)+"'>Check answer</button><button class='btn gh' data-dreset='"+esc(id)+"'>Start over</button>")+"</div>";
+  if(locked){
+    var ok=rec.first===true;
+    var showRight = !ok && d.mode!=="label";
+    h+="<div class='fb show "+(ok?"ok":"no")+"'><b>"+(ok?"Correct":"Not quite")+"</b>"+
+      (showRight ? "<div class='ordright'>The right decomposition:</div>"+decTree(all, function(i){ return (i>0 && !all[i].decoy) ? all[i].p : null; }, function(i){ return decBoxHtml(all[i].n, i===0?"root":""); })+
+        (all.some(function(b){ return b.decoy; }) ? "<div class='ordright'>Not part of this product: "+all.filter(function(b){ return b.decoy; }).map(function(b){ return fmt(b.n); }).join(", ")+"</div>" : "") : "")+
+      fmt(c.why)+"</div>";
+  } else h+="<div class='fb' data-fb='"+esc(id)+"'></div>";
+  return h+"</div>";
+}
+function decRefresh(id){
+  var sec=null; MODULES.forEach(function(m){ m.sections.forEach(function(s){ if(s.id===id) sec=s; }); });
+  var el=document.querySelector("[data-check='"+id+"']"); if(!sec||!el) return;
+  var wrap=document.createElement("div"); wrap.innerHTML=decHtml(sec); var nu=wrap.firstChild;
+  el.parentNode.replaceChild(nu, el);
+  wireDec(nu);
+  Array.prototype.forEach.call(nu.querySelectorAll("[data-ckgo]"), function(b){ b.addEventListener("click", function(){ grade(b.getAttribute("data-ckgo")); }); });
+  if(GLO.inChecks) glApply(nu);
+}
+function decSet(id, i, p){
+  var arr=DEC_TMP[id]; if(!arr) return;
+  arr[i]=p;
+  if(p<0){ // take its children off the tree too
+    var changed=true; while(changed){ changed=false; for(var k=0;k<arr.length;k++){ if(arr[k]>=0 && arr[arr[k]]!=null && (arr[arr[k]]===DEC_NONE||arr[arr[k]]===DEC_BIN) && arr[k]!==0){ arr[k]=DEC_NONE; changed=true; } } }
+  }
+  decRefresh(id);
+}
+function wireDec(root){
+  root=root||document;
+  Array.prototype.forEach.call(root.querySelectorAll("select[data-dsel]"), function(sel){
+    sel.addEventListener("change", function(){ decSet(sel.getAttribute("data-dsel"), +sel.getAttribute("data-bi"), +sel.value); });
+  });
+  Array.prototype.forEach.call(root.querySelectorAll("select[data-dlab]"), function(sel){
+    sel.addEventListener("change", function(){ var id=sel.getAttribute("data-dlab"); if(DEC_TMP[id]) DEC_TMP[id][+sel.getAttribute("data-bi")]=+sel.value; });
+  });
+  Array.prototype.forEach.call(root.querySelectorAll("[data-dflag]"), function(b){
+    b.addEventListener("click", function(){ var id=b.getAttribute("data-dflag"), i=+b.getAttribute("data-bi"), a=DEC_TMP[id]||(DEC_TMP[id]=[]); var k=a.indexOf(i); if(k>=0) a.splice(k,1); else a.push(i); decRefresh(id);
+      var again=document.querySelector("[data-dflag='"+id+"'][data-bi='"+i+"']"); if(again) again.focus(); });
+  });
+  Array.prototype.forEach.call(root.querySelectorAll("[data-dreset]"), function(b){
+    b.addEventListener("click", function(){ var id=b.getAttribute("data-dreset"); delete DEC_TMP[id]; decRefresh(id); });
+  });
+  var dragging=null;
+  Array.prototype.forEach.call(root.querySelectorAll(".dec [draggable='true']"), function(el){
+    el.addEventListener("dragstart", function(e){ dragging={id:el.getAttribute("data-dec"), i:+el.getAttribute("data-bi")}; el.classList.add("drag"); try{ e.dataTransfer.setData("text/plain",""); e.dataTransfer.effectAllowed="move"; }catch(x){} e.stopPropagation(); });
+    el.addEventListener("dragend", function(){ el.classList.remove("drag"); dragging=null; });
+  });
+  Array.prototype.forEach.call(root.querySelectorAll(".dec .db[data-bi], .dec [data-drop]"), function(t){
+    t.addEventListener("dragover", function(e){ if(!dragging || dragging.id!==t.getAttribute("data-dec")) return;
+      var to=t.getAttribute("data-drop") ? t.getAttribute("data-drop") : +t.getAttribute("data-bi");
+      if(to===dragging.i || (typeof to==="number" && decInDesc(DEC_TMP[dragging.id], dragging.i, to))) return;
+      e.preventDefault(); t.classList.add("over"); });
+    t.addEventListener("dragleave", function(){ t.classList.remove("over"); });
+    t.addEventListener("drop", function(e){ e.preventDefault(); t.classList.remove("over"); if(!dragging) return;
+      var d=t.getAttribute("data-drop"), p = d==="tray" ? DEC_NONE : (d==="bin" ? DEC_BIN : +t.getAttribute("data-bi"));
+      var g=dragging; dragging=null; decSet(g.id, g.i, p); });
+  });
+}
+function gradeDec(sec){
+  var id=sec.id, d=sec.check.dec, all=decAll(d), arr=DEC_TMP[id]||decInit(sec, all), ok=true;
+  if(d.mode==="build"){
+    var missing=decMovable(sec, all).filter(function(i){ return arr[i]===DEC_NONE; });
+    if(missing.length){ toast("Place every block first"+(all.some(function(b){ return b.decoy; })?", or put it in the bin":"")+". "+missing.length+" still to go."); return; }
+    all.forEach(function(b,i){ if(i>0 && arr[i]!==b.p) ok=false; });
+  } else if(d.mode==="errors"){
+    if(!arr.length){ toast("Click at least one block you think is wrong."); return; }
+    ok=sameSet(arr, decErrors(all));
+  } else {
+    var un=all.filter(function(b,i){ return !b.given && arr[i]<0; }).length;
+    if(un){ toast("Choose a label for every block. "+un+" still to go."); return; }
+    all.forEach(function(b,i){ if(arr[i]!==+b.lab) ok=false; });
+  }
+  STATE.checks[id]={ first:ok, picks:arr.slice(), at:new Date().toISOString() };
+  delete DEC_TMP[id];
+  autosave(); draw();
+  var el=document.querySelector("[data-check='"+id+"']"); if(el) el.scrollIntoView({block:"center", behavior:"smooth"});
+}
+
 function isMulti(s){ return Array.isArray(s.check.a); }
+function isOrder(s){ return s.check.order===true; }
+/* ---- put-in-order checks ---------------------------------------------------
+   The items are authored in the right order. They are shown shuffled (never
+   already in order), and the trainee moves them with the arrow buttons or by
+   dragging. It is right only when every item is in its place.
+   ---------------------------------------------------------------------------- */
+var ORD_TMP = {};   // the arrangement on screen before Check answer
+function startOrder(s){
+  var n=s.check.o.length;
+  var a=(PER_TRAINEE ? orderFor(s.id, n) : optionOrder(s.id, n)).slice();
+  var ident=true; for(var i=0;i<n;i++) if(a[i]!==i) ident=false;
+  if(ident && n>1) a.push(a.shift());
+  return a;
+}
+function orderHtml(s){
+  var rec=STATE.checks[s.id], locked=!!rec, c=s.check;
+  var arr = locked ? (rec.picks && rec.picks.length===c.o.length ? rec.picks : null) : (ORD_TMP[s.id] || (ORD_TMP[s.id]=startOrder(s)));
+  var h="<div class='check' data-check='"+esc(s.id)+"'><div class='lab'>Check yourself</div><div class='q'>"+fmt(c.q)+"</div>";
+  h+="<div class='multi'>"+(locked?"Your order":"Put these in order. Use the arrows, or drag an item.")+"</div>";
+  if(c.top) h+="<div class='ordend'>▲ "+fmt(c.top)+"</div>";
+  if(arr){
+    h+="<ol class='ordl"+(locked?" locked":"")+"' data-ord='"+esc(s.id)+"'>";
+    arr.forEach(function(i,pos){
+      var cls = locked ? (i===pos ? " right" : " wrong") : "";
+      h+="<li class='oi"+cls+"'"+(locked?"":" draggable='true'")+" data-i='"+i+"'><span class='on'>"+(pos+1)+"</span><span class='ot'>"+fmt(c.o[i])+"</span>"+
+        (locked ? "<span class='om'>"+(i===pos?"✓":"✗")+"</span>" :
+         "<span class='oc'><button type='button' class='ob' data-mv='-1' aria-label='Move up'"+(pos===0?" disabled":"")+">↑</button><button type='button' class='ob' data-mv='1' aria-label='Move down'"+(pos===arr.length-1?" disabled":"")+">↓</button></span>")+"</li>";
+    });
+    h+="</ol>";
+  } else h+="<p class='note'>Answered. The order you gave is not in this file.</p>";
+  if(c.bottom) h+="<div class='ordend'>▼ "+fmt(c.bottom)+"</div>";
+  h+="<div class='btnrow' style='margin-top:12px;margin-bottom:0'>"+(locked?"":"<button class='btn pri' data-ckgo='"+esc(s.id)+"'>Check answer</button>")+"</div>";
+  if(locked){
+    var ok=rec.first===true, inPlace=0; if(arr) arr.forEach(function(i,p){ if(i===p) inPlace++; });
+    h+="<div class='fb show "+(ok?"ok":"no")+"'><b>"+(ok?"Correct":"Not quite"+(arr?" · "+inPlace+" of "+c.o.length+" in the right place":""))+"</b>"+
+      (ok?"":"<div class='ordright'>The right order:<ol>"+c.o.map(function(t){ return "<li>"+fmt(t)+"</li>"; }).join("")+"</ol></div>")+fmt(c.why)+"</div>";
+  } else h+="<div class='fb' data-fb='"+esc(s.id)+"'></div>";
+  return h+"</div>";
+}
+function wireOrder(){
+  Array.prototype.forEach.call(document.querySelectorAll("ol.ordl:not(.locked)"), function(ol){
+    var id=ol.getAttribute("data-ord");
+    function save(){ ORD_TMP[id]=Array.prototype.map.call(ol.children, function(li){ return +li.getAttribute("data-i"); }); renumber(); }
+    function renumber(){ var n=ol.children.length; Array.prototype.forEach.call(ol.children, function(li,p){ li.querySelector(".on").textContent=p+1;
+      var bs=li.querySelectorAll(".ob"); bs[0].disabled=(p===0); bs[1].disabled=(p===n-1); }); }
+    ol.addEventListener("click", function(e){
+      var b=e.target.closest(".ob"); if(!b) return;
+      var li=b.closest("li"), d=+b.getAttribute("data-mv");
+      if(d<0 && li.previousElementSibling) ol.insertBefore(li, li.previousElementSibling);
+      else if(d>0 && li.nextElementSibling) ol.insertBefore(li.nextElementSibling, li);
+      save(); var again=li.querySelector(".ob[data-mv='"+d+"']"); if(again && !again.disabled) again.focus(); else b.focus();
+      li.classList.add("moved"); setTimeout(function(){ li.classList.remove("moved"); }, 250);
+    });
+    var drag=null;
+    ol.addEventListener("dragstart", function(e){ drag=e.target.closest("li"); if(!drag) return; drag.classList.add("drag"); try{ e.dataTransfer.setData("text/plain",""); e.dataTransfer.effectAllowed="move"; }catch(x){} });
+    ol.addEventListener("dragend", function(){ if(drag) drag.classList.remove("drag"); drag=null; save(); });
+    ol.addEventListener("dragover", function(e){
+      if(!drag) return; e.preventDefault();
+      var li=e.target.closest("li"); if(!li || li===drag || li.parentNode!==ol) return;
+      var r=li.getBoundingClientRect();
+      if(e.clientY < r.top + r.height/2) ol.insertBefore(drag, li); else ol.insertBefore(drag, li.nextElementSibling);
+    });
+    ol.addEventListener("drop", function(e){ e.preventDefault(); save(); });
+  });
+}
 function checkHtml(s){
+  if(isDec(s)) return decHtml(s);
+  if(isOrder(s)) return orderHtml(s);
   var rec=STATE.checks[s.id];
   var locked=!!rec, multi=isMulti(s);
   var right=multi ? s.check.a : [s.check.a];
@@ -1305,6 +1855,9 @@ function viewSubmit(){
   h+="</div></div>";
 
   h+="<h2 style='font-family:var(--serif);font-size:22px;margin:26px 0 10px'>Send it</h2>";
+  if(typeof navigator!=="undefined" && navigator.onLine===false)
+    h+="<div class='warn'><strong>This computer is offline.</strong> Everything in the training still works. <strong>Download the record</strong> now and send the file when you are connected, or hand it over on a USB drive or shared folder."+
+       (CONFIG.submitEndpoint?" <strong>Send to trainer</strong> needs a connection.":"")+(CONFIG.trainerEmail?" <strong>Open an email</strong> needs a mail program on this computer.":"")+"</div>";
   h+="<div class='btnrow'>"+
      "<button class='btn pri' id='btnDownload'>Download the record</button>"+
      "<button class='btn' id='btnCopy'>Copy as text</button>"+
@@ -1333,6 +1886,7 @@ function recordNo(){
    WIRING
    ========================================================================== */
 function wire(i,p){
+  wireOrder(); wireDec();
   Array.prototype.forEach.call(document.querySelectorAll("[data-nav]"), function(b){
     b.addEventListener("click", function(){ go(b.getAttribute("data-nav")); });
   });
@@ -1361,6 +1915,7 @@ function wire(i,p){
       clearTimeout(window.__sv); window.__sv=setTimeout(function(){ autosave(); drawRail(); },400);
     });
   });
+  var bpc=document.getElementById("btnPrintCopy"); if(bpc) bpc.addEventListener("click", function(){ printDoc("handout", true); });
   var bd=document.getElementById("btnDownload"); if(bd) bd.addEventListener("click", downloadRecord);
   var bc=document.getElementById("btnCopy");     if(bc) bc.addEventListener("click", copyRecord);
   var bm=document.getElementById("btnMail");     if(bm) bm.addEventListener("click", mailRecord);
@@ -1372,6 +1927,16 @@ function grade(id){
   MODULES.forEach(function(m){ m.sections.forEach(function(s){ if(s.id===id) sec=s; }); });
   if(!sec) return;
   var picks=[];
+  if(isDec(sec)){ gradeDec(sec); return; }
+  if(isOrder(sec)){
+    picks=(ORD_TMP[id]||startOrder(sec)).slice();
+    var okO=true; picks.forEach(function(v,p){ if(v!==p) okO=false; });
+    STATE.checks[id]={ first:okO, picks:picks, at:new Date().toISOString() };
+    delete ORD_TMP[id];
+    autosave(); draw();
+    var elO=document.querySelector("[data-check='"+id+"']"); if(elO) elO.scrollIntoView({block:"center", behavior:"smooth"});
+    return;
+  }
   Array.prototype.forEach.call(document.querySelectorAll("input[name]"), function(r){ if(r.checked && r.name==="ck_"+id) picks.push(parseInt(r.value,10)); });
   if(!picks.length){ toast(isMulti(sec) ? "Tick at least one answer first." : "Choose an answer first."); return; }
   var ok = isMulti(sec) ? sameSet(picks, sec.check.a) : (picks[0]===sec.check.a);
@@ -1624,7 +2189,9 @@ glInit();
 document.getElementById("brandSub").textContent = CONFIG.companyName + " · interactive modules";
 if(autoload()){ document.getElementById("who").value = STATE.name||""; }
 if(PREVIEW_PAGE){ VIEW.page=PREVIEW_PAGE; if(PREVIEW_PAGE.indexOf("s:")===0) STATE.seen[PREVIEW_PAGE.slice(2)]=true; }
-draw();
+if(PRINT_MODE) printDoc(PRINT_MODE, false);
+else if(/print/i.test(location.hash||"") && COURSE.printLink!==false) printDoc("handout", true);
+else draw();
 </script>
 
 <script>
@@ -1692,7 +2259,7 @@ function blankProject(){
       keptExtra:["When you are done, go to **Review and send**. It shows your scores, gathers every answer into one record, and gives you the ways to send it."],
       callouts:[], closing:"Enter your name in the header before you begin. It goes on the record you send.",
       exIntro:["Write your reasoning, not just your conclusion. The reasoning is what is being assessed, and several of these have more than one defensible answer. Where a question turns on a fact you have not been given, **say so, and say what you would ask for and whom you would ask.** Recognizing the missing fact is part of the exercise."],
-      docTitle:"", recordTitle:"", shortName:"", fileStem:"", progressStem:"", shuffle:"fixed", recordPrefix:"TRN", storeKey:"", exportName:"",
+      printLink:true, docTitle:"", recordTitle:"", shortName:"", fileStem:"", progressStem:"", shuffle:"fixed", recordPrefix:"TRN", storeKey:"", exportName:"",
       markings:{inJson:true, items:[]},
       grading:{passPct:80, drillPct:"", exAll:true, cert:true},
       glossOpts:{firstOnly:true, inChecks:false, page:true}
@@ -1792,8 +2359,20 @@ function cleanModules(mods){
         // drop blank options but keep the correct one's index right
         const keep=[], map={};
         opts.forEach((t,i)=>{ if(t.trim()){ map[i]=keep.length; keep.push(t); } });
-        const a = Array.isArray(s.check.a) ? s.check.a.filter(i=>map[i]!=null).map(i=>map[i]) : (map[s.check.a]!=null ? map[s.check.a] : 0);
-        if(keep.length>1) o.check = {q:s.check.q, o:keep, a:a, why:s.check.why||""};
+        if(s.check.dec){
+          const d=clone(s.check.dec);
+          d.blocks=(d.blocks||[]).map((b,i)=>{ const o2={n:String(b.n||"").trim(), p:i===0?-1:+b.p}; if(b.given) o2.given=true;
+            if(d.mode==="label" && b.lab!==""&&b.lab!=null) o2.lab=+b.lab; if(d.mode==="errors" && b.shown!==""&&b.shown!=null) o2.shown=+b.shown; return o2; });
+          d.decoys = d.mode==="label" ? [] : (d.decoys||[]).filter(x=>String(x.n||"").trim()).map(x=>{ const o2={n:x.n.trim()}; if(d.mode==="errors") o2.shown=+(x.shown||0); return o2; });
+          d.labels = d.mode==="label" ? nonEmpty(d.labels) : [];
+          if(d.mode!=="build") delete d.bin;
+          if(d.blocks.length>=2) o.check={q:s.check.q, o:[], a:0, dec:d, why:s.check.why||""};
+        } else if(s.check.order===true){
+          if(keep.length>1){ o.check = {q:s.check.q, o:keep, a:0, order:true, why:s.check.why||""}; if(s.check.top) o.check.top=s.check.top; if(s.check.bottom) o.check.bottom=s.check.bottom; }
+        } else {
+          const a = Array.isArray(s.check.a) ? s.check.a.filter(i=>map[i]!=null).map(i=>map[i]) : (map[s.check.a]!=null ? map[s.check.a] : 0);
+          if(keep.length>1) o.check = {q:s.check.q, o:keep, a:a, why:s.check.why||""};
+        }
       }
       return o;
     }),
@@ -1816,7 +2395,7 @@ function optionOrder(id, n, salt){
 }
 function positions(mods, salt){
   const out=[];
-  mods.forEach(m=>m.sections.forEach(s=>{ if(s.check && !Array.isArray(s.check.a)){ out.push(optionOrder(s.id, s.check.o.length, salt).indexOf(s.check.a)); } }));
+  mods.forEach(m=>m.sections.forEach(s=>{ if(s.check && !Array.isArray(s.check.a) && !s.check.order && !s.check.dec){ out.push(optionOrder(s.id, s.check.o.length, salt).indexOf(s.check.a)); } }));
   return out;
 }
 function dist(pos){ const d=[0,0,0,0,0,0]; pos.forEach(p=>d[p]++); return d; }
@@ -1873,6 +2452,7 @@ function buildTraining(p, opts){
   '<div class="toast" id="toast" role="status" aria-live="polite"></div>\n\n<scr'+'ipt>\n'+
   '/* ==========================================================================\n   Made with the Training Builder. To change this training, open this file in\n   the Training Builder (Open…), edit it there, and export it again.\n   ========================================================================== */\n'+
   (opts.preview ? 'var PREVIEW = true;\nvar PREVIEW_PAGE = '+JSON.stringify(opts.page||"start")+';\n' : '')+
+  (opts.print ? 'var PREVIEW = true;\nvar PRINT_MODE = '+JSON.stringify(opts.print)+';\n' : '')+
   'var CONFIG = '+js(config)+';\n\n'+
   'var COURSE = '+js(course)+';\n\n'+
   'var DRILL = '+js(drill)+';\n\n'+
@@ -2268,6 +2848,7 @@ function edCourse(w){
   w.appendChild(panel("Revision", [
     h("div",{class:"row2"}, fText("Content revision", c, "contentRev", {mono:true}), fText("Export file name", co, "exportName", {ph:exportName(P), help:"Leave blank to use the name shown."})),
     fArea("Last reconciled against", c, "alignedTo", {rows:3, help:"What source documents this content was last checked against. Shown on the trainer source map page."}),
+    fCheck("Let trainees open a printable copy (handout, no answers) from the start page", co, "printLink", {help:"Useful for people who want to read on paper. The answer key is only ever made here in the builder."}),
     fCheck("Always show the trainer source map and grading notes", c, "trainerView", {help:"Leave this off for the copy you send to trainees. Anyone can still see trainer view by adding #trainer to the end of the file’s address."})
   ], revBtn));
   const d = dist(positions(cleanModules(P.modules), P.autoSalt ? bestSalt(cleanModules(P.modules)) : +P.salt||0));
@@ -2612,12 +3193,38 @@ function isRight(c,i){ return Array.isArray(c.a) ? c.a.indexOf(i)>=0 : c.a===i; 
 function checkEditor(s){
   const on = !!s.check;
   if(!s.check) s.check={q:"",o:["","","",""],a:0,why:""};
-  const c=s.check, multi=Array.isArray(c.a);
+  const c=s.check, isdec=!!c.dec, order=!isdec && c.order===true, multi=!order && !isdec && Array.isArray(c.a);
   const tog = h("label",{class:"ck",style:"font-size:12px"}, h("input",{type:"checkbox", checked:!!(on && c.q!==null && !c._off), onchange:e=>{ c._off=!e.target.checked; if(c._off){ c._q=c.q; c.q=""; } else if(c._q){ c.q=c._q; } commit(true); }}), "Include a check");
   if(c._off) return panel("Check yourself", h("div",{class:"help",style:"color:var(--slate)"},"This section has no check question. It does not count toward the score."), tog);
   const typeSel = h("div",{class:"fld"}, h("div",{class:"lb"},"Question type"), h("div",{class:"chips"},
-    h("button",{class:"chipb"+(!multi?" on":""), onclick:()=>{ if(multi){ c.a = c.a.length ? c.a[0] : 0; commit(true); } }}, "One right answer"),
-    h("button",{class:"chipb"+(multi?" on":""), onclick:()=>{ if(!multi){ c.a = [c.a]; commit(true); } }}, "Choose all that apply")));
+    h("button",{class:"chipb"+(!multi&&!order&&!isdec?" on":""), onclick:()=>{ delete c.order; delete c.dec; if(Array.isArray(c.a)) c.a = c.a.length ? c.a[0] : 0; if(typeof c.a!=="number") c.a=0; commit(true); }}, "One right answer"),
+    h("button",{class:"chipb"+(multi?" on":""), onclick:()=>{ delete c.order; delete c.dec; if(!Array.isArray(c.a)) c.a = [typeof c.a==="number"?c.a:0]; commit(true); }}, "Choose all that apply"),
+    h("button",{class:"chipb"+(order?" on":""), onclick:()=>{ if(!order){ delete c.dec; c.order=true; c.a=0; commit(true); } }}, "Put in order"),
+    h("button",{class:"chipb"+(isdec?" on":""), onclick:()=>{ if(!isdec){ delete c.order; c.dec=decDefault(); c.a=0; commit(true); } }}, "Decomposition")));
+  if(isdec) return decEditor(c, typeSel, tog);
+  if(order){
+    const items=h("div");
+    c.o.forEach((t,i)=>{
+      const ta = trackFocus(h("textarea",{rows:1, oninput:e=>{ c.o[i]=e.target.value; commit(false); }})); ta.value=t;
+      items.appendChild(h("div",{class:"opt"},
+        h("div",{class:"rad"}, h("span",{style:"font-size:15px;font-weight:700;color:var(--ink-2);letter-spacing:0"}, String(i+1))),
+        ta,
+        h("div",{class:"rc",style:"display:flex;flex-direction:column"},
+          h("button",{class:"ib", title:"Move up", disabled:i===0?"disabled":null, onclick:()=>{ [c.o[i-1],c.o[i]]=[c.o[i],c.o[i-1]]; commit(true); }},"↑"),
+          h("button",{class:"ib", title:"Move down", disabled:i===c.o.length-1?"disabled":null, onclick:()=>{ [c.o[i+1],c.o[i]]=[c.o[i],c.o[i+1]]; commit(true); }},"↓"),
+          h("button",{class:"ib x", title:"Remove item", disabled:c.o.length<=2?"disabled":null, onclick:()=>{ c.o.splice(i,1); commit(true); }},"✕"))));
+    });
+    return panel("Check yourself", [
+      fArea("Question", c, "q", {rows:2}),
+      typeSel,
+      h("div",{class:"mini"},"Items, in the right order"),
+      h("div",{class:"help",style:"font-size:12px;color:var(--slate);margin:-2px 0 8px"},"Type the items top to bottom in the order that is right. Trainees get them shuffled and must put every one back in its place. They see how many they got in the right place, and the right order."),
+      items,
+      c.o.length<10 ? h("button",{class:"addrow", onclick:()=>{ c.o.push(""); commit(true); }}, "+ Add item") : null,
+      h("div",{class:"row2",style:"margin-top:12px"}, fText("Label above the list (optional)", c, "top", {ph:"e.g. First, or Highest level"}), fText("Label below the list (optional)", c, "bottom", {ph:"e.g. Last, or Lowest level"})),
+      fArea("Explanation shown after answering", c, "why", {rows:3, help:"Say why the order is what it is. The right order is shown automatically, so explain the reasons."})
+    ], tog);
+  }
   const opts = h("div");
   c.o.forEach((t,i)=>{
     const ta = trackFocus(h("textarea",{rows:2, oninput:e=>{ c.o[i]=e.target.value; commit(false); }})); ta.value=t;
@@ -2649,6 +3256,86 @@ function checkEditor(s){
 function mapIdx(c, f){ if(Array.isArray(c.a)) c.a = c.a.map(f).filter(x=>x!=null).sort((x,y)=>x-y); else { const v=f(c.a); c.a = v==null ? 0 : v; } }
 function moveOpt(c,i,j){ [c.o[i],c.o[j]]=[c.o[j],c.o[i]]; mapIdx(c, x=> x===i?j : (x===j?i:x)); commit(true); }
 function removeOpt(c,i){ c.o.splice(i,1); mapIdx(c, x=> x===i ? null : (x>i?x-1:x)); commit(true); }
+
+/* ---- decomposition question editor ---- */
+const DEC_MAX_BLOCKS=10, DEC_MAX_LEVELS=3, DEC_MAX_DECOYS=4;
+function decDefault(){ return {mode:"build", blocks:[{n:"System",p:-1,given:true},{n:"Subsystem A",p:0},{n:"Subsystem B",p:0},{n:"Component of A",p:1}], decoys:[], labels:["CI","Not a CI"], bin:"Not part of this product"}; }
+function decDepth(B,i){ let d=1, g=0; while(i>0 && g++<20){ i=B[i].p; d++; } return d; }
+function decKids(B,i){ return B.map((b,k)=>k).filter(k=>k>0 && B[k].p===i); }
+function decHeight(B,i){ const k=decKids(B,i); return 1+(k.length?Math.max(...k.map(x=>decHeight(B,x))):0); }
+function decIsDesc(B,anc,j){ let g=0; while(j>0 && g++<20){ if(B[j].p===anc) return true; j=B[j].p; } return false; }
+function decDFS(B){ const out=[]; (function w(i){ out.push(i); decKids(B,i).forEach(w); })(0); B.forEach((b,i)=>{ if(out.indexOf(i)<0) out.push(i); }); return out; }
+function decRemove(d,k){
+  const B=d.blocks, par=B[k].p;
+  B.forEach((b,i)=>{ if(i>0 && b.p===k) b.p=par; });
+  B.splice(k,1);
+  const fix=v=> (v===""||v==null) ? v : (+v===k ? "" : (+v>k ? +v-1 : +v));
+  B.forEach((b,i)=>{ if(i>0){ if(b.p>k) b.p--; b.shown=fix(b.shown); } });
+  (d.decoys||[]).forEach(x=>{ x.shown=fix(x.shown); });
+}
+function decEditor(c, typeSel, tog){
+  const d=c.dec, B=d.blocks;
+  d.decoys=d.decoys||[]; d.labels=d.labels||["CI","Not a CI"];
+  const modeSel=h("div",{class:"fld"}, h("div",{class:"lb"},"What the trainee does"), h("div",{class:"chips"},
+    [["build","Build the tree"],["errors","Find the mistakes"],["label","Label the blocks"]].map(([v,t])=>h("button",{class:"chipb"+(d.mode===v?" on":""), onclick:()=>{ d.mode=v; commit(true); }}, t))),
+    h("div",{class:"help"}, d.mode==="build" ? "The trainee gets the top block (and any you mark as given) and places every other block under its parent. Decoys must go in the bin."
+      : d.mode==="errors" ? "The trainee sees the tree with the mistakes you set below, and clicks every block that is wrong. Set a mistake by choosing “Shown under” for a block, or add a decoy that should not be there at all."
+      : "The trainee sees the right tree and picks a label for each block from your list."));
+  const rowsEl=h("div",{class:"rl"});
+  decDFS(B).forEach(i=>{
+    const b=B[i], depth=decDepth(B,i);
+    const name=trackFocus(h("input",{type:"text", value:b.n||"", placeholder: i===0?"Top block, e.g. Aircraft":"Block name", oninput:e=>{ b.n=e.target.value; commit(false); }, style:"width:100%;border:1px solid var(--rule);border-radius:5px;padding:6px 8px;font-size:13.5px"+(i===0?";font-weight:700":"")}));
+    const ctl=[];
+    if(i>0){
+      const hgt=decHeight(B,i);
+      const opts=B.map((x,j)=>j).filter(j=>j!==i && !decIsDesc(B,i,j) && decDepth(B,j)+hgt<=DEC_MAX_LEVELS);
+      ctl.push(h("label",{class:"dec-l"},"Under", h("select",{onchange:e=>{ b.p=+e.target.value; commit(true); }}, opts.map(j=>h("option",{value:j, selected:b.p===j?"selected":null}, B[j].n||"(unnamed)")))));
+    }
+    if(d.mode==="errors" && i>0){
+      const opts=B.map((x,j)=>j).filter(j=>j!==i && !decIsDesc(B,i,j));
+      ctl.push(h("label",{class:"dec-l"},"Shown under", h("select",{onchange:e=>{ b.shown=e.target.value===""?"":+e.target.value; commit(true); }},
+        h("option",{value:""},"its right place"), opts.filter(j=>j!==b.p).map(j=>h("option",{value:j, selected:(b.shown!==""&&b.shown!=null&&+b.shown===j)?"selected":null}, "✗ "+(B[j].n||"(unnamed)"))))));
+    }
+    if(d.mode==="label"){
+      ctl.push(h("label",{class:"dec-l"},"Label", h("select",{onchange:e=>{ b.lab=e.target.value===""?"":+e.target.value; commit(true); }},
+        h("option",{value:""},"— choose —"), d.labels.map((l,k)=>h("option",{value:k, selected:(b.lab!==""&&b.lab!=null&&+b.lab===k)?"selected":null}, l||"(blank)")))));
+    }
+    if((d.mode==="build" && i>0) || d.mode==="label"){
+      ctl.push(h("label",{class:"dec-l ck"}, h("input",{type:"checkbox", checked:!!b.given, onchange:e=>{ b.given=e.target.checked; commit(true); }}), "Given"));
+    }
+    const mistake = d.mode==="errors" && i>0 && b.shown!=="" && b.shown!=null && +b.shown!==b.p;
+    rowsEl.appendChild(h("div",{class:"ri", style:"margin-left:"+((depth-1)*26)+"px"+(mistake?";border-color:var(--alert);background:var(--alert-soft)":"")},
+      h("span",{class:"rn", title:"Level "+depth}, i===0 ? "▣" : "└"),
+      h("div",{class:"rb"}, name, ctl.length ? h("div",{class:"dec-ctl"}, ctl) : null),
+      h("div",{class:"rc"}, i>0 ? h("button",{class:"ib x", title:"Remove block (its children move up a level)", onclick:()=>{ decRemove(d,i); commit(true); }},"✕") : null)));
+  });
+  const addB=h("button",{class:"addrow", disabled:B.length>=DEC_MAX_BLOCKS?"disabled":null, onclick:()=>{ B.push({n:"", p:0}); commit(true); }}, "+ Add block");
+  const body=[fArea("Question", c, "q", {rows:2}), typeSel, modeSel,
+    h("div",{class:"mini"},"The right decomposition"),
+    h("div",{class:"help",style:"font-size:12px;color:var(--slate);margin:-2px 0 8px"}, "Up to "+DEC_MAX_BLOCKS+" blocks and "+DEC_MAX_LEVELS+" levels, counting the top block. Fewer is fine. Choose each block’s parent with “Under”."+
+      (d.mode!=="errors" ? " “Given” blocks are already filled in for the trainee." : "")),
+    rowsEl, h("div",{class:"acts"}, addB, h("span",{style:"font-size:12px;color:var(--slate);align-self:center"}, B.length+" of "+DEC_MAX_BLOCKS+" blocks"))];
+  if(d.mode==="label"){
+    body.push(h("div",{class:"mini"},"Labels to choose from"));
+    body.push(fLines(null, d, "labels", {help:"One label per line, for example CI and Not a CI, or the part note codes. Changing the order changes which label each block has.", rows:3}));
+  } else {
+    body.push(h("div",{class:"mini"}, "Decoys (optional)"));
+    body.push(h("div",{class:"help",style:"font-size:12px;color:var(--slate);margin:-2px 0 8px"}, d.mode==="build" ? "Blocks that do not belong in this product, such as a specification or a test procedure. The trainee has to put them in the bin." : "Blocks drawn in the tree that should not be there at all. Choose where each one is shown."));
+    const dl=h("div",{class:"rl"});
+    d.decoys.forEach((x,k)=>{
+      const nm=trackFocus(h("input",{type:"text", value:x.n||"", placeholder:"e.g. Hydraulic system specification", oninput:e=>{ x.n=e.target.value; commit(false); }, style:"width:100%;border:1px solid var(--rule);border-radius:5px;padding:6px 8px;font-size:13.5px"}));
+      const ctl = d.mode==="errors" ? h("div",{class:"dec-ctl"}, h("label",{class:"dec-l"},"Shown under", h("select",{onchange:e=>{ x.shown=+e.target.value; commit(true); }},
+        B.map((y,j)=>h("option",{value:j, selected:(x.shown!=null&&x.shown!==""&&+x.shown===j)?"selected":null}, y.n||"(unnamed)"))))) : null;
+      if(d.mode==="errors" && (x.shown==null||x.shown==="")) x.shown=0;
+      dl.appendChild(h("div",{class:"ri"}, h("span",{class:"rn"},"🗑"), h("div",{class:"rb"}, nm, ctl), h("div",{class:"rc"}, h("button",{class:"ib x", onclick:()=>{ d.decoys.splice(k,1); commit(true); }},"✕"))));
+    });
+    dl.appendChild(h("button",{class:"addrow", disabled:d.decoys.length>=DEC_MAX_DECOYS?"disabled":null, onclick:()=>{ d.decoys.push({n:"", shown:d.mode==="errors"?0:""}); commit(true); }}, "+ Add decoy"));
+    body.push(dl);
+    if(d.mode==="build" && d.decoys.length) body.push(fText("Bin label", d, "bin", {ph:"Not part of this product"}));
+  }
+  body.push(h("div",{style:"height:12px"}), fArea("Explanation shown after answering", c, "why", {rows:3, help: d.mode==="label" ? "Say why each block gets its label." : "The right tree is shown automatically, so explain the reasons."}));
+  return panel("Check yourself", body, tog);
+}
 
 /* ---- drill ---- */
 function edDrill(w, m, mi){
@@ -2717,15 +3404,33 @@ function lint(){
       const c=s.check;
       if(!c || c._off || !String(c.q||"").trim()){ if(!(c&&c._off)) add("warn", s.id+" has no check question. It will not count toward the score.", sel); }
       else{
+        if(c.dec){
+          const d=c.dec, B=d.blocks||[];
+          if(B.some(b=>!String(b.n||"").trim())) add("err", s.id+": a block in the decomposition has no name.", sel);
+          if(B.length<3) add("warn", s.id+": a decomposition with fewer than three blocks is too easy to guess.", sel);
+          if(d.mode==="build" && !B.some((b,i)=>i>0 && !b.given)) add("err", s.id+": every block is marked Given, so there is nothing to place.", sel);
+          if(d.mode==="errors"){ const n=B.filter((b,i)=>i>0 && b.shown!==""&&b.shown!=null && +b.shown!==b.p).length + (d.decoys||[]).filter(x=>String(x.n||"").trim()).length;
+            if(!n) add("err", s.id+": Find the mistakes has no mistakes. Set “Shown under” on a block, or add a decoy.", sel); }
+          if(d.mode==="label"){ const L=nonEmpty(d.labels);
+            if(L.length<2) add("err", s.id+": Label the blocks needs at least two labels.", sel);
+            if(B.some(b=>b.lab===""||b.lab==null||+b.lab>=L.length)) add("err", s.id+": every block needs its right label chosen.", sel);
+            if(!B.some(b=>!b.given)) add("err", s.id+": every block is marked Given, so there is nothing to label.", sel); }
+          if(!String(c.why||"").trim()) add("warn", s.id+": the check has no explanation.", sel);
+        } else {
         const filled=c.o.filter(o=>String(o).trim());
         if(filled.length<2) add("err", s.id+": the check needs at least two options.", sel);
-        if(Array.isArray(c.a)){
+        if(c.order===true){
+          const low=filled.map(x=>String(x).trim().toLowerCase());
+          if(new Set(low).size<low.length) add("warn", s.id+": two items have the same text, so the order between them cannot be told apart.", sel);
+          if(filled.length===2) add("warn", s.id+": a put-in-order question with two items is a coin toss. Three or more work better.", sel);
+        } else if(Array.isArray(c.a)){
           if(!c.a.length) add("err", s.id+": no option is ticked as right. Tick at least one.", sel);
           else if(c.a.some(i=>!String(c.o[i]||"").trim())) add("err", s.id+": an option ticked as right is blank.", sel);
           else if(c.a.length===filled.length) add("warn", s.id+": every option is ticked as right, so ticking everything always scores.", sel);
         } else if(!String(c.o[c.a]||"").trim()) add("err", s.id+": the option marked correct is blank.", sel);
         if(filled.length<c.o.length && filled.length>=2) add("warn", s.id+": a blank check option will be left out.", sel);
         if(!String(c.why||"").trim()) add("warn", s.id+": the check has no explanation.", sel);
+        }
       }
       (s.gov||[]).forEach(g=>{ used.add(g); if(!known.has(g)) add("warn", s.id+" is tagged with rule “"+g+"”, which is not in the source map.", sel); });
     });
@@ -2806,6 +3511,20 @@ function openFile(file){
   };
   r.readAsText(file);
 }
+function printDialog(){
+  flushPending();
+  const e=lint().filter(i=>i.lvl==="err");
+  const open=(mode)=>{ const html=buildTraining(P,{print:mode}); const u=URL.createObjectURL(new Blob([html],{type:"text/html"})); const w=window.open(u,"_blank"); if(!w) toast("Your browser blocked the new tab. Use Download instead."); setTimeout(()=>URL.revokeObjectURL(u),120000); };
+  const save=(mode)=>{ download(stemOf(P)+"_Rev"+(P.config.contentRev||"")+(mode==="key"?"_answer_key":"_handout")+".html", buildTraining(P,{print:mode}), "text/html;charset=utf-8"); toast("Downloaded. Open it in a browser and use Print, or Save as PDF."); };
+  openModal("Printable versions", [
+    e.length ? h("div",{class:"warnbox"}, "The Health check found "+e.length+" problem"+(e.length===1?"":"s")+". The printout may be incomplete until "+(e.length===1?"it is":"they are")+" fixed.") : null,
+    h("div",{class:"choice",style:"cursor:default"}, h("b",null,"Trainee handout"), h("span",null,"The whole course on paper: every section, every check with tick boxes, drill lines, and ruled lines for the written exercises. No answers."),
+      h("div",{class:"acts",style:"margin:10px 0 0"}, h("button",{class:"btn pri sm", onclick:()=>{ closeModal(); open("handout"); }}, "Open print view"), h("button",{class:"btn sm", onclick:()=>{ closeModal(); save("handout"); }}, "Download"))),
+    h("div",{class:"choice",style:"cursor:default"}, h("b",null,"Trainer answer key"), h("span",null,"The same pages with the right answers marked, every explanation, the drill answers, the grading notes for the written exercises, and the revision history. Marked “do not give to trainees”."),
+      h("div",{class:"acts",style:"margin:10px 0 0"}, h("button",{class:"btn pri sm", onclick:()=>{ closeModal(); open("key"); }}, "Open print view"), h("button",{class:"btn sm", onclick:()=>{ closeModal(); save("key"); }}, "Download"))),
+    h("p",{class:"help",style:"font-size:12.5px;color:var(--slate);margin:6px 0 0"}, "The print view opens in a new tab. Use its Print button, or your browser's Print, and choose Save as PDF for a PDF. Markings repeat at the top and bottom of every printed page. "+(P.course.shuffle==="trainee" ? "This course shuffles options separately for each trainee online, so paper answer letters follow one fixed order: use the handout and key together." : "Answer letters match the option order trainees see online."))
+  ]);
+}
 function newDialog(){
   openModal("Start a new training", [
     DIRTY ? h("div",{class:"warnbox"},"The current training has changes you have not exported or saved as a draft. Starting a new one replaces it here (Undo cannot bring it back). Save a draft first if you want to keep it.") : null,
@@ -2838,6 +3557,7 @@ $("bUndo").onclick=undo; $("bRedo").onclick=redo;
 $("fB").onmousedown=e=>e.preventDefault(); $("fI").onmousedown=e=>e.preventDefault();
 $("fB").onclick=()=>wrapSel("**"); $("fI").onclick=()=>wrapSel("*");
 $("bHealth").onclick=showHealth;
+$("bPrint").onclick=printDialog;
 $("bExport").onclick=doExport;
 $("bPv").onclick=()=>{ const off=document.body.classList.toggle("nopv"); if(window.innerWidth<=980) document.body.classList.toggle("pvforce", !off); if(!off) schedulePreview(true); };
 $("pvTrainer").onchange=()=>schedulePreview(true);
@@ -2970,15 +3690,41 @@ function plainT(s){ return mkTok(String(s||"")).replace(/\*\*/g,"").replace(/\*(
 function cidx(){
   const mods=cleanModules(P.modules), checks=[], drills=[], parts=[], ex=[];
   mods.forEach(m=>{
-    m.sections.forEach(s=>{ if(s.check) checks.push({id:s.id, m:m, title:s.title, q:s.check.q, o:s.check.o, a:s.check.a, why:s.check.why}); });
+    m.sections.forEach(s=>{ if(s.check) checks.push({id:s.id, m:m, title:s.title, q:s.check.q, o:s.check.o, a:s.check.a, why:s.check.why, order:s.check.order===true, dec:s.check.dec||null}); });
     m.drill.forEach(d=>drills.push({id:d.id, m:m, d:d}));
     m.exercises.forEach(x=>{ ex.push({m:m, x:x}); x.parts.forEach(pt=>parts.push({key:x.id+"."+pt.id, m:m, x:x, pt:pt})); });
   });
   return {mods, checks, drills, parts, ex};
 }
-function rightSet(c){ return Array.isArray(c.a) ? c.a : [c.a]; }
-function optText(c, idxs){ return (idxs||[]).filter(i=>c.o[i]!=null).map(i=>plainT(c.o[i])).join("; "); }
-function pickedText(c, r){ const p=(r&&r.picks)||[]; return p.length ? optText(c,p) : "(not in the file)"; }
+/* decomposition helpers */
+function decAllR(d){ return d.blocks.map((b,i)=>({n:plainT(b.n), p:i===0?-1:+b.p, given:!!b.given, lab:b.lab, shown:b.shown, decoy:false}))
+  .concat(d.mode==="label"?[]:(d.decoys||[]).map(x=>({n:plainT(x.n), p:-2, decoy:true, shown:x.shown}))); }
+function decErrs(all){ return all.map((b,i)=>i).filter(i=>i>0 && (all[i].decoy || (all[i].shown!=null && all[i].shown!=="" && +all[i].shown!==all[i].p))); }
+function decWrong(c, picks){ // indices of blocks the trainee got wrong
+  const d=c.dec, all=decAllR(d), p=picks||[];
+  if(d.mode==="build") return all.map((b,i)=>i).filter(i=>i>0 && !all[i].given && p[i]!==all[i].p);
+  if(d.mode==="errors"){ const E=decErrs(all); return all.map((b,i)=>i).filter(i=>i>0 && ((E.indexOf(i)>=0)!==(p.indexOf(i)>=0))); }
+  return all.map((b,i)=>i).filter(i=>!all[i].given && p[i]!==+all[i].lab);
+}
+function decRightText(c){
+  const d=c.dec, all=decAllR(d);
+  const path=i=>{ const r=[]; let g=0; while(i>=0 && g++<20){ r.unshift(all[i].n); i=all[i].p; } return r.join(" › "); };
+  if(d.mode==="errors") return "Mistakes: "+decErrs(all).map(i=>all[i].n).join("; ");
+  if(d.mode==="label") return all.map(b=>b.n+": "+((d.labels||[])[+b.lab]||"")).join("; ");
+  return all.map((b,i)=>i).filter(i=>i>0).map(i=>all[i].decoy ? all[i].n+" › "+(d.bin||"not part of this product") : path(i)).join("; ");
+}
+function decPickedText(c, picks){
+  const d=c.dec, all=decAllR(d), p=picks||[];
+  if(!p.length) return "(not in the file)";
+  if(d.mode==="errors"){ return "Flagged: "+(p.map(i=>all[i]&&all[i].n).filter(Boolean).join("; ")||"nothing"); }
+  const W=decWrong(c,p); if(!W.length) return "all right";
+  if(d.mode==="label") return W.map(i=>all[i].n+": "+((d.labels||[])[p[i]]||"no label")+" (right: "+((d.labels||[])[+all[i].lab]||"")+")").join("; ");
+  const nm=j=> j===-2 ? (d.bin||"the bin") : (j===-9||j==null ? "not placed" : (all[j]?all[j].n:"?"));
+  return W.map(i=>all[i].n+" under "+nm(p[i])+" (right: "+nm(all[i].p)+")").join("; ");
+}
+function rightSet(c){ return c.order ? c.o.map((_,i)=>i) : (Array.isArray(c.a) ? c.a : [c.a]); }
+function optText(c, idxs){ if(c.dec) return decRightText(c); return (idxs||[]).filter(i=>c.o[i]!=null).map(i=>plainT(c.o[i])).join(c.order ? " → " : "; "); }
+function pickedText(c, r){ if(c.dec) return decPickedText(c, r&&r.picks); const p=(r&&r.picks)||[]; return p.length ? optText(c,p) : "(not in the file)"; }
 function grading(){ return Object.assign({passPct:80, drillPct:"", exAll:true, cert:true}, P.course.grading||{}); }
 function pctOf(a,b){ return b ? Math.round(100*a/b) : 0; }
 function ansOf(t,key){ return String((t.data.answers||{})[key]||"").trim(); }
@@ -3203,9 +3949,12 @@ function viewRoster(w,C){
 function itemData(C){
   const T=RES.trainees;
   const checks=C.checks.map(c=>{
-    let att=0, right=0; const picks=new Array(c.o.length).fill(0), wrongPicks=new Array(c.o.length).fill(0); let unknownPick=0;
+    const nOpt = c.dec ? decAllR(c.dec).length : c.o.length;
+    let att=0, right=0; const picks=new Array(nOpt).fill(0), wrongPicks=new Array(nOpt).fill(0); let unknownPick=0;
     T.forEach(t=>{ const r=(t.data.checks||{})[c.id]; if(!r) return; att++; if(r.first===true) right++;
       const ps=r.picks||[]; if(!ps.length){ if(r.first!==true) unknownPick++; return; }
+      if(c.dec){ const W=decWrong(c, ps); W.forEach(i=>wrongPicks[i]++); for(let i=0;i<nOpt;i++) if(W.indexOf(i)<0) picks[i]++; return; }
+      if(c.order){ ps.forEach((it,pos)=>{ if(picks[it]!=null && it===pos) picks[it]++; if(wrongPicks[it]!=null && it!==pos) wrongPicks[it]++; }); return; }
       const R=rightSet(c); ps.forEach(p=>{ if(picks[p]!=null){ picks[p]++; if(R.indexOf(p)<0) wrongPicks[p]++; } }); });
     let wi=-1, wn=0; wrongPicks.forEach((n,i)=>{ if(n>wn){ wn=n; wi=i; } });
     return {c, att, right, pct:att?Math.round(100*right/att):null, picks, wi, wn, unknownPick};
@@ -3231,14 +3980,14 @@ function viewItems(w,C){
   w.appendChild(h("div",{class:"mini"},"Section checks"));
   const ckRow = r => {
     const R=rightSet(r.c);
-    const opts = r.c.o.map((o,i)=>h("div",{class:"optd"+(R.indexOf(i)>=0?" right":"")},
-      h("span",null,(R.indexOf(i)>=0?"✓ ":"")+plainT(o)),
+    const opts = r.c.dec ? decAllR(r.c.dec).map((b,i)=>h("div",{class:"optd"}, h("span",null, b.n+(i===0?" (top)":"")+(b.decoy?" (decoy)":"")+"  (times right)"), h("span",{style:"font-family:var(--mono)"}, String(r.picks[i])), pbar(r.att?Math.round(100*r.picks[i]/r.att):0, -1))) : r.c.o.map((o,i)=>h("div",{class:"optd"+(!r.c.order && R.indexOf(i)>=0?" right":"")},
+      h("span",null, r.c.order ? (i+1)+". "+plainT(o)+"  (times in the right place)" : (R.indexOf(i)>=0?"✓ ":"")+plainT(o)),
       h("span",{style:"font-family:var(--mono)"}, String(r.picks[i])),
       pbar(r.att?Math.round(100*r.picks[i]/r.att):0, -1)));
     const note = r.unknownPick ? h("div",{class:"help",style:"font-size:12px;color:var(--slate)"}, r.unknownPick+" wrong answer(s) came from training records, which do not say which option was picked.") : null;
     const qcell = h("details",{class:"qa"}, h("summary",null, plainT(r.c.q)), h("div",{style:"margin-top:8px"}, opts), note);
     const pcell = r.pct==null ? h("span",{style:"color:var(--mute)"},"—") : [h("span",{style:"font-family:var(--mono);font-size:12px"}, r.right+" · "+r.pct+"%"), pbar(r.pct)];
-    const wcell = r.wi>=0 ? [plainT(r.c.o[r.wi]), h("span",{style:"font-family:var(--mono);color:var(--alert)"}, "  ×"+r.wn)] : h("span",{style:"color:var(--mute)"},"—");
+    const wcell = r.wi>=0 ? [r.c.order ? "Most often out of place: " : (r.c.dec ? "Most often wrong: " : ""), r.c.dec ? decAllR(r.c.dec)[r.wi].n : plainT(r.c.o[r.wi]), h("span",{style:"font-family:var(--mono);color:var(--alert)"}, "  ×"+r.wn)] : h("span",{style:"color:var(--mute)"},"—");
     return h("tr",null, h("td",{class:"n"}, r.c.id), h("td",null, qcell), h("td",{class:"n"}, r.att+" / "+RES.trainees.length), h("td",null, pcell), h("td",{style:"font-size:12.5px"}, wcell));
   };
   w.appendChild(h("div",{class:"rtw"}, h("table",{class:"rt"},
@@ -3677,11 +4426,17 @@ function courseFields(p){
     ["Pass mark: section checks", g.passPct!=null?String(g.passPct)+"%":""], ["Pass mark: drill", g.drillPct!==""&&g.drillPct!=null?g.drillPct+"%":"not used"],
     ["Pass rule: every written answer acceptable", g.exAll?"Yes":"No"],
     ["Glossary: underline first use only", (c.glossOpts||{}).firstOnly!==false?"Yes":"No"], ["Glossary: underline inside checks", (c.glossOpts||{}).inChecks?"Yes":"No"], ["Glossary: glossary page", (c.glossOpts||{}).page!==false?"Yes":"No"],
+    ["Printable copy link for trainees", c.printLink!==false?"Yes":"No"],
     ["Record title", c.recordTitle], ["File name stem", c.fileStem], ["Progress file stem", c.progressStem], ["Record number prefix", c.recordPrefix], ["Browser storage key", c.storeKey]
   ].map(([l,v])=>[l, String(v==null?"":v)]);
 }
-function checkSig(c){ return c ? JSON.stringify([c.q, c.o, c.a, c.why]) : ""; }
-function rightText(c){ const R=Array.isArray(c.a)?c.a:[c.a]; return R.map(i=>c.o[i]).filter(x=>x!=null).join("\n"); }
+function checkSig(c){ return c ? JSON.stringify([c.q, c.o, c.a, c.why, !!c.order, c.top||"", c.bottom||"", c.dec||null]) : ""; }
+function qType(c){ if(c.dec) return "Decomposition: "+({build:"build the tree",errors:"find the mistakes",label:"label the blocks"}[c.dec.mode]||c.dec.mode); return c.order ? "Put in order" : (Array.isArray(c.a) ? "Choose all that apply" : "One right answer"); }
+function rightText(c){ if(c.dec){ const d=c.dec, B=d.blocks||[]; const depth=i=>{ let n=0,g=0; while(i>0&&g++<20){ i=B[i].p; n++; } return n; };
+  const dfs=[]; (function w(i){ dfs.push(i); B.forEach((x,k)=>{ if(k>0 && +x.p===i) w(k); }); })(0); B.forEach((x,k)=>{ if(dfs.indexOf(k)<0) dfs.push(k); });
+  const lines=dfs.map(i=>[i,B[i]]).map(([i,b])=>"  ".repeat(depth(i))+b.n+(i>0?"  (under "+((B[+b.p]||{}).n||"?")+")":"")+(b.given?" (given)":"")+(d.mode==="label"?" : "+((d.labels||[])[+b.lab]||"?"):"")+(d.mode==="errors"&&b.shown!=null&&b.shown!==""&&+b.shown!==b.p?"  [shown under "+(B[+b.shown]||{}).n+"]":""));
+  (d.decoys||[]).forEach(x=>lines.push("Decoy: "+x.n+(d.mode==="errors"?" [shown under "+(B[+x.shown]||{}).n+"]":""))); return lines.join("\n"); }
+  if(c.order) return c.o.map((x,i)=>(i+1)+". "+x).join("\n"); const R=Array.isArray(c.a)?c.a:[c.a]; return R.map(i=>c.o[i]).filter(x=>x!=null).join("\n"); }
 
 function diffProjects(A, B){
   const VA=projView(A), VB=projView(B);
@@ -3741,10 +4496,11 @@ function diffProjects(A, B){
     else if(a.check && b.check && checkSig(a.check)!==checkSig(b.check)){
       const ca=a.check, cb=b.check;
       if(ca.q!==cb.q) cf.push({label:"Check question", a:ca.q, b:cb.q});
-      if(Array.isArray(ca.a)!==Array.isArray(cb.a)) cf.push({label:"Question type", a:Array.isArray(ca.a)?"Choose all that apply":"One right answer", b:Array.isArray(cb.a)?"Choose all that apply":"One right answer"});
-      if(ca.o.join("\n")!==cb.o.join("\n")) cf.push({label:"Options", a:ca.o.join("\n"), b:cb.o.join("\n"), lines:true});
+      if(qType(ca)!==qType(cb)) cf.push({label:"Question type", a:qType(ca), b:qType(cb)});
+      if(ca.o.join("\n")!==cb.o.join("\n") && !(ca.order && cb.order)) cf.push({label:"Options", a:ca.o.join("\n"), b:cb.o.join("\n"), lines:true});
       if(rightText(ca)!==rightText(cb)) cf.push({label:"Right answer", a:rightText(ca), b:rightText(cb), key:true, lines:true});
       if((ca.why||"")!==(cb.why||"")) cf.push({label:"Explanation", a:ca.why||"", b:cb.why||""});
+      if((ca.top||"")!==(cb.top||"")||(ca.bottom||"")!==(cb.bottom||"")) cf.push({label:"List labels", a:(ca.top||"")+" / "+(ca.bottom||""), b:(cb.top||"")+" / "+(cb.bottom||"")});
     }
     if(f.length || bl.length || cf.length || moved){ D.secs.push({id, st: (f.length||bl.length||cf.length) ? "chg" : "mov", mod:nb.m.id, s:b, a, f, bl, cf, moved}); }
   });
