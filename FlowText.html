@@ -122,6 +122,11 @@ input.swatch{width:48px;height:40px;padding:2px;border:2px solid var(--btnLine);
     <span id="esval" class="num">17</span>
     <button id="bEsUp" class="sq" title="Larger editor text">+</button>
   </div>
+  <div class="grp"><span class="lbl">Row height</span>
+    <button id="bRhDn" class="sq" title="Shorter rows (blocks stay the same size)">&minus;</button>
+    <span id="rhval" class="num">0</span>
+    <button id="bRhUp" class="sq" title="Taller rows (blocks stay the same size)">+</button>
+  </div>
   <label class="chk"><input type="checkbox" id="cUniform"> Same-size boxes</label>
   <label class="chk"><input type="checkbox" id="cShade"> Shade rows</label>
   <label class="chk"><input type="checkbox" id="cDark"> Dark screen</label>
@@ -214,7 +219,7 @@ var PLEX600 = 'd09GMgABAAAAAFb0ABEAAAAA/PAAAFaQAAMBRwAAAAAAAAAAAAAAAAAAAAAAAAAAG
 var $ = function(s){ return document.querySelector(s); };
 
 var DEFAULTS = { font:'Calibri', fontSize:14, boxWidth:'normal', editorSize:17, uniform:true, shade:true, dark:false,
-  laneFont:'same', laneSize:0, laneBold:true, laneInk:'#0d0d0d', laneBg:'#d7e0eb', ppt:'fit' };
+  laneFont:'same', laneSize:0, laneBold:true, laneInk:'#0d0d0d', laneBg:'#d7e0eb', ppt:'fit', rowSpace:0 };
 var LANE_KEYS = ['laneFont','laneSize','laneBold','laneInk','laneBg'];
 function laneFontKey(){ return S.laneFont === 'same' || !FONT_STACKS[S.laneFont] ? S.font : S.laneFont; }
 function laneFs(){ return S.laneSize || S.fontSize; }
@@ -598,6 +603,9 @@ function layout(M){
     n.lift = first ? first.h/2 : fs*1.4;
     rowH[n.row] = Math.max(rowH[n.row], 2*(n.lift + n.r + fs*0.25));
   });
+  // Extra row height: more space above and below the blocks. Blocks keep their size.
+  var extra = (S.rowSpace || 0) * fs * 0.8;
+  for (var rx = 0; rx < R; rx++) rowH[rx] += extra;
   function gapW(i){
     var t = gapT.get(i), n = t ? t.n : 0;
     var base = i < 0 ? (n ? fs*2 : fs*1.2) : fs*2.6;
@@ -1053,6 +1061,8 @@ function applySettings(redraw){
   $('#sBox').value = S.boxWidth;
   $('#fsval').textContent = S.fontSize;
   $('#esval').textContent = S.editorSize;
+  S.rowSpace = Math.max(0, Math.min(15, S.rowSpace|0));
+  $('#rhval').textContent = S.rowSpace ? '+' + S.rowSpace : '0';
   $('#cUniform').checked = !!S.uniform;
   $('#cShade').checked = !!S.shade;
   $('#cDark').checked = !!S.dark;
@@ -1082,6 +1092,8 @@ $('#bFsDn').onclick = function(){ setting('fontSize', S.fontSize-1); };
 $('#bFsUp').onclick = function(){ setting('fontSize', S.fontSize+1); };
 $('#bEsDn').onclick = function(){ setting('editorSize', S.editorSize-1); };
 $('#bEsUp').onclick = function(){ setting('editorSize', S.editorSize+1); };
+$('#bRhDn').onclick = function(){ setting('rowSpace', S.rowSpace-1); };
+$('#bRhUp').onclick = function(){ setting('rowSpace', S.rowSpace+1); };
 $('#cUniform').onchange = function(){ setting('uniform', this.checked); };
 $('#cShade').onchange = function(){ setting('shade', this.checked); };
 $('#cDark').onchange = function(){ setting('dark', this.checked); };
