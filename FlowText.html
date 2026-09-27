@@ -127,6 +127,12 @@ input.swatch{width:48px;height:40px;padding:2px;border:2px solid var(--btnLine);
     <span id="rhval" class="num">0</span>
     <button id="bRhUp" class="sq" title="Taller rows (blocks stay the same size)">+</button>
   </div>
+  <div class="grp"><span class="lbl">Diamond fill</span>
+    <input type="color" id="cDecFill" class="swatch" aria-label="Diamond fill color">
+    <select id="pDecFill" aria-label="Diamond fill presets">
+      <option value="">Pick…</option><option value="#ffffff">White (same as blocks)</option><option value="#fff4d1">Pale yellow</option><option value="#e6e6e6">Light gray</option><option value="#dce8f5">Light blue</option><option value="#e2f3e6">Light green</option>
+    </select>
+  </div>
   <label class="chk"><input type="checkbox" id="cUniform"> Same-size boxes</label>
   <label class="chk"><input type="checkbox" id="cShade"> Shade rows</label>
   <label class="chk"><input type="checkbox" id="cDark"> Dark screen</label>
@@ -219,7 +225,7 @@ var PLEX600 = 'd09GMgABAAAAAFb0ABEAAAAA/PAAAFaQAAMBRwAAAAAAAAAAAAAAAAAAAAAAAAAAG
 var $ = function(s){ return document.querySelector(s); };
 
 var DEFAULTS = { font:'Calibri', fontSize:14, boxWidth:'normal', editorSize:17, uniform:true, shade:true, dark:false,
-  laneFont:'same', laneSize:0, laneBold:true, laneInk:'#0d0d0d', laneBg:'#d7e0eb', ppt:'fit', rowSpace:0 };
+  laneFont:'same', laneSize:0, laneBold:true, laneInk:'#0d0d0d', laneBg:'#d7e0eb', ppt:'fit', rowSpace:0, decFill:'#fff4d1' };
 var LANE_KEYS = ['laneFont','laneSize','laneBold','laneInk','laneBg'];
 function laneFontKey(){ return S.laneFont === 'same' || !FONT_STACKS[S.laneFont] ? S.font : S.laneFont; }
 function laneFs(){ return S.laneSize || S.fontSize; }
@@ -762,7 +768,7 @@ function renderSVG(M, L, forExport){
       o.push('<circle cx="'+r1(n.cx)+'" cy="'+r1(n.cy)+'" r="'+r1(n.r - esw/2)+'" fill="#ffffff" stroke="#000000" stroke-width="'+r1(esw)+'"/>');
     } else {
       if (n.kind === 'decision'){
-        o.push('<polygon points="'+r1(n.cx)+','+r1(n.y)+' '+r1(n.x+n.w)+','+r1(n.cy)+' '+r1(n.cx)+','+r1(n.y+n.h)+' '+r1(n.x)+','+r1(n.cy)+'" fill="#fff4d1" stroke="'+INK+'" stroke-width="1.8" stroke-linejoin="round"/>');
+        o.push('<polygon points="'+r1(n.cx)+','+r1(n.y)+' '+r1(n.x+n.w)+','+r1(n.cy)+' '+r1(n.cx)+','+r1(n.y+n.h)+' '+r1(n.x)+','+r1(n.cy)+'" fill="'+esc(S.decFill)+'" stroke="'+INK+'" stroke-width="1.8" stroke-linejoin="round"/>');
       } else {
         o.push('<rect x="'+r1(n.x)+'" y="'+r1(n.y)+'" width="'+r1(n.w)+'" height="'+r1(n.h)+'" rx="'+r1(fs*0.35)+'" fill="#ffffff" stroke="'+INK+'" stroke-width="1.8"/>');
       }
@@ -918,7 +924,7 @@ function buildPptx(M, L){
       var dec = n.kind === 'decision';
       var geom = dec ? prst('diamond') : prst('roundRect', Math.min(50000, fs*0.35/Math.min(n.w, n.h)*100000));
       var lines = n.lines;
-      shape(dec ? 'Decision' : 'Step', n.x, n.y, n.w, n.h, geom, fillX(dec ? '#fff4d1' : '#ffffff'), lnX(INK, 1.8),
+      shape(dec ? 'Decision' : 'Step', n.x, n.y, n.w, n.h, geom, fillX(dec ? S.decFill : '#ffffff'), lnX(INK, 1.8),
         { xml: txBody(lines, { size:fs, bold:false, color:'#0d0d0d', face:face, ins: dec ? [0,0,0,0] : [fs*0.3, fs*0.2, fs*0.3, fs*0.2] }) });
     }
   });
@@ -1069,6 +1075,8 @@ function applySettings(redraw){
   S.laneSize = S.laneSize ? Math.max(8, Math.min(40, S.laneSize|0)) : 0;
   if (!/^#[0-9a-f]{6}$/i.test(S.laneInk)) S.laneInk = DEFAULTS.laneInk;
   if (!/^#[0-9a-f]{6}$/i.test(S.laneBg)) S.laneBg = DEFAULTS.laneBg;
+  if (!/^#[0-9a-f]{6}$/i.test(S.decFill)) S.decFill = DEFAULTS.decFill;
+  $('#cDecFill').value = S.decFill;
   if (S.laneFont !== 'same' && !FONT_STACKS[S.laneFont]) S.laneFont = 'same';
   $('#sLaneFont').value = S.laneFont;
   $('#lsval').textContent = laneFs();
@@ -1105,6 +1113,8 @@ $('#cLaneInk').oninput = function(){ setting('laneInk', this.value); };
 $('#cLaneBg').oninput = function(){ setting('laneBg', this.value); };
 $('#pLaneInk').onchange = function(){ if (this.value) setting('laneInk', this.value); this.value = ''; };
 $('#pLaneBg').onchange = function(){ if (this.value) setting('laneBg', this.value); this.value = ''; };
+$('#cDecFill').oninput = function(){ setting('decFill', this.value); };
+$('#pDecFill').onchange = function(){ if (this.value) setting('decFill', this.value); this.value = ''; };
 $('#bLaneReset').onclick = function(){ LANE_KEYS.forEach(function(k){ S[k] = DEFAULTS[k]; }); applySettings(); setDirty(true); autosave(); };
 $('#sPpt').onchange = function(){ S.ppt = this.value; setDirty(true); autosave(); };
 $('#bZin').onclick = function(){ fitMode = false; zoom = Math.min(4, zoom*1.2); applyZoom(); };
