@@ -184,6 +184,22 @@ input.swatch{width:48px;height:40px;padding:2px;border:2px solid var(--btnLine);
       <pre>Customer: Place order -> Clerk: Check stock</pre>
       <p>The word before the colon is the actor. Each actor gets its own row. After a box has a row, you can refer to it by its name alone. A box with no actor takes the row of the box before it.</p>
       <p>To set the row order, add a line: <code>lanes: Customer, Clerk, Warehouse</code></p>
+      <h3>Parallel work: fork and join</h3>
+      <p>A fork splits the flow into branches that run at the same time. A join waits until every branch is done, then the flow goes on. Both draw as a solid black bar. The bar stretches across every row its branches use.</p>
+      <p>You can have as many branches as you need. You can have as many forks and joins as you need.</p>
+      <p><b>Step 1.</b> Point an arrow into the fork.</p>
+      <pre>Check stock -> fork</pre>
+      <p><b>Step 2.</b> Write one line per branch. Each branch starts at the fork and ends at the join. A branch can have as many boxes as you like.</p>
+      <pre>fork -> Warehouse: Pick items -> Pack box -> join
+fork -> Billing: Charge card -> join
+fork -> Sales: Send confirmation -> join</pre>
+      <p><b>Step 3.</b> Write the line that leaves the join.</p>
+      <pre>join -> Customer: Receive order</pre>
+      <p><b>Short form.</b> The <code>|</code> key lists branches on one line. These two lines draw the same thing as the three steps above, except that Pick items and Pack box become one box, "Pick and pack":</p>
+      <pre>Check stock -> fork -> Warehouse: Pick and pack | Billing: Charge card | Sales: Send confirmation
+Pick and pack | Charge card | Send confirmation -> join -> Customer: Receive order</pre>
+      <p><b>More than one fork.</b> Just write <code>fork</code> and <code>join</code> again. Each time an arrow points into <code>fork</code>, a new fork starts. Each time an arrow points into <code>join</code> after the last join already has its way out, a new join starts. So write the lines in order: into the fork, the branches, then out of the join.</p>
+      <p><b>Forks inside forks.</b> Give them names, such as <code>fork 1</code>, <code>fork 2</code>, <code>join 1</code>, <code>join 2</code>. A named fork is the same bar everywhere you use its name, in any order.</p>
       <h3>All the rules</h3>
       <table>
         <tr><td><code>a -&gt; b</code></td><td>Solid arrow</td></tr>
@@ -193,9 +209,9 @@ input.swatch{width:48px;height:40px;padding:2px;border:2px solid var(--btnLine);
         <tr><td><code>a ..maybe..&gt; b</code></td><td>Dashed arrow with a label</td></tr>
         <tr><td><code>In stock?</code></td><td>A name that ends in <code>?</code> becomes a diamond</td></tr>
         <tr><td><code>start</code></td><td>Start circle. Optional.</td></tr>
-        <tr><td><code>fork</code></td><td>Fork bar (split). One arrow in, several arrows out. The branches run at the same time. <code>split</code> also works.</td></tr>
-        <tr><td><code>join</code></td><td>Join bar (merge). Several arrows in, one arrow out. It waits for every branch. <code>merge</code> also works.</td></tr>
-        <tr><td><code>fork 2</code>, <code>join B</code></td><td>Add a number or letter when you need more than one fork or join</td></tr>
+        <tr><td><code>fork</code></td><td>Fork bar (split). See "Parallel work" below. <code>split</code> also works.</td></tr>
+        <tr><td><code>join</code></td><td>Join bar (merge). See "Parallel work" below. <code>merge</code> also works.</td></tr>
+        <tr><td><code>a -&gt; b | c | d</code></td><td>One arrow to each box in the list. Works on either side of an arrow.</td></tr>
         <tr><td><code>end</code></td><td>End circle. Optional. The End circle setting picks where it goes. "In its row" gives each row its own end circle. "Bottom right corner" puts one shared end circle in the bottom right corner.</td></tr>
         <tr><td><code>title: My process</code></td><td>Title at the top</td></tr>
         <tr><td><code>lanes: A, B, C</code></td><td>Row order. Rows with no boxes still show.</td></tr>
@@ -245,15 +261,22 @@ var FONT_STACKS = {
 };
 var EXAMPLE = [
   'title: Order fulfillment',
-  'lanes: Customer, Sales, Warehouse',
+  'lanes: Customer, Sales, Warehouse, Billing',
   '',
   '# Main path',
   'start -> Customer: Place order -> Sales: Check stock -> In stock?',
-  'In stock? -yes-> Warehouse: Pick items -> Pack box -> Customer: Receive order -> end',
   '',
-  '# Other branch',
-  'In stock? -no-> Sales: Offer substitute -> Customer: Choose new item',
-  'Choose new item ..retry..> Place order'
+  '# Out of stock: the customer picks something else and tries again',
+  'In stock? -no-> Customer: Choose new item ..retry..> Place order',
+  '',
+  '# In stock: a fork starts three jobs at the same time',
+  'In stock? -yes-> fork',
+  'fork -> Warehouse: Pick items -> Pack box -> join',
+  'fork -> Billing: Charge card -> Send receipt -> join',
+  'fork -> Sales: Send confirmation -> join',
+  '',
+  '# The join waits for all three jobs to finish',
+  'join -> Warehouse: Ship order -> Customer: Receive order -> end'
 ].join('\n');
 
 var S = clone(DEFAULTS);
@@ -288,7 +311,14 @@ function parse(text){
     if (m){ lane = laneName(m[1]); label = m[2].trim(); }
     return { lane: lane, label: label };
   }
-  function ref(tok, ln){
+  // Bare "fork" and "join" pair up in writing order:
+  //  "X -> fork" starts a new fork once the current fork already has its arrow in.
+  //  "X -> join" starts a new join once the current join already has its arrow out.
+  var curFork = null, curJoin = null;
+  function hasIn(n){ return edges.some(function(e){ return e.to === n; }); }
+  function hasOut(n){ return edges.some(function(e){ return e.from === n; }); }
+  function newBar(kind, lane, ln){ var b = { id:'n'+(seq++), kind:kind, label:'', lane:lane, line:ln }; nodes.push(b); return b; }
+  function ref(tok, ln, isTarget){
     var p = parseTok(tok);
     if (!p.label) return null;
     var low = norm(p.label);
@@ -299,6 +329,13 @@ function parse(text){
     var bm = low.match(/^(fork|split|join|merge)(?:\s*([0-9]+|[a-z]))?$/);
     if (bm){
       var bk = (bm[1] === 'fork' || bm[1] === 'split') ? 'fork' : 'join', key = '@' + bk + '#' + (bm[2] || '');
+      if (!bm[2]){
+        var cur = bk === 'fork' ? curFork : curJoin;
+        if (!cur || (isTarget && (bk === 'fork' ? hasIn(cur) : hasOut(cur)))) cur = newBar(bk, p.lane, ln);
+        else if (p.lane && !cur.lane) cur.lane = p.lane;
+        if (bk === 'fork') curFork = cur; else curJoin = cur;
+        return cur;
+      }
       var b = byKey.get(key);
       if (!b){ b = { id:'n'+(seq++), kind:bk, label:'', lane:p.lane, line:ln }; byKey.set(key, b); nodes.push(b); }
       else if (p.lane && !b.lane) b.lane = p.lane;
@@ -338,16 +375,23 @@ function parse(text){
       if (/^[^:]+:\s*$/.test(t)){ warnings.push({ line:ln, msg:'"'+t+'" has an actor but no box name after the colon.' }); return; }
       ref(t, ln); return;
     }
-    var refs = parts.map(function(p){ return p.trim() ? ref(p, ln) : null; });
-    for (var k = 0; k < arrows.length; k++){
-      var from = refs[k], to = refs[k+1];
-      if (!from || !to){
-        warnings.push({ line:ln, msg: !from ? 'An arrow has nothing before it.' : 'An arrow has nothing after it.' });
-        continue;
+    // Each part may list several boxes split by "|": fork -> A | B | C
+    var prev = null;
+    for (var k = 0; k < parts.length; k++){
+      var toks = parts[k].split('|').map(function(x){ return x.trim(); }).filter(Boolean);
+      var isTarget = k > 0 && prev && prev.length > 0;
+      var cur = toks.map(function(x){ return ref(x, ln, isTarget); }).filter(Boolean);
+      if (k > 0){
+        var a = arrows[k-1];
+        if (!prev || !prev.length) warnings.push({ line:ln, msg:'An arrow has nothing before it.' });
+        else if (!cur.length) warnings.push({ line:ln, msg:'An arrow has nothing after it.' });
+        else prev.forEach(function(from){ cur.forEach(function(to){
+          if (from.kind === 'end') warnings.push({ line:ln, msg:'An arrow leaves an end circle. That is allowed, but check it.' });
+          if (to.kind === 'start') warnings.push({ line:ln, msg:'An arrow points into a start circle. That is allowed, but check it.' });
+          edges.push({ from:from, to:to, label:a.label, dashed:a.dashed, line:ln });
+        }); });
       }
-      if (from.kind === 'end') warnings.push({ line:ln, msg:'An arrow leaves an end circle. That is allowed, but check it.' });
-      if (to.kind === 'start') warnings.push({ line:ln, msg:'An arrow points into a start circle. That is allowed, but check it.' });
-      edges.push({ from:from, to:to, label:arrows[k].label, dashed:arrows[k].dashed, line:ln });
+      prev = cur;
     }
   });
 
@@ -385,8 +429,10 @@ function parse(text){
   nodes.forEach(function(n){
     if (n.kind !== 'fork' && n.kind !== 'join') return;
     var nin = edges.filter(function(e){ return e.to === n; }).length, nout = edges.filter(function(e){ return e.from === n; }).length;
-    if (n.kind === 'fork' && (nin !== 1 || nout < 2)) warnings.push({ line:n.line, msg:'A fork usually has 1 arrow in and 2 or more arrows out. This one has '+nin+' in and '+nout+' out.' });
-    if (n.kind === 'join' && (nin < 2 || nout !== 1)) warnings.push({ line:n.line, msg:'A join usually has 2 or more arrows in and 1 arrow out. This one has '+nin+' in and '+nout+' out.' });
+    if (n.kind === 'fork' && nout < 2) warnings.push({ line:n.line, msg:'This fork has '+nout+' branch'+(nout === 1 ? '' : 'es')+' going out. A fork needs 2 or more. Branch lines start with "fork ->" and come after the line that leads into the fork.' });
+    if (n.kind === 'fork' && nin > 1) warnings.push({ line:n.line, msg:'This fork has '+nin+' arrows in. A fork usually has 1. If you meant separate forks, name them "fork 1" and "fork 2".' });
+    if (n.kind === 'join' && nin < 2) warnings.push({ line:n.line, msg:'This join collects only '+nin+' branch'+(nin === 1 ? '' : 'es')+'. Write all the "-> join" branch lines before the "join ->" line. Or name it, like "join 1", and use that name everywhere.' });
+    if (n.kind === 'join' && nout > 1) warnings.push({ line:n.line, msg:'This join has '+nout+' arrows out. A join usually has 1. If you meant separate joins, name them "join 1" and "join 2".' });
   });
   return { title:title, lanes:lanes, hasLanes:hasLanes, nodes:nodes, edges:edges, warnings:warnings };
 }
@@ -487,14 +533,16 @@ function layout(M){
   nodes.forEach(function(n){ n.col -= minC; });
   var C = Math.max.apply(null, nodes.map(function(n){ return n.col; })) + 1;
   // A fork or join bar gets a column of its own, so its bar never runs through a block.
-  for (var bc = 0; bc < C; bc++){
-    var here = nodes.filter(function(n){ return n.col === bc; });
-    if (here.some(isBar) && here.some(function(n){ return !isBar(n); })){
-      nodes.forEach(function(n){ if (n.col > bc || (n.col === bc && !isBar(n))) n.col++; });
-      C++;
-    }
-  }
-
+  // Walk in flow order and move a node right only when its column holds the other kind.
+  var colKind = new Map();
+  topo.forEach(function(n){
+    var c = n.col;
+    inn.get(n).forEach(function(e){ if (!e.back) c = Math.max(c, e.from.col + 1); });
+    var kind = isBar(n) ? 'bar' : 'node';
+    while (colKind.has(c) && colKind.get(c) !== kind) c++;
+    n.col = c; colKind.set(c, kind);
+  });
+  C = Math.max.apply(null, nodes.map(function(n){ return n.col; })) + 1;
   if (cornerEnd){
     var others = nodes.filter(function(n){ return n !== cornerEnd; });
     cornerEnd.col = others.length ? Math.max.apply(null, others.map(function(n){ return n.col; })) + 1 : 0;
