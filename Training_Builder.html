@@ -208,6 +208,7 @@ body.resmode #bCmp{display:none}
   </div>
   <div class="spacer"></div>
   <button class="tbtn" id="bCmp" title="Compare this training with an older revision and draft the revision log">Compare…</button>
+  <button class="tbtn" id="bSplit" title="Divide this training into two trainings">Split…</button>
   <button class="tbtn" id="bRes" title="Load trainee files, see scores, grade written answers, and sign off">Results</button>
   <button class="tbtn edonly" id="bPrint" title="Make a printable handout or a trainer answer key">Print…</button>
   <button class="tbtn edonly" id="bHealth" title="Check the training for problems">Health check<span class="badge ok" id="hBadge">0</span></button>
@@ -216,6 +217,7 @@ body.resmode #bCmp{display:none}
   <input type="file" id="fileIn" accept=".html,.htm,.json,text/html,application/json" hidden>
   <input type="file" id="imgIn" accept="image/*" hidden>
   <input type="file" id="cmpIn" accept=".html,.htm,.json,text/html,application/json" hidden>
+  <input type="file" id="splitIn" accept=".html,.htm,.json,text/html,application/json" hidden>
   <input type="file" id="resIn" accept=".json,.html,.htm,application/json,text/html" multiple hidden>
 </header>
 
@@ -232,6 +234,7 @@ body.resmode #bCmp{display:none}
 </div>
 <section class="results" id="results" aria-label="Results"></section>
 <section class="compare" id="compare" aria-label="Revision comparison"></section>
+<section class="splitv" id="splitv" aria-label="Split a training"></section>
 
 <div class="modal" id="modal" role="dialog" aria-modal="true"><div class="mbox"><div class="mh"><h2 id="mTitle"></h2><button class="ib x" id="mClose" aria-label="Close">✕</button></div><div class="mb" id="mBody"></div></div></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -2666,6 +2669,8 @@ function loadProject(p, name){
   renderAll(); persist();
   if(document.body.classList.contains("resmode") && typeof renderResults==="function") renderResults();
   if(document.body.classList.contains("cmpmode") && typeof exitCompare==="function") exitCompare();
+  if(window.__splitNext){ window.__splitNext=false; if(typeof enterSplit==="function") enterSplit(); }
+  else if(document.body.classList.contains("splitmode") && typeof renderSplit==="function"){ splInit(); renderSplit(); }
 }
 
 /* ---- preview ---- */
@@ -4942,5 +4947,359 @@ function suggestTerms(){
   openModal("Suggest terms from the content", body);
 }
 </script>
+<script>"use strict";
+/* ==========================================================================
+   SPLIT: divide one training into two trainings.
+   The training open now is the source. Each module, section, drill page and
+   exercise is assigned to Part 1, Part 2, or both. Each part gets its own
+   name, file names and storage key, and is exported as its own training.
+   The source is never changed.
+   ========================================================================== */
+let SPL = null;
+
+(function injectCss(){
+  const css = `
+.splitv{display:none;flex:1;min-height:0;overflow-y:auto}
+body.splitmode .work{display:none}
+body.splitmode .splitv{display:block}
+body.splitmode .edonly{display:none}
+body.splitmode #bRes, body.splitmode #bCmp{display:none}
+body.resmode #bSplit, body.cmpmode #bSplit{display:none}
+.splitv .ed{max-width:1120px}
+.spc{display:inline-flex;border:1px solid var(--rule);border-radius:5px;overflow:hidden;background:#fff}
+.spc button{border:0;border-right:1px solid var(--rule);background:#fff;padding:5px 11px;font-size:12px;font-weight:700;font-family:var(--mono);color:var(--slate)}
+.spc button:last-child{border-right:0}
+.spc button:hover{background:var(--surface)}
+.spc button.on1{background:var(--rust);color:#fff}
+.spc button.on2{background:var(--teal);color:#fff}
+.spc button.onb{background:var(--ink-2);color:#fff}
+.spmix{font-family:var(--mono);font-size:10.5px;color:var(--amber);font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-left:8px}
+.sprow td{vertical-align:middle!important}
+.sprow .btn.sm{white-space:nowrap}
+.spsub td{background:var(--surface)!important;font-size:12.5px;padding:5px 10px!important}
+.spsub td.n{padding-left:26px!important}
+.sppart{background:var(--paper);border:1px solid var(--rule);border-top:4px solid var(--rust);border-radius:7px;padding:14px 16px}
+.sppart.p2{border-top-color:var(--teal)}
+.sppart h3{margin:0 0 2px;font-family:var(--serif);font-size:19px}
+.sppart .cnt{font-family:var(--mono);font-size:11px;color:var(--slate);margin:0 0 12px}
+.sppart .fld input{width:100%;border:1px solid var(--rule);border-radius:5px;padding:6px 8px;font-size:13px;background:#fff}
+.sppart .fld input:focus{outline:2px solid var(--rust);outline-offset:0;border-color:var(--rust)}
+.sppart .fld{margin:0 0 9px}
+.sppart .fld label{display:block;font-size:11.5px;font-weight:700;color:var(--ink-2);margin-bottom:3px}
+.xr{border:1px solid var(--rule);border-radius:5px;background:#fff;margin:0 0 6px}
+.xr summary{cursor:pointer;padding:7px 11px;font-size:13px}
+.xr summary b{font-family:var(--mono);font-size:12px;color:var(--rust-ink);margin-right:6px}
+.xr ul{margin:0;padding:0 12px 9px 30px}
+.xr li{font-size:12.5px;margin:3px 0;color:var(--ink-2)}
+.xr mark{background:var(--amber-soft);color:var(--amber);font-weight:700;padding:0 2px;border-radius:2px}
+`;
+  const st=document.createElement("style"); st.textContent=css; document.head.appendChild(st);
+})();
+
+/* ---------- state ---------- */
+function splSk(p){ return p.course.storeKey || stemOf(p).toLowerCase().replace(/[^a-z0-9]+/g,"_"); }
+function splInit(){
+  const mods=P.modules, t=P.course.title||"Training", stem=stemOf(P), sk=splSk(P);
+  const tot=mods.reduce((a,m)=>a+m.sections.length,0);
+  let best=0, bd=Infinity, run=0;
+  mods.forEach((m,i)=>{ run+=m.sections.length; if(i<mods.length-1){ const d=Math.abs(tot/2-run); if(d<bd){ bd=d; best=i; } } });
+  const mod={}; mods.forEach((m,i)=>{ mod[m.id] = (mods.length<2 || i<=best) ? "1" : "2"; });
+  const mk=n=>({ title:t+": Part "+n, heroTitle:(P.course.heroTitle||t)+": Part "+n, subtitle:P.course.subtitle||"",
+    shortName:(P.course.shortName||t)+" Part "+n, fileStem:stem+"-Part"+n, storeKey: n===1 ? sk : sk+"_part"+n,
+    recordPrefix:(P.course.recordPrefix||"TRN")+n, contentRev:"A" });
+  SPL={ mod, item:{}, open:{}, parts:[mk(1),mk(2)], opt:{history:true, rules:true, gloss:true, renumber:false},
+    srcTitle:t, srcRev:P.config.contentRev||"?" };
+}
+function splEnsure(){
+  if(!SPL) return splInit();
+  P.modules.forEach(m=>{ if(!SPL.mod[m.id]) SPL.mod[m.id]="1"; });
+}
+function splEff(m,id){ return SPL.item[id] || SPL.mod[m.id]; }
+function splIn(v,k){ return v==="b" || v===String(k); }
+function splItems(m){
+  const a=m.sections.map(s=>({id:s.id, kind:"Section", nm:s.title, chk:!!(s.check && !s.check._off && String(s.check.q||"").trim())}));
+  if((m.drill||[]).length) a.push({id:m.id+"-DR", kind:"Drill", nm:(P.drill.title||"Drill")+" ("+m.drill.length+" line"+(m.drill.length===1?"":"s")+")"});
+  (m.exercises||[]).forEach(x=>a.push({id:x.id, kind:"Exercise", nm:x.title}));
+  return a;
+}
+function splMixed(m){ return splItems(m).some(it=>SPL.item[it.id] && SPL.item[it.id]!==SPL.mod[m.id]); }
+
+/* ---------- building a part ---------- */
+function splRange(p){
+  return p.modules.map(m=>{
+    const o=P.modules.find(x=>x.id===m.id);
+    const full = o && m.sections.length===o.sections.length && m.drill.length===(o.drill||[]).length && m.exercises.length===(o.exercises||[]).length;
+    if(full) return m.id;
+    const ids=m.sections.map(s=>s.id);
+    return m.id+" (part: "+(ids.length ? ids[0]+(ids.length>1?" to "+ids[ids.length-1]:"") : "no sections")+")";
+  }).join(", ");
+}
+function splBuild(k){
+  const S=SPL.parts[k-1], src=P, p=clone(src);
+  delete p._file;
+  p.modules = src.modules.map(m=>{
+    const nm=clone(m);
+    nm.sections = clone(m.sections.filter(s=>splIn(splEff(m,s.id),k)));
+    nm.drill = ((m.drill||[]).length && splIn(splEff(m,m.id+"-DR"),k)) ? clone(m.drill) : [];
+    nm.exercises = clone((m.exercises||[]).filter(x=>splIn(splEff(m,x.id),k)));
+    return nm;
+  }).filter(m=>m.sections.length || m.drill.length || m.exercises.length);
+  const carries = splRange(p);
+  if(SPL.opt.renumber) p.modules.forEach((m,i)=>{ if(/^Module\s+\d+$/i.test(m.label||"")) m.label="Module "+(i+1); });
+  const c=p.course;
+  c.title=S.title; c.heroTitle=S.heroTitle; c.subtitle=S.subtitle; c.shortName=S.shortName; c.recordTitle=S.title;
+  if(c.docTitle) c.docTitle=S.title;
+  c.fileStem=S.fileStem; c.progressStem=""; c.storeKey=S.storeKey; c.recordPrefix=S.recordPrefix; c.exportName="";
+  p.config.contentRev=S.contentRev;
+  /* keep every check's option order exactly as it was in the source */
+  if(src.autoSalt){ p.autoSalt=false; p.salt=bestSalt(cleanModules(src.modules)); }
+  if(SPL.opt.rules){
+    const used=new Set(); p.modules.forEach(m=>m.sections.forEach(s=>(s.gov||[]).forEach(g=>used.add(g))));
+    p.rules=(p.rules||[]).filter(r=>used.has(r.k));
+  }
+  if(SPL.opt.gloss && (p.glossary||[]).length){
+    const txt=splTexts(p).map(x=>x.t).join("\n");
+    p.glossary=p.glossary.filter(g=>gMatches(gKeys(g), txt));
+  }
+  const entry={rev:S.contentRev, date:today(), items:["Initial release. Split from "+SPL.srcTitle+", Rev "+SPL.srcRev+". Carries "+carries+"."]};
+  p.revisions=[entry].concat(SPL.opt.history ? clone(src.revisions||[]).map(r=>Object.assign(r,{rev:r.rev+" (original training)"})) : []);
+  return p;
+}
+function splCount(p){
+  let s=0,c=0,d=0,x=0,w=0;
+  p.modules.forEach(m=>{ s+=m.sections.length; c+=m.sections.filter(q=>q.check && !q.check._off && String(q.check.q||"").trim()).length;
+    d+=m.drill.length; x+=m.exercises.length; m.exercises.forEach(e=>w+=e.parts.length); });
+  return {m:p.modules.length, s, c, d, x, w};
+}
+function splLint(p){ const save=P; P=p; try{ return lint(); } finally{ P=save; } }
+
+/* ---------- cross-reference scan ---------- */
+function splTexts(p){
+  const out=[], add=(w,o)=>gStrings(o,[]).forEach(t=>{ if(String(t).trim()) out.push({w, t:String(t)}); });
+  const c=p.course;
+  add("Start page", [c.kicker, c.heroTitle, c.subtitle, c.intro, c.closing, (c.meta||[]).map(r=>[r.k,r.v]), c.keptExtra, (c.callouts||[]).map(x=>[x.lab,x.x])]);
+  add("Exercise page instructions", c.exIntro||[]);
+  add("Course settings: Last reconciled against", p.config.alignedTo||"");
+  add("Drill settings", [p.drill.lede||"", p.drill.assumptions||[]]);
+  p.modules.forEach(m=>{
+    add(m.id+" module details", [m.title, m.sub||""]);
+    m.sections.forEach(s=>add(s.id, [s.title, s.lede||"", s.body, s.check||{}]));
+    (m.drill||[]).forEach(d=>add(d.id, [d.nm, d.facts, d.why]));
+    (m.exercises||[]).forEach(x=>add(x.id, [x.title, x.scen, x.parts]));
+  });
+  return out;
+}
+function splIds(mods){
+  const s=new Set();
+  mods.forEach(m=>{ s.add(m.id); s.add(m.id+"-EX"); s.add(m.id+"-DR");
+    m.sections.forEach(q=>s.add(q.id)); (m.drill||[]).forEach(d=>s.add(d.id)); (m.exercises||[]).forEach(x=>s.add(x.id)); });
+  return s;
+}
+function splXref(p){
+  const all=splIds(P.modules), have=splIds(p.modules), gone=[...all].filter(x=>!have.has(x));
+  const idRe = gone.length ? new RegExp("(?<![A-Za-z0-9-])("+gone.sort((a,b)=>b.length-a.length).map(reEscape).join("|")+")(?![A-Za-z0-9])","g") : null;
+  const num={};   // original module number -> module id
+  P.modules.forEach(m=>{ const mm=/^Module\s+(\d+)$/i.exec(m.label||""); if(mm) num[mm[1]]=m.id; });
+  const present=new Set(p.modules.map(m=>m.id)), newNum={};
+  if(SPL.opt.renumber) p.modules.forEach((m,i)=>{ const o=P.modules.find(x=>x.id===m.id); const mm=/^Module\s+(\d+)$/i.exec((o&&o.label)||""); if(mm && +mm[1]!==i+1) newNum[mm[1]]=i+1; });
+  const modRe=/\bModules?\s+(\d+)(?:\s*(?:to|through|and|or|-|–)\s*(\d+))?/g;
+  const hits={}, order=[];
+  const hit=(w,t,i,len,why)=>{ if(!hits[w]){ hits[w]=[]; order.push(w); }
+    const a=Math.max(0,i-60), b=Math.min(t.length,i+len+60), pl=s=>s.replace(/\*\*/g,"").replace(/\*/g,"");
+    hits[w].push({pre:(a>0?"…":"")+pl(t.slice(a,i)), m:pl(t.slice(i,i+len)), post:pl(t.slice(i+len,b))+(b<t.length?"…":""), why}); };
+  splTexts(p).forEach(({w,t})=>{
+    if(idRe){ idRe.lastIndex=0; let m; while((m=idRe.exec(t))) hit(w,t,m.index,m[0].length,"not in this part"); }
+    modRe.lastIndex=0; let m;
+    while((m=modRe.exec(t))){
+      const a=+m[1], b=m[2]?+m[2]:a, lo=Math.min(a,b), hi=Math.max(a,b), bad=[], moved=[];
+      for(let n=lo;n<=hi && n-lo<20;n++){ const id=num[n]; if(!id) continue; if(!present.has(id)) bad.push(n); else if(newNum[n]) moved.push(n+" is now Module "+newNum[n]); }
+      if(bad.length) hit(w,t,m.index,m[0].length,"Module "+bad.join(", ")+" not in this part");
+      else if(moved.length) hit(w,t,m.index,m[0].length,"renumbered: "+moved.join("; "));
+    }
+  });
+  return {order, hits, total:order.reduce((a,w)=>a+hits[w].length,0)};
+}
+function reEscape(s){ return String(s).replace(/[.*+?^${}()|[\]\\]/g,"\\$&"); }
+
+/* ---------- mode ---------- */
+function enterSplit(){
+  flushPending(); closeModal();
+  if(document.body.classList.contains("resmode")) setResMode(false);
+  if(document.body.classList.contains("cmpmode") && typeof exitCompare==="function") exitCompare();
+  document.body.classList.add("splitmode");
+  $("bSplit").textContent="← Back to editing";
+  splInit(); renderSplit();
+}
+function exitSplit(){ document.body.classList.remove("splitmode"); $("bSplit").textContent="Split…"; }
+function splitDialog(){
+  flushPending();
+  const n=P.modules.reduce((a,m)=>a+m.sections.length,0);
+  openModal("Split a training into two", [
+    h("p",{style:"margin:0 0 12px;font-size:14px"}, "You choose which modules, sections and exercises go into each part. Each part becomes its own training with its own name and file names. The original is not changed."),
+    h("button",{class:"choice", onclick:()=>{ closeModal(); enterSplit(); }}, h("b",null,"Split the training open now"),
+      h("span",null, (P.course.title||"untitled")+" · Rev "+(P.config.contentRev||"?")+" · "+P.modules.length+" modules · "+n+" sections")),
+    h("button",{class:"choice", onclick:()=>{ closeModal(); $("splitIn").click(); }}, h("b",null,"Open a training file to split…"),
+      h("span",null,"A training .html file, including hand-built trainings in the original format, or a builder draft .json. It replaces the training open now in the builder."))
+  ]);
+}
+
+/* ---------- small inputs that do not touch the project ---------- */
+function sIn(label, obj, key, o){
+  o=o||{};
+  const i=h("input",{type:"text", value:obj[key]||"", class:o.mono?"mono":null, placeholder:o.ph||"", oninput:e=>{ obj[key]=e.target.value; clearTimeout(sIn.t); sIn.t=setTimeout(()=>renderSplit(true), 700); }});
+  return h("div",{class:"fld"}, h("label",null,label), i);
+}
+function sChk(label, key, help){
+  return h("div",{class:"fld",style:"margin-bottom:10px"}, h("label",{class:"ck"}, h("input",{type:"checkbox", checked:!!SPL.opt[key], onchange:e=>{ SPL.opt[key]=e.target.checked; renderSplit(); }}), label),
+    help ? h("div",{class:"help"}, help) : null);
+}
+function chooser(cur, set){
+  const b=(v,t)=>h("button",{class:(cur===v?"on"+v:""), title:t==="Both"?"Put it in both parts":"Put it in "+t, onclick:()=>set(v)}, t);
+  return h("div",{class:"spc"}, b("1","Part 1"), b("b","Both"), b("2","Part 2"));
+}
+
+/* ---------- rendering ---------- */
+function renderSplit(keepFocus){
+  splEnsure();
+  const box=$("splitv"), st=box.scrollTop;
+  const fa=document.activeElement, fIdx = keepFocus && fa && fa.tagName==="INPUT" ? [...box.querySelectorAll("input[type=text]")].indexOf(fa) : -1, fSel = fIdx>=0 ? [fa.selectionStart, fa.selectionEnd] : null;
+  box.innerHTML="";
+  const w=h("div",{class:"ed"}); box.appendChild(w);
+  const parts=[splBuild(1), splBuild(2)], cnt=parts.map(splCount), xr=parts.map(splXref), lints=parts.map(splLint);
+  const n=P.modules.reduce((a,m)=>a+m.sections.length,0);
+
+  w.append(...head(null, "Split a training", "Split: "+(P.course.title||"untitled"),
+    "Rev "+(P.config.contentRev||"?")+" · "+P.modules.length+" modules · "+n+" sections. Assign each module to Part 1, Part 2, or both. Open a module to split it section by section. The original is not changed."));
+
+  // quick split
+  const after=h("select",{class:"btn sm",style:"font-weight:600"},
+    h("option",{value:""},"Split after module…"), P.modules.slice(0,-1).map((m,i)=>h("option",{value:i}, m.label+": "+m.title)));
+  after.onchange=e=>{ if(e.target.value==="") return; const k=+e.target.value; P.modules.forEach((m,i)=>SPL.mod[m.id]= i<=k?"1":"2"); SPL.item={}; renderSplit(); };
+  w.appendChild(h("div",{class:"acts"}, after,
+    h("button",{class:"btn sm", onclick:()=>{ const o=SPL.opt, pp=SPL.parts; splInit(); SPL.opt=o; SPL.parts=pp; renderSplit(); }}, "Balance by section count"),
+    h("button",{class:"btn sm", onclick:()=>$("splitIn").click()}, "Open a different training…"),
+    h("span",{style:"flex:1"}),
+    h("button",{class:"btn pri", disabled:(!cnt[0].m||!cnt[1].m)?"disabled":null, onclick:()=>splExport(parts,[1,2])}, "Export both trainings"),
+    h("button",{class:"btn", onclick:exitSplit}, "Back to editing")));
+
+  // assignment table
+  const rows=[];
+  P.modules.forEach(m=>{
+    const its=splItems(m), mixed=splMixed(m), open=!!SPL.open[m.id];
+    rows.push(h("tr",{class:"sprow"},
+      h("td",{class:"n"}, m.id),
+      h("td",null, h("b",null, m.label+": "+m.title), h("div",{style:"font-size:11.5px;color:var(--slate)"},
+        m.sections.length+" sections"+((m.drill||[]).length?" · "+m.drill.length+" drill lines":"")+" · "+(m.exercises||[]).length+" exercises")),
+      h("td",{style:"white-space:nowrap"}, chooser(mixed?"":SPL.mod[m.id], v=>{ SPL.mod[m.id]=v; its.forEach(it=>delete SPL.item[it.id]); renderSplit(); }),
+        mixed ? h("span",{class:"spmix"},"mixed") : null),
+      h("td",{style:"text-align:right"}, h("button",{class:"btn sm", onclick:()=>{ SPL.open[m.id]=!open; renderSplit(); }}, open?"Close ▴":"By section ▾"))));
+    if(open) its.forEach(it=>{
+      const v=splEff(m,it.id);
+      rows.push(h("tr",{class:"spsub"},
+        h("td",{class:"n"}, it.id),
+        h("td",null, h("span",{style:"font-family:var(--mono);font-size:10px;color:var(--slate);text-transform:uppercase;letter-spacing:.08em;margin-right:8px"}, it.kind), plainT(it.nm),
+          it.kind==="Section" && !it.chk ? h("span",{style:"color:var(--mute)"}," · no check") : null),
+        h("td",{colspan:"2"}, chooser(v, nv=>{ if(nv===SPL.mod[m.id]) delete SPL.item[it.id]; else SPL.item[it.id]=nv; renderSplit(); }))));
+    });
+  });
+  w.appendChild(panel("Which part gets what", [
+    h("div",{class:"rtw",style:"margin:0"}, h("table",{class:"rt"},
+      h("thead",null,h("tr",null, h("th",{style:"width:80px"},"ID"), h("th",null,"Module"), h("th",{style:"width:250px"},"Goes to"), h("th",{style:"width:110px"}))),
+      h("tbody",null,rows))),
+    h("div",{class:"help",style:"font-size:12px;color:var(--slate);margin-top:8px"}, "IDs do not change. A trainee’s saved progress file still lines up with both parts. “Both” copies the item into each part.")
+  ]));
+
+  // warnings
+  const warn=[];
+  if(!cnt[0].m) warn.push("Part 1 is empty. Put at least one module or section in it.");
+  if(!cnt[1].m) warn.push("Part 2 is empty. Put at least one module or section in it.");
+  if(SPL.parts[0].storeKey.trim().toLowerCase()===SPL.parts[1].storeKey.trim().toLowerCase()) warn.push("Both parts use the same browser storage key. A trainee who opens both parts in one browser would have one part overwrite the other’s answers. Give them different keys.");
+  if(SPL.parts[0].fileStem.trim()===SPL.parts[1].fileStem.trim()) warn.push("Both parts use the same file name stem, so their progress and record files would have the same names.");
+  if((SPL.parts[0].title||"").trim()===(SPL.parts[1].title||"").trim()) warn.push("Both parts have the same title.");
+  const both=[]; P.modules.forEach(m=>splItems(m).forEach(it=>{ if(splEff(m,it.id)==="b") both.push(it.id); }));
+  if(warn.length) w.appendChild(h("div",{class:"errbox"}, h("ul",{style:"margin:0;padding-left:18px"}, warn.map(x=>h("li",null,x)))));
+  if(both.length) w.appendChild(h("div",{class:"warnbox"}, both.length+" item"+(both.length===1?" is":"s are")+" in both parts: "+both.slice(0,12).join(", ")+(both.length>12?"…":"")+". A trainee who takes both parts answers them twice."));
+
+  // part panels
+  const partPanel=k=>{
+    const S=SPL.parts[k-1], p=parts[k-1], c=cnt[k-1], L=lints[k-1], e=L.filter(i=>i.lvl==="err").length;
+    const dis=c.m?null:"disabled";
+    return h("div",{class:"sppart"+(k===2?" p2":"")},
+      h("h3",null,"Part "+k),
+      h("div",{class:"cnt"}, c.m+" modules · "+c.s+" sections · "+c.c+" checks · "+c.d+" drill lines · "+c.x+" exercises"),
+      h("div",{class:"cnt",style:"margin-top:-8px"}, p.modules.map(m=>m.id).join(", ")||"nothing assigned"),
+      sIn("Course title", S, "title"),
+      sIn("Big title on the start page", S, "heroTitle"),
+      sIn("Subtitle", S, "subtitle"),
+      sIn("Short name for email subject", S, "shortName"),
+      h("div",{class:"row2"}, sIn("File name stem", S, "fileStem", {mono:true}), sIn("Browser storage key", S, "storeKey", {mono:true})),
+      h("div",{class:"row2"}, sIn("Record number prefix", S, "recordPrefix", {mono:true}), sIn("Content revision", S, "contentRev", {mono:true})),
+      h("div",{class:"fld"}, h("label",null,"Health check"),
+        h("div",{style:"font-size:12.5px;color:"+(e?"var(--alert)":"var(--teal)")}, e ? e+" problem"+(e===1?"":"s")+". Open the part in the editor to fix "+(e===1?"it":"them")+"." : "No problems that stop the training working."+(L.length?" "+L.length+" warning"+(L.length===1?"":"s")+".":""))),
+      h("div",{class:"fld"}, h("label",null,"Cross-references"),
+        h("div",{style:"font-size:12.5px;color:"+(xr[k-1].total?"var(--amber)":"var(--teal)")}, xr[k-1].total ? xr[k-1].total+" place"+(xr[k-1].total===1?"":"s")+" point at content that is not in this part. See the list below." : "No references to content outside this part.")),
+      h("div",{class:"acts",style:"margin:10px 0 0"},
+        h("button",{class:"btn pri sm", disabled:dis, onclick:()=>splExport(parts,[k])}, "Export training"),
+        h("button",{class:"btn sm", disabled:dis, onclick:()=>{ download(stemOf(p)+"_Rev"+(p.config.contentRev||"")+"_draft.json", JSON.stringify(p,null,1), "application/json"); toast("Draft saved for Part "+k+"."); }}, "Save draft"),
+        h("button",{class:"btn sm", disabled:dis, onclick:()=>{ const u=URL.createObjectURL(new Blob([buildTraining(p,{preview:true,page:"start"})],{type:"text/html"})); if(!window.open(u,"_blank")) toast("Your browser blocked the new tab."); setTimeout(()=>URL.revokeObjectURL(u),60000); }}, "Preview"),
+        splOpenBtn(p,k,dis)));
+  };
+  w.appendChild(h("div",{class:"row2",style:"gap:16px;margin:0 0 18px"}, partPanel(1), partPanel(2)));
+
+  // shared options
+  w.appendChild(panel("What both parts keep", [
+    sChk("Keep only the source-map rules each part uses", "rules", "Rules no section in the part is tagged with are left out. Turn this off to copy every rule to both."),
+    sChk("Keep only the glossary terms each part uses", "gloss", (P.glossary||[]).length ? "Terms that do not appear anywhere in the part are left out." : "This training has no glossary terms."),
+    sChk("Carry the original revision history into both parts", "history", "Each part starts with a new revision entry that says where it came from. Old entries are marked “(original training)”."),
+    sChk("Renumber module labels in each part", "renumber", "Part 2 would start at Module 1. Module IDs and section IDs do not change, and text that says “Module 4” is not rewritten. The cross-reference list below shows every place that would then be wrong."),
+    h("div",{class:"help",style:"font-size:12.5px;color:var(--slate)"},
+      "Copied to both as they are: company and trainer settings, markings and banners, drill settings, the note text library, and the grading rules. ",
+      "Each check keeps the same option order it has in the original, so a printed answer key still matches.")
+  ]));
+
+  // cross references
+  const xrPanel=k=>{
+    const X=xr[k-1];
+    if(!X.total) return h("div",{class:"okbox"}, "Part "+k+": no text points at content outside this part.");
+    return h("div",null, h("div",{class:"mini"},"Part "+k+" · "+X.total+" reference"+(X.total===1?"":"s")+" in "+X.order.length+" place"+(X.order.length===1?"":"s")),
+      X.order.map(wh=>{ const L=X.hits[wh];
+        return h("details",{class:"xr"}, h("summary",null, h("b",null,wh), L.length+" reference"+(L.length===1?"":"s")),
+          h("ul",null, L.slice(0,25).map(x=>{ const li=h("li"); li.append(x.pre, h("mark",null,x.m), x.post, h("span",{style:"color:var(--slate)"}," · "+x.why)); return li; }),
+            L.length>25 ? h("li",null,"and "+(L.length-25)+" more") : null)); }));
+  };
+  w.appendChild(panel("Cross-references to check", [
+    h("p",{style:"margin:0 0 10px;font-size:13px"}, "Text that names a section, exercise or module that went to the other part. Some are fine, such as a pointer back to Part 1. Others need rewording, such as a start page that says “Seven modules”. Open the part in the editor to change the text."),
+    xrPanel(1), xrPanel(2)
+  ]));
+  box.scrollTop=st;
+  if(fIdx>=0){ const ins=box.querySelectorAll("input[type=text]"); if(ins[fIdx]){ ins[fIdx].focus(); try{ ins[fIdx].setSelectionRange(fSel[0],fSel[1]); }catch(x){} } }
+}
+function splOpenBtn(p,k,dis){
+  const label="Open in the editor";
+  const b=h("button",{class:"btn sm", disabled:dis}, label);
+  b.addEventListener("click", ()=>{
+    if(DIRTY && !b.classList.contains("armed")){
+      b.classList.add("armed","dan"); b.textContent="Replaces the open training. Click again";
+      setTimeout(()=>{ if(b.isConnected){ b.classList.remove("armed","dan"); b.textContent=label; } }, 4000);
+      return;
+    }
+    exitSplit(); loadProject(clone(p)); DIRTY=true;
+    toast("Part "+k+" is open in the editor. Fix any cross-references, then export it.");
+  });
+  return b;
+}
+function splExport(parts, which){
+  which.forEach((k,i)=>setTimeout(()=>{
+    const p=parts[k-1], html=buildTraining(p);
+    download(exportName(p), html, "text/html;charset=utf-8");
+  }, i*700));
+  toast(which.length>1 ? "Exported both parts: "+exportName(parts[0])+" and "+exportName(parts[1])+"." : "Exported "+exportName(parts[which[0]-1])+".");
+}
+
+/* ---------- wiring ---------- */
+$("bSplit").onclick=()=>{ if(document.body.classList.contains("splitmode")) exitSplit(); else splitDialog(); };
+$("splitIn").onchange=e=>{ const f=e.target.files[0]; e.target.value=""; if(!f) return; window.__splitNext=true; openFile(f); };
+</script>
+
 </body>
 </html>
