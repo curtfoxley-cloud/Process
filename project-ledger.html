@@ -111,11 +111,29 @@
   #owner::placeholder{color:var(--rule-strong)}
 
   .pies{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-  .pies.two{grid-template-columns:repeat(2,1fr);max-width:520px}
   .pie{text-align:center}
+  .pie svg{max-width:210px;margin:0 auto}
   .pie .cap{font-size:12px;color:var(--muted);margin-top:2px}
+  .pie.current .cap{color:var(--ink);font-weight:600}
+  .panelhead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+  .panelhead select{font-size:12.5px;padding:3px 6px}
+  .chk{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted);margin:0}
+  .chk input{width:auto}
+
+  /* help + tag editor */
+  .help h3{font-size:13.5px;margin:16px 0 4px}
+  .help h3:first-of-type{margin-top:4px}
+  .help p,.help li{font-size:13.5px;line-height:1.55;margin:0 0 4px}
+  .help ul{margin:0 0 6px;padding-left:18px}
+  .help .cmp{width:100%;border-collapse:collapse;font-size:13px;margin:4px 0 8px}
+  .help .cmp th,.help .cmp td{padding:5px 8px 5px 0;border-bottom:1px solid var(--rule);vertical-align:top}
+  .tagrow{display:flex;gap:8px;align-items:center;margin-bottom:6px}
+  .tagrow input{flex:1}
+  .tagrow .swatch{width:14px;height:14px;border-radius:3px}
+  .modal.wide{width:min(680px,100%)}
   .legend{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:4px 16px}
-  .legend li{display:flex;align-items:center;gap:6px;font-size:12.5px}
+  .legend li{display:flex;align-items:baseline;gap:6px;font-size:12.5px}
+  .legend li .swatch{transform:translateY(1px)}
   .swatch{width:9px;height:9px;border-radius:2px;flex:none}
   .legend .h{color:var(--muted)}
 
@@ -123,7 +141,8 @@
   th{text-align:left;font-size:12px;font-weight:600;color:var(--muted);padding:0 8px 6px 0;border-bottom:1px solid var(--rule-strong)}
   td{padding:6px 8px 6px 0;border-bottom:1px solid var(--rule);vertical-align:top}
   tr:last-child td{border-bottom:0}
-  td.r,th.r{text-align:right;padding-right:0}
+  td.r,th.r{text-align:right;padding-right:18px}
+  td.r:last-child,th.r:last-child{padding-right:0}
   .pname{display:flex;align-items:center;gap:8px}
   .rowacts{display:flex;gap:2px;justify-content:flex-end}
 
@@ -156,10 +175,11 @@
   .toast button:hover{border-color:#fff}
 
   .printhead{display:none}
+  #reportNotePrint{display:none}
   @media (max-width:760px){
     .grid{grid-template-columns:1fr}
     .board{grid-template-columns:1fr}
-    .pies,.pies.two{grid-template-columns:1fr}
+    .pies{grid-template-columns:1fr!important;max-width:none!important}
     .nav .title{font-size:18px}
   }
   @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -175,10 +195,21 @@
     .panel{border:1px solid var(--rule);break-inside:avoid;page-break-inside:avoid}
     .grid{gap:10px}
     tr,.fig,.win{break-inside:avoid}
-    .pies{grid-template-columns:repeat(3,1fr)}
-    .pies.two{grid-template-columns:repeat(2,1fr)}
+    /* A report prints one period. Only the pie for the selected view prints. */
+    .pies{display:flex!important;justify-content:center;max-width:none!important}
+    .pie:not(.current){display:none!important}
+    .pie.current{width:190px}
+    .pie.current .cap{font-weight:400;color:var(--muted)}
+    /* The two pie panels sit side by side so page one holds both. */
+    #piePanel,#tagPanel{grid-column:auto}
+    .toast,.scrim{display:none!important}
+    /* Pay periods cut across months and years, so they stay out of those reports. */
+    body.view-month .pp-only, body.view-year .pp-only{display:none!important}
+    body.view-month #peoplePanel, body.view-year #peoplePanel{grid-column:1/-1}
+    body.no-print-entries #entriesPanel{display:none!important}
+    .grouphead .rule{background:var(--rule-strong)}
     *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-    #reportNotePrint{white-space:pre-wrap;font-size:10.5pt}
+    #reportNotePrint{display:block;white-space:pre-wrap;font-size:10.5pt}
   }
 </style>
 </head>
@@ -192,7 +223,7 @@
 
   <header class="mast no-print">
     <div class="ident">
-      <h1>Project Ledger <span id="fileState">— unsaved</span></h1>
+      <h1>Project Ledger <span id="fileState">· unsaved</span></h1>
       <input id="owner" type="text" placeholder="Your name" autocomplete="name"
              aria-label="Your name, shown on printed and copied reports">
     </div>
@@ -204,6 +235,7 @@
       <button id="btnCsv">Export CSV</button>
       <button id="btnPrint">Save PDF</button>
       <button id="btnSave">Save file</button>
+      <button id="btnHelp">Help</button>
       <input type="file" id="fileInput" accept="application/json,.json" hidden>
     </div>
   </header>
@@ -222,6 +254,7 @@
       <button data-view="day" aria-pressed="false">Day</button>
       <button data-view="week" aria-pressed="true">Week</button>
       <button data-view="month" aria-pressed="false">Month</button>
+      <button data-view="year" aria-pressed="false">Year</button>
     </div>
   </div>
 
@@ -261,33 +294,32 @@
       </div>
       <div class="f grow">
         <label for="eNote">What you did</label>
-        <input type="text" id="eNote" placeholder="Optional — shows in the report">
+        <input type="text" id="eNote" placeholder="Optional. Shows in the report.">
       </div>
       <div class="f">
         <button class="primary" id="eAdd">Log time</button>
-        <button id="eCancel" style="display:none">Cancel</button>
       </div>
-      <div class="hint" id="entryHint">For backdating or adding detail. Accepts 1.5, 90m, 1:30, or 1h30.</div>
+      <div class="hint">For backdating or adding detail. Accepts 1.5, 90m, 1:30, or 1h30. To change an entry, click Edit in the Entries list, or History on a project card.</div>
     </div>
   </div>
 
   <div class="grid">
-    <div class="panel wide">
+    <div class="panel wide" id="piePanel">
       <h2>Share of hours by project</h2>
       <p class="note" id="pieNote"></p>
       <div class="pies" id="pies"></div>
       <ul class="legend" id="pieLegend"></ul>
     </div>
 
-    <div class="panel wide">
+    <div class="panel wide" id="tagPanel">
       <h2>Share of hours by tag</h2>
       <p class="note" id="tagNote"></p>
-      <div class="pies two" id="tagPies"></div>
+      <div class="pies" id="tagPies"></div>
       <ul class="legend" id="tagLegend"></ul>
     </div>
 
     <div class="panel">
-      <h2>Hours by day</h2>
+      <h2 id="dailyTitle">Hours by day</h2>
       <p class="note" id="dailyNote"></p>
       <div id="chartDaily"></div>
     </div>
@@ -299,16 +331,28 @@
     </div>
 
     <div class="panel wide" id="winsPanel">
-      <h2 id="winsTitle">Weekly wins</h2>
-      <p class="note no-print">What went well. Link a win to a project if it belongs to one — these print with the report.</p>
+      <div class="panelhead">
+        <h2 id="winsTitle">Weekly wins</h2>
+        <select id="wSort" class="no-print" aria-label="Sort wins">
+          <option value="date">Newest first</option>
+          <option value="date-asc">Oldest first</option>
+          <option value="tag">Group by tag</option>
+          <option value="project">Group by project</option>
+        </select>
+      </div>
+      <p class="note no-print">What went well. Link a win to a project if it belongs to one. Wins print with the report in the order shown.</p>
       <div class="winform no-print">
         <div class="g">
           <label for="wText">The win</label>
-          <textarea id="wText" rows="2" placeholder="Cut the intake turnaround from 5 days to 1 — Ana's team is now self-serving."></textarea>
+          <textarea id="wText" rows="2" placeholder="Cut the intake turnaround from 5 days to 1. Ana's team now serves itself."></textarea>
         </div>
-        <div style="flex:0 1 200px">
+        <div style="flex:0 1 190px">
           <label for="wProject">Related project</label>
           <select id="wProject" style="width:100%"></select>
+        </div>
+        <div style="flex:0 0 auto">
+          <label for="wDate">Date</label>
+          <input type="date" id="wDate">
         </div>
         <div>
           <button class="primary" id="wAdd">Add win</button>
@@ -324,40 +368,39 @@
       <div id="projectSummary"></div>
     </div>
 
-    <div class="panel">
+    <div class="panel" id="peoplePanel">
       <h2>Collaboration</h2>
       <p class="note">Your own hours on projects each person is named on. This is not time they worked.</p>
       <div id="people"></div>
     </div>
 
-    <div class="panel" id="ppPanel">
+    <div class="panel pp-only" id="ppPanel">
       <h2>Pay period</h2>
       <p class="note" id="ppNote"></p>
       <div id="chartPP"></div>
     </div>
 
-    <div class="panel wide">
-      <h2>Entries</h2>
+    <div class="panel wide" id="entriesPanel">
+      <div class="panelhead">
+        <h2>Entries</h2>
+        <label class="chk no-print"><input type="checkbox" id="printEntries" checked> Include in PDF</label>
+      </div>
       <p class="note" id="entryCount"></p>
       <div id="entryTable"></div>
     </div>
 
     <div class="panel wide">
       <h2>Notes for the report</h2>
-      <p class="note no-print">Context a list of hours misses — blockers, tradeoffs, what got deferred.</p>
+      <p class="note no-print">Context a list of hours misses: blockers, tradeoffs, what got deferred.</p>
       <textarea id="reportNote" class="no-print" rows="3" style="width:100%" placeholder="Two days lost to the vendor outage; the reporting rebuild slipped a week as a result."></textarea>
       <div id="reportNotePrint"></div>
     </div>
   </div>
 
-  <details class="help no-print">
-    <summary>How saving works</summary>
-    <ul>
-      <li><strong>Save file</strong> downloads everything as a <code>.json</code> file; <strong>Open file</strong> loads it back. Nothing is kept in the browser, so save before closing the tab — you'll get a warning if you have unsaved changes.</li>
-      <li><strong>Save PDF</strong> opens the print dialog; pick "Save as PDF" as the destination. It prints the period on screen, charts and wins included.</li>
-      <li><strong>Copy summary</strong> puts a plain-text version on your clipboard for pasting into email or chat.</li>
-    </ul>
-  </details>
+  <p class="no-print" style="margin-top:26px;font-size:13px;color:var(--muted)">
+    Nothing is kept in the browser. Click <strong>Save file</strong> before you close the tab.
+    Click <strong>Help</strong> for how each feature works.
+  </p>
 </div>
 
 <div class="scrim" id="scrim"><div class="modal" id="modal" role="dialog" aria-modal="true"></div></div>
@@ -372,20 +415,32 @@
    distinguishable under red-green colour blindness. Reordering them will weaken that. */
 var PALETTE=["#016746","#C97659","#3E4D83","#83933E","#8F2952","#3696B5","#6C4912","#A87BB8","#079D87","#963E2C"];
 
-/* Edit these two lines together if your tag list ever changes. */
-var TAGS=["Program","PLM Division","SMS","Home Office"];
-var TAG_COLORS={"Program":"#144F7A","PLM Division":"#385907","SMS":"#BF6B42","Home Office":"#7E2F53","Untagged":"#AEB8B2"};
+/* Tags are editable in Settings. New tags draw colors from TAG_PALETTE in order.
+   The eight colors plus the gray "Untagged" slice are at least dE 19 apart. */
+var TAG_PALETTE=["#144F7A","#385907","#BF6B42","#7E2F53","#4F99EB","#947220","#739656","#6A412B"];
+var UNTAGGED_COLOR="#AEB8B2";
+var DEFAULT_TAGS=[{name:"Program",color:"#144F7A"},{name:"PLM Division",color:"#385907"},
+                  {name:"SMS",color:"#BF6B42"},{name:"Home Office",color:"#7E2F53"}];
+var TAGS=[], TAG_COLORS={};
+function syncTags(){
+  TAGS=state.tags.map(function(t){ return t.name; });
+  TAG_COLORS={Untagged:UNTAGGED_COLOR};
+  state.tags.forEach(function(t){ TAG_COLORS[t.name]=t.color; });
+}
+function listJoin(a){ return a.length<2 ? a.join("") : a.slice(0,-1).join(", ")+" and "+a[a.length-1]; }
 
 var state={
-  version:3,
+  version:4,
   owner:"",
-  settings:{weekStart:5,trackPeriod:true,periodHours:80,periodDays:14,periodAnchor:""},
+  settings:{weekStart:5,trackPeriod:true,periodHours:80,periodDays:14,periodAnchor:"",winSort:"date",printEntries:{day:true,week:true,month:true,year:false}},
+  tags:DEFAULT_TAGS.map(function(t){ return {id:Math.random().toString(36).slice(2,10),name:t.name,color:t.color}; }),
   projects:[],
   entries:[],
   wins:[],
   reportNote:""
 };
-var view="week", anchor=new Date(), editingId=null, editingWin=null, timer=null, dirty=false;
+syncTags();
+var view="week", anchor=new Date(), editingWin=null, timer=null, dirty=false, winRangeKey="";
 var filters={text:"",tag:"",hours:false,sort:"hours"};
 var summarySort={key:"hours",dir:-1};
 
@@ -406,7 +461,7 @@ function tint(hex,a){
   return "rgb("+Math.round(255+(r-255)*a)+","+Math.round(255+(g-255)*a)+","+Math.round(255+(b-255)*a)+")";
 }
 function fmtH(h){ return fmt(h)+" h"; }
-function markDirty(){ dirty=true; $("#fileState").textContent="— unsaved changes"; }
+function markDirty(){ dirty=true; $("#fileState").textContent="· unsaved changes"; }
 
 var undoFn=null;
 function toast(msg,undo){
@@ -436,6 +491,7 @@ function startOfWeek(d){
 function rangeFor(v,a){
   if(v==="day") return [iso(a),iso(a)];
   if(v==="week"){ var s=startOfWeek(a); return [iso(s),iso(addDays(s,6))]; }
+  if(v==="year") return [a.getFullYear()+"-01-01", a.getFullYear()+"-12-31"];
   return [iso(new Date(a.getFullYear(),a.getMonth(),1)), iso(new Date(a.getFullYear(),a.getMonth()+1,0))];
 }
 function range(){ return rangeFor(view,anchor); }
@@ -461,13 +517,14 @@ function periodLabel(){
   if(view==="day") return {title:DOW[a.getDay()]+", "+a.getDate()+" "+MON[a.getMonth()]+" "+a.getFullYear(),sub:""};
   if(view==="week") return {title:a.getDate()+" "+MON[a.getMonth()]+" – "+b.getDate()+" "+MON[b.getMonth()]+" "+b.getFullYear(),
                             sub:"Week beginning "+DOW[a.getDay()]};
+  if(view==="year") return {title:String(a.getFullYear()),sub:"January to December"};
   return {title:MON[a.getMonth()]+" "+a.getFullYear(),sub:b.getDate()+" days"};
 }
 
 /* ---------- data ---------- */
 function projById(id){ for(var i=0;i<state.projects.length;i++) if(state.projects[i].id===id) return state.projects[i]; return null; }
 function projName(id){ var p=projById(id); return p?p.name:"(deleted project)"; }
-/* Cards and tables are coloured by tag — a handful of meaningful colours rather than
+/* Cards and tables are colored by tag: a handful of meaningful colors rather than
    one per project, which stops scaling past about ten. Charts get their colours from
    a per-render map covering only the projects big enough to show; everything else
    rolls into a single grey "Other" slice. */
@@ -476,7 +533,7 @@ var TOP_N=8;
 var chartColors={};
 function projColor(id){ var p=projById(id); return p&&p.tag?TAG_COLORS[p.tag]:TAG_COLORS.Untagged; }
 function buildChartColors(){
-  var wins=[rangeFor("day",anchor),rangeFor("week",anchor),rangeFor("month",anchor),range(),chartWindow()];
+  var wins=pieScales("project").map(function(s){ return rangeFor(s,anchor); }).concat([range(),chartWindow()]);
   var lo=wins[0][0], hi=wins[0][1];
   wins.forEach(function(w){ if(w[0]<lo) lo=w[0]; if(w[1]>hi) hi=w[1]; });
   chartColors={};
@@ -505,7 +562,8 @@ function hoursByProject(r){
 function allTimeHours(id){ return state.entries.filter(function(e){ return e.projectId===id; })
   .reduce(function(s,e){ return s+e.hours; },0); }
 function tagOf(pid){ var p=projById(pid); return (p&&p.tag)?p.tag:"Untagged"; }
-function tagColor(t){ return TAG_COLORS[t]||"#AEB8B2"; }
+function tagColor(t){ return TAG_COLORS[t]||UNTAGGED_COLOR; }
+function tagChip(t){ return t?'<span class="tagchip" style="background:'+tint(tagColor(t),0.16)+';color:'+tagColor(t)+'">'+esc(t)+'</span>':''; }
 function hoursByTag(r){
   var m={},order=[];
   entriesIn(r).forEach(function(e){
@@ -540,75 +598,105 @@ function pie(data,total,size){
   return svg(S,S,g);
 }
 
-function renderPies(){
-  var specs=[["day","Day"],["week","Week"],["month","Month"]];
-  var html="", monthRoll=null;
-  specs.forEach(function(sp){
-    var r=rangeFor(sp[0],anchor), data=rollup(hoursByProject(r)), tot=totalOf(entriesIn(r));
-    if(sp[0]==="month") monthRoll=data;
-    html+='<div class="pie">'+pie(data,tot,150)+'<div class="cap">'+esc(sp[1])+' · '+esc(periodLabelFor(sp[0]))+'</div></div>';
+var SCALE_ORDER=["day","week","month","year"];
+var SCALE_NAME={day:"Day",week:"Week",month:"Month",year:"Year"};
+/* Which pies show on screen. The pie for the selected view is always included,
+   and it is the only pie that prints. */
+function pieScales(kind){
+  var base = view==="year" ? ["month","year"]
+           : kind==="tag" ? ["week","month"] : ["day","week","month"];
+  if(base.indexOf(view)<0) base.push(view);
+  return SCALE_ORDER.filter(function(s){ return base.indexOf(s)>=0; });
+}
+function pieRow(el,scales,dataFor){
+  var html="";
+  scales.forEach(function(s){
+    var r=rangeFor(s,anchor), tot=totalOf(entriesIn(r));
+    html+='<div class="pie'+(s===view?" current":"")+'">'+pie(dataFor(r),tot,150)+
+      '<div class="cap">'+SCALE_NAME[s]+' · '+esc(periodLabelFor(s))+'</div></div>';
   });
-  $("#pies").innerHTML=html;
-  var lp=periodLabelFor("month");
-  var totalProjects=hoursByProject(rangeFor("month",anchor)).length;
-  $("#pieNote").textContent="Day, week and month containing "+prettyDate(iso(anchor))+"."+
-    (totalProjects>TOP_N?" Largest "+TOP_N+" shown; the rest are grouped.":"");
-  var mt=totalOf(entriesIn(rangeFor("month",anchor)));
-  $("#pieLegend").innerHTML=(monthRoll&&monthRoll.length)?monthRoll.map(function(d){
+  el.innerHTML=html;
+  el.style.gridTemplateColumns="repeat("+scales.length+",1fr)";
+  el.style.maxWidth = scales.length<3 ? (scales.length*260)+"px" : "";
+}
+function renderPies(){
+  var scales=pieScales("project");
+  pieRow($("#pies"),scales,function(r){ return rollup(hoursByProject(r)); });
+  var r=range(), roll=rollup(hoursByProject(r)), tot=totalOf(entriesIn(r));
+  var many=hoursByProject(r).length>TOP_N;
+  var scaleText=listJoin(scales.map(function(s){ return SCALE_NAME[s].toLowerCase(); }));
+  scaleText=scaleText.charAt(0).toUpperCase()+scaleText.slice(1);
+  $("#pieNote").innerHTML='<span class="no-print">'+esc(scaleText)+
+    ' containing '+esc(prettyDate(iso(anchor)))+'. The legend matches the selected '+viewWord()+'. </span>'+
+    (many?"Largest "+TOP_N+" projects shown. The rest are grouped as Other.":"");
+  $("#pieLegend").innerHTML=roll.length?roll.map(function(d){
     var p=d.id==="__other"?null:projById(d.id);
-    return '<li><span class="swatch" style="background:'+d.color+'"></span>'+esc(d.label)+
+    return '<li><span class="swatch" style="background:'+d.color+'"></span><span>'+esc(d.label)+
       (p&&p.tag?' <span class="h">'+esc(p.tag)+'</span>':'')+
-      ' <span class="h num">'+fmt(d.value)+' h · '+Math.round(d.value/mt*100)+'%</span></li>';
+      ' <span class="h num">'+fmt(d.value)+' h · '+Math.round(d.value/tot*100)+'%</span></span></li>';
   }).join(""):"";
 }
 function renderTagPies(){
-  var html="", monthAgg=null;
-  [["week","Week"],["month","Month"]].forEach(function(sp){
-    var r=rangeFor(sp[0],anchor), agg=hoursByTag(r), tot=totalOf(entriesIn(r));
-    if(sp[0]==="month") monthAgg=agg;
-    var data=agg.map(function(d){ return {label:d.tag,value:d.value,color:tagColor(d.tag)}; });
-    html+='<div class="pie">'+pie(data,tot,150)+'<div class="cap">'+sp[1]+' · '+esc(periodLabelFor(sp[0]))+'</div></div>';
+  var scales=pieScales("tag");
+  pieRow($("#tagPies"),scales,function(r){
+    return hoursByTag(r).map(function(d){ return {label:d.tag,value:d.value,color:tagColor(d.tag)}; });
   });
-  $("#tagPies").innerHTML=html;
-  $("#tagNote").textContent="Hours across "+TAGS.slice(0,-1).join(", ")+" and "+TAGS[TAGS.length-1]+".";
-  var mt=totalOf(entriesIn(rangeFor("month",anchor)));
-  $("#tagLegend").innerHTML=(monthAgg&&monthAgg.length)?monthAgg.map(function(d){
-    return '<li><span class="swatch" style="background:'+tagColor(d.tag)+'"></span>'+esc(d.tag)+
-      ' <span class="h num">'+fmt(d.value)+' h · '+Math.round(d.value/mt*100)+'% of '+esc(periodLabelFor("month"))+'</span></li>';
+  var r=range(), agg=hoursByTag(r), tot=totalOf(entriesIn(r));
+  $("#tagNote").textContent=TAGS.length?"Hours across "+listJoin(TAGS)+".":"No tags set up. Add them in Settings.";
+  $("#tagLegend").innerHTML=agg.length?agg.map(function(d){
+    return '<li><span class="swatch" style="background:'+tagColor(d.tag)+'"></span><span>'+esc(d.tag)+
+      ' <span class="h num">'+fmt(d.value)+' h · '+Math.round(d.value/tot*100)+'%</span></span></li>';
   }).join(""):"";
 }
-function viewWord(){ return view==="day"?"day":view==="week"?"week":"month"; }
+function viewWord(){ return view; }
 function periodLabelFor(v){
   var r=rangeFor(v,anchor),a=parseISO(r[0]),b=parseISO(r[1]);
   if(v==="day") return a.getDate()+" "+MON[a.getMonth()];
   if(v==="week") return a.getDate()+" "+MON[a.getMonth()]+"–"+b.getDate()+" "+MON[b.getMonth()];
+  if(v==="year") return String(a.getFullYear());
   return MON[a.getMonth()]+" "+a.getFullYear();
 }
 
 function stackedDaily(){
-  var win=chartWindow(), days=daysIn(win), list=entriesIn(win);
+  var win=chartWindow(), list=entriesIn(win);
   if(!list.length) return emptyBox("No hours logged in this window.");
+  var byMonth = view==="year";
+  /* buckets: one per day, or one per month in the year view */
+  var buckets=[];
+  if(byMonth){
+    var y=parseISO(win[0]).getFullYear();
+    for(var mi=0;mi<12;mi++) buckets.push({key:y+"-"+String(mi+1).padStart(2,"0"),label:MON[mi],title:MON[mi]+" "+y,weekend:false});
+  } else {
+    daysIn(win).forEach(function(d){
+      var w=parseISO(d).getDay();
+      buckets.push({key:d,label:view==="month"?String(parseISO(d).getDate()):DOW2[w],title:prettyDate(d),weekend:w===0||w===6});
+    });
+  }
+  var keyOf=function(e){ return byMonth?e.date.slice(0,7):e.date; };
+  var sums={};
+  list.forEach(function(e){
+    var k=keyOf(e);
+    if(!sums[k]) sums[k]={};
+    sums[k][e.projectId]=(sums[k][e.projectId]||0)+e.hours;
+  });
   var order=hoursByProject(win).map(function(d){ return d.id; });
-  var byDay={}; days.forEach(function(d){ byDay[d]=[]; });
-  days.forEach(function(d){
-    var other=0;
+  var segs=buckets.map(function(b){
+    var out=[], other=0, s=sums[b.key]||{};
     order.forEach(function(pid){
-      var v=list.filter(function(e){ return e.date===d&&e.projectId===pid; }).reduce(function(s,e){ return s+e.hours; },0);
-      if(v<=0) return;
-      if(isCharted(pid)) byDay[d].push({pid:pid,v:v,c:chartColor(pid),n:projName(pid)});
+      var v=s[pid]||0; if(v<=0) return;
+      if(isCharted(pid)) out.push({v:v,c:chartColor(pid),n:projName(pid)});
       else other+=v;
     });
-    if(other>0) byDay[d].push({pid:"__other",v:other,c:OTHER_COLOR,n:"Other projects"});
+    if(other>0) out.push({v:other,c:OTHER_COLOR,n:"Other projects"});
+    return out;
   });
-  var totals=days.map(function(d){ return byDay[d].reduce(function(s,x){ return s+x.v; },0); });
+  var totals=segs.map(function(sg){ return sg.reduce(function(s,x){ return s+x.v; },0); });
   var max=Math.ceil(Math.max.apply(null,totals.concat([1]))*1.08*2)/2;
-  var W=560,H=230,L=30,R=8,T=10,B=26,pw=W-L-R,ph=H-T-B;
-  var n=days.length, slot=pw/n, bw=Math.min(30,slot*0.66), g="";
+  var W=560,H=230,L=34,R=8,T=10,B=26,pw=W-L-R,ph=H-T-B;
+  var n=buckets.length, slot=pw/n, bw=Math.min(30,slot*0.66), g="";
   if(view!=="month"){
-    days.forEach(function(d,i){
-      var w=parseISO(d).getDay();
-      if(w===0||w===6)
-        g+='<rect x="'+(L+slot*i)+'" y="'+T+'" width="'+slot+'" height="'+ph+'" fill="#E3E9E4"/>';
+    buckets.forEach(function(b,i){
+      if(b.weekend) g+='<rect x="'+(L+slot*i)+'" y="'+T+'" width="'+slot+'" height="'+ph+'" fill="#E3E9E4"/>';
     });
   }
   [0,max/2,max].forEach(function(v){
@@ -616,14 +704,14 @@ function stackedDaily(){
     g+='<line x1="'+L+'" y1="'+y+'" x2="'+(W-R)+'" y2="'+y+'" stroke="#D2DAD4"/>';
     g+='<text x="'+(L-6)+'" y="'+(y+4)+'" text-anchor="end" font-size="10" fill="#5E6E68" font-family="inherit">'+fmt(v)+'</text>';
   });
-  days.forEach(function(d,i){
+  buckets.forEach(function(b,i){
     var x=L+slot*i+(slot-bw)/2, yb=T+ph;
-    byDay[d].forEach(function(seg){
+    segs[i].forEach(function(seg){
       var hgt=(seg.v/max)*ph; yb-=hgt;
       g+='<rect x="'+x+'" y="'+yb+'" width="'+bw+'" height="'+Math.max(.5,hgt)+'" fill="'+seg.c+'" rx="1">'+
-         '<title>'+esc(prettyDate(d))+' · '+esc(seg.n)+': '+fmtH(seg.v)+'</title></rect>';
+         '<title>'+esc(b.title)+' · '+esc(seg.n)+': '+fmtH(seg.v)+'</title></rect>';
     });
-    var lbl = view==="month" ? ((n>20&&i%3!==0)?"":String(parseISO(d).getDate())) : DOW2[parseISO(d).getDay()];
+    var lbl = (view==="month"&&n>20&&i%3!==0) ? "" : b.label;
     if(lbl) g+='<text x="'+(x+bw/2)+'" y="'+(H-9)+'" text-anchor="middle" font-size="10" fill="#5E6E68" font-family="inherit">'+lbl+'</text>';
     if(totals[i]>0&&n<=14)
       g+='<text x="'+(x+bw/2)+'" y="'+(T+ph-(totals[i]/max)*ph-4)+'" text-anchor="middle" font-size="10" fill="#14231F" font-family="inherit">'+fmt(totals[i])+'</text>';
@@ -714,7 +802,7 @@ function renderPayPeriod(){
 /* ---------- render ---------- */
 function updatePrintHead(){
   var r=range(), total=totalOf(entriesIn(r)), lbl=periodLabel();
-  $("#phTitle").textContent="Project time report — "+lbl.title;
+  $("#phTitle").textContent="Project time report: "+lbl.title;
   $("#phSub").textContent=(state.owner?state.owner+" · ":"")+fmtH(total)+" across "+
     hoursByProject(r).length+" projects · generated "+prettyDate(iso(new Date()));
 }
@@ -726,16 +814,22 @@ function render(){
     b.setAttribute("aria-pressed",String(b.dataset.view===view));
   });
   updatePrintHead();
+  var pe=state.settings.printEntries[view]!==false;
+  document.body.className="view-"+view+(pe?"":" no-print-entries");
+  $("#printEntries").checked=pe;
   buildChartColors();
   renderFigures(list,total,r);
   renderBoard(r);
   renderPies();
   renderTagPies();
-  $("#dailyNote").textContent = (view==="day" ? "Seven days ending on the selected date."
-    : "Stacked by project.")+(view==="month"?"":" Shaded columns are the weekend.");
+  $("#dailyTitle").textContent = view==="year" ? "Hours by month" : "Hours by day";
+  $("#dailyNote").textContent = view==="day" ? "Seven days ending on the selected date. Shaded columns are the weekend."
+    : view==="week" ? "Stacked by project. Shaded columns are the weekend."
+    : view==="year" ? "Stacked by project. One bar per month."
+    : "Stacked by project.";
   $("#chartDaily").innerHTML=stackedDaily();
   $("#chartRank").innerHTML=rankBars();
-  $("#rankNote").textContent="Ranked by hours in the selected "+viewWord()+" — "+periodLabel().title+".";
+  $("#rankNote").textContent="Ranked by hours in the selected "+viewWord()+", "+periodLabel().title+".";
   renderPayPeriod();
   renderSummary(list,total,r);
   renderPeople(r);
@@ -755,10 +849,11 @@ function renderFigures(list,total,r){
     {k:"Hours logged",v:fmt(total)},
     {k:"Projects touched",v:String(hoursByProject(r).length)},
     {k:"Active projects",v:String(live)},
+    {k:"Completed",v:String(completedIn(r).length)},
     {k:"Days with entries",v:active+" of "+days.length}
   ];
   var pp=payPeriodFor(iso(anchor));
-  if(pp) figs.push({k:"Pay period so far",v:fmt(totalOf(entriesIn(pp)))+" of "+fmt(state.settings.periodHours)});
+  if(pp) figs.push({k:"Pay period so far",v:fmt(totalOf(entriesIn(pp)))+" of "+fmt(state.settings.periodHours),cls:"pp-only"});
   var bp=top?projName(top.id):"—";
   figs.push({k:"Biggest project",v:(bp.length>52?bp.slice(0,51)+"…":bp),cls:"name"});
   $("#figures").innerHTML=figs.map(function(f){
@@ -766,34 +861,42 @@ function renderFigures(list,total,r){
   }).join("");
 }
 
+function completedIn(r){
+  return state.projects.filter(function(p){ return p.status==="complete"&&p.completedOn&&p.completedOn>=r[0]&&p.completedOn<=r[1]; })
+    .sort(function(a,b){ return a.completedOn<b.completedOn?-1:1; });
+}
+function scopeLabel(){ return view==="day" ? "on "+periodLabelFor("day") : "in "+periodLabelFor(view); }
+
 function card(p,r){
   var periodH=state.entries.filter(function(e){ return e.projectId===p.id&&e.date>=r[0]&&e.date<=r[1]; })
     .reduce(function(s,e){ return s+e.hours; },0);
   var all=allTimeHours(p.id);
   var running=timer&&timer.projectId===p.id;
-  var scope = view==="day"?"today":view==="week"?"this week":"this month";
   var people=(p.people||[]).filter(Boolean);
   var c=projColor(p.id);
+  var badge = p.status==="complete" ? '<span class="pill">Complete'+(p.completedOn?" · "+esc(prettyDate(p.completedOn).slice(4)):"")+'</span>'
+            : p.status==="archived" ? '<span class="pill">Archived</span>'
+            : running ? '<span class="pill on">Timing</span>' : '';
   return '<article class="pcard'+(p.status!=="active"?" done":"")+'" style="--c:'+c+';--tint:'+tint(c,0.06)+'">'+
-    '<div class="ptop"><h3>'+esc(p.name)+'</h3>'+
-      (p.status==="complete"?'<span class="pill">Complete</span>':p.status==="archived"?'<span class="pill">Archived</span>':
-       running?'<span class="pill on">Timing</span>':'')+'</div>'+
-    '<div class="pmeta">'+
-      (p.tag?'<span class="tagchip" style="background:'+tint(tagColor(p.tag),0.16)+';color:'+tagColor(p.tag)+'">'+esc(p.tag)+'</span>':'')+
+    '<div class="ptop"><h3>'+esc(p.name)+'</h3>'+badge+'</div>'+
+    '<div class="pmeta">'+tagChip(p.tag)+
       (people.length?'<span>with <b>'+people.map(esc).join(", ")+'</b></span>':'')+'</div>'+
-    '<div class="phours"><span class="big num">'+fmt(periodH)+'</span><span class="sm">h '+scope+' · '+fmt(all)+' h total</span></div>'+
+    '<div class="phours"><span class="big num">'+fmt(periodH)+'</span><span class="sm">h '+esc(scopeLabel())+' · '+fmt(all)+' h total</span></div>'+
+    (p.status==="active" ?
     '<div class="padd">'+
-      '<button class="qa" data-p="'+p.id+'" data-inc="0.25">+15m</button>'+
-      '<button class="qa" data-p="'+p.id+'" data-inc="0.5">+30m</button>'+
-      '<button class="primary hour qa" data-p="'+p.id+'" data-inc="1">+ 1 hour</button>'+
-      '<button class="tm'+(running?" running":"")+'" data-p="'+p.id+'">'+(running?"Stop":"Timer")+'</button>'+
-    '</div>'+
+      '<button class="qa" data-p="'+p.id+'" data-inc="0.25" title="Log 15 minutes to today">+15m</button>'+
+      '<button class="qa" data-p="'+p.id+'" data-inc="0.5" title="Log 30 minutes to today">+30m</button>'+
+      '<button class="primary hour qa" data-p="'+p.id+'" data-inc="1" title="Log 1 hour to today">+ 1 hour</button>'+
+      '<button class="tm'+(running?" running":"")+'" data-p="'+p.id+'" title="Start a timer. Stopping it logs the elapsed time to today.">'+(running?"Stop":"Timer")+'</button>'+
+    '</div>' : '')+
     '<div class="prow2">'+
       '<button class="quiet ep" data-p="'+p.id+'">Edit</button>'+
+      '<button class="quiet hist" data-p="'+p.id+'" title="See and edit every entry for this project">History</button>'+
       (p.status==="active"
-        ? '<button class="quiet st" data-p="'+p.id+'" data-s="complete">Mark complete</button>'+
-          '<button class="quiet st" data-p="'+p.id+'" data-s="archived">Archive</button>'
-        : '<button class="quiet st" data-p="'+p.id+'" data-s="active">Reopen</button>')+
+        ? '<button class="quiet st" data-p="'+p.id+'" data-s="complete" title="The work is done. Hours stay in reports, and the project counts as completed.">Mark complete</button>'+
+          '<button class="quiet st" data-p="'+p.id+'" data-s="archived" title="Shelve it without calling it done. Hours stay in reports.">Archive</button>'
+        : '<button class="quiet st" data-p="'+p.id+'" data-s="active" title="Put it back on the board">Reopen</button>')+
+      '<button class="quiet helpbtn" title="What do these buttons do?">?</button>'+
     '</div></article>';
 }
 
@@ -823,7 +926,7 @@ function renderBoard(r){
   $("#boardTitle").textContent="Active projects";
   $("#boardHint").textContent = filtering
     ? "Showing "+active.length+" of "+allActive.length
-    : (allActive.length ? allActive.length+" active · hours for "+(view==="day"?"the selected day":view==="week"?"this week":"this month") : "");
+    : (allActive.length ? allActive.length+" active · hours "+scopeLabel() : "");
 
   var html;
   if(!active.length){
@@ -846,10 +949,15 @@ function renderBoard(r){
     html='<div class="board">'+active.map(function(p){ return card(p,r); }).join("")+'</div>';
   }
   $("#board").innerHTML=html;
-  $("#stash").innerHTML = rest.length
-    ? '<details class="stash"><summary>'+rest.length+' completed or archived project'+(rest.length>1?"s":"")+
-      ' — hours stay in your reports</summary><div class="board">'+rest.map(function(p){ return card(p,r); }).join("")+'</div></details>'
-    : "";
+  var done=rest.filter(function(p){ return p.status==="complete"; });
+  var shelved=rest.filter(function(p){ return p.status!=="complete"; });
+  function stash(list,label,why){
+    if(!list.length) return "";
+    return '<details class="stash"><summary>'+list.length+' '+label+' project'+(list.length>1?"s":"")+
+      ' · '+why+'</summary><div class="board">'+list.map(function(p){ return card(p,r); }).join("")+'</div></details>';
+  }
+  $("#stash").innerHTML = stash(done,"completed","hours stay in your reports") +
+                          stash(shelved,"archived","shelved, hours stay in your reports");
   var sel=$("#fTag"), cur=filters.tag;
   sel.innerHTML='<option value="">All tags</option>'+
     TAGS.map(function(t){ return '<option value="'+esc(t)+'">'+esc(t)+'</option>'; }).join("")+
@@ -898,7 +1006,7 @@ function renderSummary(list,total,r){
     rows.map(function(d){
       return '<tr><td><div class="pname"><span class="swatch" style="background:'+projColor(d.id)+'"></span>'+
         esc(d.name)+'</div></td>'+
-        '<td>'+(d.tag?'<span class="tagchip" style="background:'+tint(tagColor(d.tag),0.16)+';color:'+tagColor(d.tag)+'">'+esc(d.tag)+'</span>':'—')+'</td>'+
+        '<td>'+(d.tag?tagChip(d.tag):'—')+'</td>'+
         '<td>'+esc(d.people||"—")+'</td>'+
         '<td>'+esc(d.status==="active"?"Active":d.status==="complete"?"Complete":d.status?"Archived":"—")+'</td>'+
         '<td class="r num">'+fmt(d.hours)+'</td>'+
@@ -927,27 +1035,69 @@ function renderPeople(r){
   }).join("")+'</tbody></table>';
 }
 
+function defaultWinDate(){
+  var r=range(), today=iso(new Date());
+  return (today>=r[0]&&today<=r[1]) ? today : r[1]<today ? r[1] : r[0];
+}
+function winTag(w){ var p=w.projectId?projById(w.projectId):null; return p&&p.tag?p.tag:""; }
+function sortedWins(r){
+  var ws=winsIn(r).slice(), mode=state.settings.winSort||"date";
+  var byDateDesc=function(a,b){ return a.date<b.date?1:a.date>b.date?-1:0; };
+  if(mode==="date-asc") return {groups:null,list:ws.sort(function(a,b){ return -byDateDesc(a,b); })};
+  if(mode==="tag"||mode==="project"){
+    var keyOf = mode==="tag"
+      ? function(w){ return winTag(w); }
+      : function(w){ return w.projectId&&projById(w.projectId)?w.projectId:""; };
+    var keys={};
+    ws.forEach(function(w){ var k=keyOf(w); (keys[k]=keys[k]||[]).push(w); });
+    var order=Object.keys(keys).sort(function(a,b){
+      if(!a) return 1; if(!b) return -1;          // empty group last
+      if(mode==="tag") return TAGS.indexOf(a)-TAGS.indexOf(b);
+      return projName(a).localeCompare(projName(b));
+    });
+    return {groups:order.map(function(k){
+      return {label: mode==="tag" ? (k||"Untagged or no project") : (k?projName(k):"No project"),
+              color: mode==="tag" ? tagColor(k||"Untagged") : (k?projColor(k):"#C8D0CA"),
+              list: keys[k].sort(byDateDesc)};
+    }),list:null};
+  }
+  return {groups:null,list:ws.sort(byDateDesc)};
+}
+function winRow(w,showProject){
+  var p=w.projectId?projById(w.projectId):null;
+  return '<div class="win">'+
+    '<span class="swatch" style="margin-top:6px;background:'+(p?projColor(p.id):"#C8D0CA")+'"></span>'+
+    '<div class="body"><div class="txt">'+esc(w.text)+'</div>'+
+      '<div class="tag">'+(p&&showProject?esc(p.name)+' · ':'')+esc(prettyDate(w.date))+
+        (p&&p.tag&&state.settings.winSort!=="tag"?' '+tagChip(p.tag):'')+'</div></div>'+
+    '<div class="rowacts no-print">'+
+      '<button class="quiet we" data-id="'+w.id+'">Edit</button>'+
+      '<button class="quiet danger wd" data-id="'+w.id+'">Delete</button></div>'+
+  '</div>';
+}
 function renderWins(r){
   var panel=$("#winsPanel");
   panel.style.display = view==="day" ? "none" : "";
-  $("#winsTitle").textContent = view==="week" ? "Weekly wins" : "Wins this month";
+  $("#winsTitle").textContent = {week:"Weekly wins",month:"Wins this month",year:"Wins this year"}[view]||"Wins";
+  $("#wSort").value=state.settings.winSort||"date";
+  var key=view+r[0];
+  if(!editingWin&&key!==winRangeKey){ $("#wDate").value=defaultWinDate(); winRangeKey=key; }
   if(view==="day") return;
-  var ws=winsIn(r);
-  $("#winList").innerHTML = ws.length ? ws.map(function(w){
-    var p=w.projectId?projById(w.projectId):null;
-    return '<div class="win">'+
-      '<span class="swatch" style="margin-top:6px;background:'+(p?projColor(p.id):"#C8D0CA")+'"></span>'+
-      '<div class="body"><div class="txt">'+esc(w.text)+'</div>'+
-        '<div class="tag">'+(p?esc(p.name)+' · ':'')+esc(prettyDate(w.date))+'</div></div>'+
-      '<div class="rowacts no-print">'+
-        '<button class="quiet we" data-id="'+w.id+'">Edit</button>'+
-        '<button class="quiet danger wd" data-id="'+w.id+'">Delete</button></div>'+
-    '</div>';
-  }).join("") : emptyBox("Nothing logged yet for this "+(view==="week"?"week":"month")+".");
+  var s=sortedWins(r), mode=state.settings.winSort;
+  if(!winsIn(r).length){ $("#winList").innerHTML=emptyBox("No wins logged for this "+view+" yet."); return; }
+  if(s.groups){
+    $("#winList").innerHTML=s.groups.map(function(g){
+      return '<div class="grouphead" style="margin-top:12px"><span class="swatch" style="background:'+g.color+'"></span>'+
+        esc(g.label)+' <span class="n">'+g.list.length+' win'+(g.list.length>1?"s":"")+'</span><span class="rule"></span></div>'+
+        g.list.map(function(w){ return winRow(w,mode!=="project"); }).join("");
+    }).join("");
+  } else {
+    $("#winList").innerHTML=s.list.map(function(w){ return winRow(w,true); }).join("");
+  }
 }
 
 function renderEntries(list){
-  $("#entryCount").textContent=list.length+(list.length===1?" entry":" entries")+" in the selected "+viewWord()+".";
+  $("#entryCount").textContent=list.length+(list.length===1?" entry":" entries")+" in the selected "+viewWord()+". Click Edit to change any of them.";
   if(!list.length){ $("#entryTable").innerHTML=emptyBox("Nothing logged yet."); return; }
   $("#entryTable").innerHTML='<table><thead><tr><th>Date</th><th>Project</th><th class="r">Hours</th><th>Detail</th>'+
     '<th class="r no-print">Edit</th></tr></thead><tbody>'+list.map(function(e){
@@ -960,19 +1110,11 @@ function renderEntries(list){
 }
 
 function renderSelects(){
-  var opts=function(){
-    var l=state.projects.slice().sort(function(a,b){
-      var aa=a.status==="active"?0:1, bb=b.status==="active"?0:1;
-      if(aa!==bb) return aa-bb;
-      return a.name.localeCompare(b.name);
-    });
-    return l.map(function(p){ return '<option value="'+p.id+'">'+esc(p.name)+(p.status!=="active"?" ("+p.status+")":"")+'</option>'; }).join("");
-  };
   var s1=$("#eProject"), c1=s1.value;
-  s1.innerHTML = state.projects.length ? opts() : '<option value="">No projects yet</option>';
+  s1.innerHTML = state.projects.length ? projectOptions() : '<option value="">No projects yet</option>';
   if(c1) s1.value=c1;
   var s2=$("#wProject"), c2=s2.value;
-  s2.innerHTML='<option value="">No project</option>'+opts();
+  s2.innerHTML='<option value="">No project</option>'+projectOptions();
   if(c2) s2.value=c2;
 }
 
@@ -1006,7 +1148,7 @@ function saveFile(){
   payload.activeTimer=timer;
   var slug=(state.owner||"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
   download("project-ledger-"+(slug?slug+"-":"")+iso(new Date())+".json",JSON.stringify(payload,null,2));
-  dirty=false; $("#fileState").textContent="— saved "+iso(new Date());
+  dirty=false; $("#fileState").textContent="· saved "+iso(new Date());
   toast("Ledger saved to your downloads");
 }
 function loadFile(text){
@@ -1014,6 +1156,17 @@ function loadFile(text){
   try{ d=JSON.parse(text); }catch(err){ toast("That file isn't valid JSON"); return; }
   var rawProjects = d.projects || d.tasks;
   if(!d||!Array.isArray(rawProjects)||!Array.isArray(d.entries)){ toast("That file doesn't look like a ledger export"); return; }
+  /* Tags: use the file's list if it has one. Older files get the original four. */
+  var rawTags = Array.isArray(d.tags)&&d.tags.length ? d.tags : DEFAULT_TAGS;
+  var seenT={};
+  state.tags=rawTags.filter(function(t){
+    var n=String(t&&t.name||"").trim();
+    if(!n||n.toLowerCase()==="untagged"||seenT[n.toLowerCase()]) return false;
+    seenT[n.toLowerCase()]=1; return true;
+  }).slice(0,TAG_PALETTE.length).map(function(t,i){
+    return {id:t.id||uid(),name:String(t.name).trim(),color:/^#[0-9a-fA-F]{6}$/.test(t.color||"")?t.color:TAG_PALETTE[i]};
+  });
+  syncTags();
   function normTag(p){
     var raw=p.tag||p.category||"";
     for(var i=0;i<TAGS.length;i++) if(TAGS[i].toLowerCase()===String(raw).toLowerCase()) return TAGS[i];
@@ -1037,14 +1190,20 @@ function loadFile(text){
     trackPeriod: ds.trackPeriod!==false,
     periodHours: (typeof ds.periodHours==="number")?ds.periodHours:80,
     periodDays: (typeof ds.periodDays==="number")?ds.periodDays:14,
-    periodAnchor: ds.periodAnchor||iso(startOfWeek(new Date()))
+    periodAnchor: ds.periodAnchor||iso(startOfWeek(new Date())),
+    winSort: ["date","date-asc","tag","project"].indexOf(ds.winSort)>=0?ds.winSort:"date",
+    /* Long reports list hundreds of entries, so the year view leaves them out unless asked. */
+    printEntries: (ds.printEntries&&typeof ds.printEntries==="object")
+      ? {day:ds.printEntries.day!==false,week:ds.printEntries.week!==false,month:ds.printEntries.month!==false,year:ds.printEntries.year===true}
+      : {day:true,week:true,month:true,year:false}
   };
   state.reportNote=d.reportNote||"";
   state.owner=d.owner||"";
   timer=d.activeTimer||null;
+  editingWin=null; winRangeKey="";
   $("#reportNote").value=state.reportNote;
   $("#owner").value=state.owner;
-  dirty=false; $("#fileState").textContent="— loaded";
+  dirty=false; $("#fileState").textContent="· loaded";
   render(); toast("Ledger loaded");
 }
 function exportCsv(){
@@ -1059,10 +1218,11 @@ function exportCsv(){
 }
 function copySummary(){
   var r=range(), list=entriesIn(r), total=totalOf(list), lbl=periodLabel(), agg=hoursByProject(r);
-  var lines=["Project time report — "+lbl.title];
+  var lines=["Project time report: "+lbl.title];
   if(state.owner) lines.push("Prepared by "+state.owner);
   lines.push(fmt(total)+" hours across "+agg.length+" projects");
-  var ppr=payPeriodFor(iso(anchor));
+  /* Pay periods cut across months and years, so only short reports mention them. */
+  var ppr=(view==="day"||view==="week")?payPeriodFor(iso(anchor)):null;
   if(ppr){
     var pa=parseISO(ppr[0]), pb=parseISO(ppr[1]);
     lines.push("Pay period "+pa.getDate()+" "+MON[pa.getMonth()]+"–"+pb.getDate()+" "+MON[pb.getMonth()]+
@@ -1072,12 +1232,12 @@ function copySummary(){
   var tagAgg=hoursByTag(r);
   if(tagAgg.length){
     lines.push("By tag:");
-    tagAgg.forEach(function(t){ lines.push("• "+t.tag+" — "+fmt(t.value)+" h ("+Math.round(t.value/total*100)+"%)"); });
+    tagAgg.forEach(function(t){ lines.push("• "+t.tag+": "+fmt(t.value)+" h ("+Math.round(t.value/total*100)+"%)"); });
     lines.push("","By project:");
   }
   agg.forEach(function(d){
     var p=projById(d.id), people=((p&&p.people)||[]).filter(Boolean);
-    lines.push("• "+projName(d.id)+" — "+fmt(d.value)+" h ("+Math.round(d.value/total*100)+"%)"+
+    lines.push("• "+projName(d.id)+": "+fmt(d.value)+" h ("+Math.round(d.value/total*100)+"%)"+
       (p&&p.tag?" · "+p.tag:"")+
       (p&&p.status==="complete"?" [complete]":"")+(people.length?" · with "+people.join(", "):""));
     var notes=list.filter(function(e){ return e.projectId===d.id&&e.note; }).map(function(e){ return e.note; });
@@ -1085,13 +1245,23 @@ function copySummary(){
     notes.filter(function(n){ if(seen[n]) return false; seen[n]=1; return true; })
          .slice(0,4).forEach(function(n){ lines.push("    – "+n); });
   });
-  var ws=winsIn(r);
-  if(ws.length&&view!=="day"){
-    lines.push("", view==="week"?"Wins this week:":"Wins this month:");
-    ws.forEach(function(w){
+  var done=completedIn(r);
+  if(done.length){
+    lines.push("","Completed:");
+    done.forEach(function(p){ lines.push("• "+p.name+" ("+prettyDate(p.completedOn)+")"); });
+  }
+  var s=sortedWins(r);
+  if(winsIn(r).length&&view!=="day"){
+    lines.push("", {week:"Wins this week:",month:"Wins this month:",year:"Wins this year:"}[view]);
+    var winLine=function(w){
       var p=w.projectId?projById(w.projectId):null;
-      lines.push("• "+w.text+(p?" ("+p.name+")":""));
+      return "• "+w.text+(p?" ("+p.name+")":"");
+    };
+    if(s.groups) s.groups.forEach(function(g){
+      lines.push("  "+g.label+":");
+      g.list.forEach(function(w){ lines.push("  "+winLine(w)); });
     });
+    else s.list.forEach(function(w){ lines.push(winLine(w)); });
   }
   var note=$("#reportNote").value.trim();
   if(note){ lines.push("","Notes:",note); }
@@ -1102,16 +1272,123 @@ function copySummary(){
 }
 function fallbackCopy(text){
   var ta=document.createElement("textarea"); ta.value=text; document.body.appendChild(ta); ta.select();
-  try{ document.execCommand("copy"); toast("Summary copied"); }catch(e){ toast("Copy failed — select the text manually"); }
+  try{ document.execCommand("copy"); toast("Summary copied"); }catch(e){ toast("Copy failed. Select the text by hand."); }
   document.body.removeChild(ta);
 }
 
 /* ---------- modals ---------- */
-function openModal(html){
+function openModal(html,wide){
+  $("#modal").className="modal"+(wide?" wide":"");
   $("#modal").innerHTML=html; $("#scrim").classList.add("open");
-  var f=$("#modal").querySelector("input,select,textarea,button"); if(f) f.focus();
+  var f=$("#modal").querySelector("input,select,textarea,button"); if(f) f.focus({preventScroll:true});
+  $("#modal").scrollTop=0;
 }
 function closeModal(){ $("#scrim").classList.remove("open"); $("#modal").innerHTML=""; }
+
+function projectOptions(selected){
+  var l=state.projects.slice().sort(function(a,b){
+    var aa=a.status==="active"?0:1, bb=b.status==="active"?0:1;
+    if(aa!==bb) return aa-bb;
+    return a.name.localeCompare(b.name);
+  });
+  return l.map(function(p){
+    return '<option value="'+p.id+'"'+(p.id===selected?" selected":"")+'>'+esc(p.name)+(p.status!=="active"?" ("+p.status+")":"")+'</option>';
+  }).join("");
+}
+
+/* Edit one time entry. back = a project id to return to its history afterward. */
+function entryModal(id,back){
+  var e=state.entries.filter(function(x){ return x.id===id; })[0];
+  if(!e) return;
+  openModal('<h2>Edit time entry</h2>'+
+    '<input type="hidden" id="xId" value="'+e.id+'"><input type="hidden" id="xBack" value="'+esc(back||"")+'">'+
+    '<div class="mrow"><div class="c" style="flex:2 1 220px"><label for="xProject">Project</label>'+
+      '<select id="xProject">'+projectOptions(e.projectId)+'</select></div>'+
+      '<div class="c"><label for="xDate">Date</label><input id="xDate" type="date" value="'+esc(e.date)+'"></div></div>'+
+    '<div class="mrow"><div class="c" style="flex:0 1 120px"><label for="xHours">Time</label>'+
+      '<input id="xHours" type="text" value="'+fmt(e.hours)+'"></div>'+
+      '<div class="c" style="flex:3 1 260px"><label for="xNote">What you did</label>'+
+      '<input id="xNote" type="text" value="'+esc(e.note||"")+'" placeholder="Optional"></div></div>'+
+    '<p class="note" style="font-size:12px;color:var(--muted)">Time accepts 1.5, 90m, 1:30, or 1h30.</p>'+
+    '<div style="display:flex;justify-content:space-between;gap:8px;margin-top:12px">'+
+      '<button class="danger xdel" data-id="'+e.id+'">Delete entry</button>'+
+      '<span><button id="xCancel">Cancel</button> <button class="primary" id="xSave">Save entry</button></span>'+
+    '</div>');
+}
+function saveEntryModal(){
+  var e=state.entries.filter(function(x){ return x.id===$("#xId").value; })[0];
+  var back=$("#xBack").value;
+  var h=parseHours($("#xHours").value), date=$("#xDate").value;
+  if(!e) return closeModal();
+  if(!date){ toast("Pick a date"); return; }
+  if(!(h>0)){ toast("Enter time as 1.5, 90m, or 1:30"); $("#xHours").focus(); return; }
+  e.projectId=$("#xProject").value; e.date=date; e.hours=Math.round(h*1000)/1000; e.note=$("#xNote").value.trim();
+  markDirty(); render();
+  if(back) historyModal(back); else closeModal();
+  var r=range();
+  toast(date>=r[0]&&date<=r[1] ? "Entry updated" : "Entry updated. It is now dated "+prettyDate(date)+".");
+}
+function deleteEntryWithUndo(id){
+  var idx=-1;
+  state.entries.forEach(function(x,i){ if(x.id===id) idx=i; });
+  if(idx<0) return;
+  var gone=state.entries[idx];
+  state.entries.splice(idx,1); markDirty(); render();
+  toast("Entry deleted",function(){ state.entries.splice(idx,0,gone); markDirty(); render(); toast("Entry restored"); });
+}
+
+/* Every entry for one project, across all dates. */
+function historyModal(pid){
+  var p=projById(pid); if(!p) return;
+  var list=state.entries.filter(function(e){ return e.projectId===pid; })
+    .sort(function(a,b){ return a.date<b.date?1:a.date>b.date?-1:0; });
+  var total=totalOf(list);
+  openModal('<h2>'+esc(p.name)+'</h2>'+
+    '<p class="note" style="font-size:12.5px;color:var(--muted);margin:-6px 0 12px">'+
+      list.length+' entr'+(list.length===1?"y":"ies")+' · '+fmt(total)+' h total'+
+      (list.length?' · '+esc(prettyDate(list[list.length-1].date))+' to '+esc(prettyDate(list[0].date)):'')+'</p>'+
+    (list.length ?
+      '<table><thead><tr><th>Date</th><th class="r">Hours</th><th>Detail</th><th class="r">Edit</th></tr></thead><tbody>'+
+      list.map(function(e){
+        return '<tr><td class="num" style="white-space:nowrap">'+esc(prettyDate(e.date))+' '+parseISO(e.date).getFullYear()+'</td>'+
+          '<td class="r num">'+fmt(e.hours)+'</td><td>'+esc(e.note||"")+'</td>'+
+          '<td class="r"><button class="quiet he" data-id="'+e.id+'" data-p="'+pid+'">Edit</button></td></tr>';
+      }).join("")+'</tbody></table>'
+      : emptyBox("No time logged on this project yet."))+
+    '<div style="display:flex;justify-content:space-between;gap:8px;margin-top:14px">'+
+      '<button class="hlog" data-p="'+pid+'">Log time on another date</button>'+
+      '<button id="mClose">Close</button></div>', true);
+}
+
+function helpModal(){
+  openModal('<h2>How the ledger works</h2><div class="help">'+
+    '<h3>Mark complete and Archive</h3>'+
+    '<p>Both buttons take a project off the board. Both keep every hour in your reports. They differ in what they say about the work.</p>'+
+    '<table class="cmp"><thead><tr><th></th><th>Mark complete</th><th>Archive</th></tr></thead><tbody>'+
+      '<tr><td><strong>Use it when</strong></td><td>The work is done.</td><td>The work stopped but is not done. It was paused, cancelled, or folded into another project.</td></tr>'+
+      '<tr><td><strong>On the board</strong></td><td>Moves to the Completed list.</td><td>Moves to the Archived list.</td></tr>'+
+      '<tr><td><strong>Hours</strong></td><td>Stay in every chart and table.</td><td>Stay in every chart and table.</td></tr>'+
+      '<tr><td><strong>In reports</strong></td><td>Counts in the Completed figure for the period it finished. Listed under Completed in the copied summary.</td><td>Not counted as completed.</td></tr>'+
+      '<tr><td><strong>Undo</strong></td><td>Click Reopen.</td><td>Click Reopen.</td></tr>'+
+    '</tbody></table>'+
+    '<p>You can still log time to a completed or archived project. Pick it in the entry bar under the board.</p>'+
+    '<h3>Delete</h3>'+
+    '<p>Delete removes a project and all of its hours. You cannot undo it. Use Archive if you want to keep the history.</p>'+
+    '<h3>Logging and editing time</h3>'+
+    '<ul><li>+15m, +30m, and +1 hour log time to today. Each one shows an Undo button for a few seconds.</li>'+
+    '<li>Timer logs the elapsed time to today when you stop it.</li>'+
+    '<li>The entry bar logs time on any date.</li>'+
+    '<li>To change an entry, click Edit in the Entries list. To reach older entries, click History on the project card.</li></ul>'+
+    '<h3>Wins</h3>'+
+    '<p>Each win has a date. The date decides which week, month, and year it shows in. Click Edit on a win to change its text, project, or date.</p>'+
+    '<h3>Views and PDFs</h3>'+
+    '<p>Save PDF prints the view on screen. A weekly PDF shows the week pie only. A monthly PDF shows the month pie only and leaves out the pay period. A yearly PDF works the same way. The Entries panel has an Include in PDF box. Each view remembers its own choice. The year view starts with it off, because a year of entries runs many pages.</p>'+
+    '<h3>Tags</h3>'+
+    '<p>Add, rename, or remove tags in Settings. You can have up to '+TAG_PALETTE.length+'. Renaming a tag updates every project that uses it.</p>'+
+    '<h3>Saving</h3>'+
+    '<p>Nothing is kept in the browser. Save file downloads a .json file. Open file loads it back. The page warns you if you try to close it with unsaved changes.</p>'+
+    '</div><div style="text-align:right;margin-top:14px"><button id="mClose">Close</button></div>', true);
+}
 
 function knownPeople(){
   var m={}; state.projects.forEach(function(p){ (p.people||[]).forEach(function(n){ if(n) m[n]=1; }); });
@@ -1127,7 +1404,7 @@ function projectModal(id){
       '<div class="c"><label for="pTag">Tag</label><select id="pTag"><option value="">Untagged</option>'+
       TAGS.map(function(t){ return '<option value="'+esc(t)+'"'+((p&&p.tag===t)?" selected":"")+'>'+esc(t)+'</option>'; }).join("")+
       '</select></div></div>'+
-    '<label>Collaborating with — up to 3 people</label>'+
+    '<label>Collaborating with (up to 3 people)</label>'+
     '<div class="mrow">'+[0,1,2].map(function(i){
       return '<div class="c"><input type="text" class="pp" list="peopleList" value="'+esc(people[i]||"")+'" placeholder="'+(i===0?"Name":"Optional")+'"></div>';
     }).join("")+'<datalist id="peopleList">'+knownPeople().map(function(n){ return '<option value="'+esc(n)+'">'; }).join("")+'</datalist></div>'+
@@ -1142,8 +1419,28 @@ function projectModal(id){
       '<span><button id="mClose">Cancel</button> <button class="primary" id="pSave">'+(p?"Save changes":"Create project")+'</button></span>'+
     '</div>');
 }
+var tagDraft=[];
+function nextTagColor(){
+  var used={}; tagDraft.forEach(function(t){ used[t.color.toUpperCase()]=1; });
+  for(var i=0;i<TAG_PALETTE.length;i++) if(!used[TAG_PALETTE[i].toUpperCase()]) return TAG_PALETTE[i];
+  return TAG_PALETTE[tagDraft.length%TAG_PALETTE.length];
+}
+function renderTagEditor(){
+  var el=$("#tagEditor"); if(!el) return;
+  el.innerHTML=tagDraft.map(function(t,i){
+    var n=state.projects.filter(function(p){ return t.orig&&p.tag===t.orig; }).length;
+    return '<div class="tagrow"><span class="swatch" style="background:'+t.color+'"></span>'+
+      '<input type="text" class="tagname" data-i="'+i+'" value="'+esc(t.name)+'" placeholder="Tag name" aria-label="Tag name">'+
+      '<span style="font-size:12px;color:var(--muted);min-width:74px">'+n+' project'+(n===1?"":"s")+'</span>'+
+      '<button class="quiet danger tagdel" data-i="'+i+'" aria-label="Remove tag">Remove</button></div>';
+  }).join("")+
+  (tagDraft.length<TAG_PALETTE.length
+    ? '<button id="tagAdd" style="margin-top:4px">Add tag</button>'
+    : '<p style="font-size:12px;color:var(--muted)">That is the most tags the colors can keep apart.</p>');
+}
 function settingsModal(){
   var s=state.settings;
+  tagDraft=state.tags.map(function(t){ return {id:t.id,name:t.name,color:t.color,orig:t.name}; });
   openModal('<h2>Settings</h2>'+
     '<div class="mrow"><div class="c"><label for="sWeek">Week starts on</label><select id="sWeek">'+
       DOWFULL.map(function(d,i){ return '<option value="'+i+'"'+(s.weekStart===i?" selected":"")+'>'+d+'</option>'; }).join("")+
@@ -1158,15 +1455,40 @@ function settingsModal(){
       '<div class="c"><label for="sAnchor">A pay period started on</label>'+
       '<input id="sAnchor" type="date" value="'+esc(s.periodAnchor)+'"></div></div>'+
     '<p class="note" style="font-size:12px;color:var(--muted);line-height:1.5">'+
-      'A 9/80 schedule is 80 hours over 14 days. Set the start date of any one pay period and every '+
-      'period after it lines up. Nothing here assumes a fixed number of hours per day — an 11-hour '+
-      'Tuesday and a 7-hour Thursday both just count toward the period total.</p>'+
-    '<p class="note" style="font-size:12px;color:var(--muted);line-height:1.5">'+
-      'Cards are coloured by tag. Charts colour the largest '+TOP_N+' projects and group the rest '+
-      'into one grey slice, so the key stays readable however many projects you are running.</p>'+
-    '<div style="text-align:right">'+
+      'A 9/80 schedule is 80 hours over 14 days. Set the start date of any one pay period. Every '+
+      'period before and after it lines up. Nothing here assumes a fixed number of hours per day.</p>'+
+    '<h2 style="margin-top:18px">Tags</h2>'+
+    '<p class="note" style="font-size:12px;color:var(--muted);line-height:1.5;margin:0 0 8px">'+
+      'Cards and tag pies are colored by tag. Renaming a tag updates its projects. Removing a tag leaves its projects untagged.</p>'+
+    '<div id="tagEditor"></div>'+
+    '<div style="text-align:right;margin-top:16px">'+
       '<button id="mClose">Cancel</button> <button class="primary" id="sSave">Save settings</button>'+
     '</div>');
+  renderTagEditor();
+}
+function applyTagDraft(){
+  var names={}, clean=[];
+  for(var i=0;i<tagDraft.length;i++){
+    var n=tagDraft[i].name.trim();
+    if(!n){ toast("Every tag needs a name. Remove the empty one."); return false; }
+    if(n.toLowerCase()==="untagged"){ toast("\"Untagged\" is reserved. Pick another name."); return false; }
+    if(names[n.toLowerCase()]){ toast("Two tags are named \""+n+"\"."); return false; }
+    names[n.toLowerCase()]=1;
+    clean.push({id:tagDraft[i].id||uid(),name:n,color:tagDraft[i].color,orig:tagDraft[i].orig});
+  }
+  var keptOrig={}; clean.forEach(function(t){ if(t.orig) keptOrig[t.orig]=t.name; });
+  var dropped=state.tags.filter(function(t){ return !(t.name in keptOrig); }).map(function(t){ return t.name; });
+  var hit=state.projects.filter(function(p){ return dropped.indexOf(p.tag)>=0; }).length;
+  if(hit&&!confirm("Removing "+listJoin(dropped)+" leaves "+hit+" project"+(hit>1?"s":"")+" untagged. Continue?")) return false;
+  state.projects.forEach(function(p){
+    if(!p.tag) return;
+    if(p.tag in keptOrig) p.tag=keptOrig[p.tag];
+    else p.tag="";
+  });
+  if(filters.tag&&filters.tag!=="__none") filters.tag = keptOrig[filters.tag]||"";
+  state.tags=clean.map(function(t){ return {id:t.id,name:t.name,color:t.color}; });
+  syncTags();
+  return true;
 }
 
 /* ---------- events ---------- */
@@ -1180,10 +1502,12 @@ document.addEventListener("click",function(ev){
     var dir=el.id==="prev"?-1:1;
     if(view==="day") anchor=addDays(anchor,dir);
     else if(view==="week") anchor=addDays(anchor,7*dir);
+    else if(view==="year") anchor=new Date(anchor.getFullYear()+dir,anchor.getMonth(),1);
     else anchor=new Date(anchor.getFullYear(),anchor.getMonth()+dir,1);
     render(); return;
   }
   if(el.id==="today"){ anchor=new Date(); render(); return; }
+  if(el.id==="btnHelp"||el.classList.contains("helpbtn")){ helpModal(); return; }
 
   if(el.classList.contains("sortbtn")){
     var key=el.dataset.sort;
@@ -1203,7 +1527,16 @@ document.addEventListener("click",function(ev){
   if(el.id==="btnImport"){ $("#fileInput").click(); return; }
   if(el.id==="btnCsv"){ exportCsv(); return; }
   if(el.id==="btnCopy"){ copySummary(); return; }
-  if(el.id==="btnPrint"){ state.reportNote=$("#reportNote").value; $("#reportNotePrint").textContent=state.reportNote; window.print(); return; }
+  if(el.id==="btnPrint"){
+    state.reportNote=$("#reportNote").value; $("#reportNotePrint").textContent=state.reportNote;
+    /* The browser uses the page title as the PDF's default file name. */
+    var r0=range(), oldTitle=document.title;
+    document.title="Time report "+(view==="year"?r0[0].slice(0,4):view==="month"?r0[0].slice(0,7):view==="day"?r0[0]:r0[0]+" to "+r0[1])+
+      (state.owner?" - "+state.owner:"");
+    window.print();
+    setTimeout(function(){ document.title=oldTitle; },1000);
+    return;
+  }
   if(el.id==="mClose"){ closeModal(); return; }
 
   if(el.classList.contains("qa")){
@@ -1217,10 +1550,32 @@ document.addEventListener("click",function(ev){
   }
   if(el.classList.contains("tm")){ toggleTimer(el.dataset.p); return; }
   if(el.classList.contains("ep")){ projectModal(el.dataset.p); return; }
+  if(el.classList.contains("hist")){ historyModal(el.dataset.p); return; }
+  if(el.classList.contains("he")){ entryModal(el.dataset.id,el.dataset.p); return; }
+  if(el.classList.contains("hlog")){
+    closeModal(); $("#eProject").value=el.dataset.p;
+    var eb=$("#eDate"); if(eb.scrollIntoView) eb.scrollIntoView({block:"center"}); eb.focus(); return;
+  }
+  if(el.id==="xSave"){ saveEntryModal(); return; }
+  if(el.id==="xCancel"){ var b=$("#xBack").value; if(b) historyModal(b); else closeModal(); return; }
+  if(el.classList.contains("xdel")){
+    var back=$("#xBack").value;
+    deleteEntryWithUndo(el.dataset.id);
+    if(back) historyModal(back); else closeModal();
+    return;
+  }
+  if(el.id==="tagAdd"){
+    if(tagDraft.length>=TAG_PALETTE.length) return;
+    tagDraft.push({id:uid(),name:"",color:nextTagColor(),orig:null});
+    renderTagEditor();
+    var ins=$("#modal").querySelectorAll(".tagname"); if(ins.length) ins[ins.length-1].focus();
+    return;
+  }
+  if(el.classList.contains("tagdel")){ tagDraft.splice(+el.dataset.i,1); renderTagEditor(); return; }
   if(el.classList.contains("st")){
     var p=projById(el.dataset.p);
     if(p){ p.status=el.dataset.s; p.completedOn=el.dataset.s==="complete"?iso(new Date()):null; markDirty(); }
-    render(); toast(projName(el.dataset.p)+" marked "+el.dataset.s); return;
+    render(); toast(projName(el.dataset.p)+({complete:" marked complete",archived:" archived",active:" reopened"}[el.dataset.s]||"")); return;
   }
   if(el.id==="pSave"){ saveProjectModal(); return; }
   if(el.classList.contains("pdel")){
@@ -1233,6 +1588,7 @@ document.addEventListener("click",function(ev){
     markDirty(); closeModal(); render(); return;
   }
   if(el.id==="sSave"){
+    if(!applyTagDraft()) return;
     var ws=parseInt($("#sWeek").value,10);
     state.settings.weekStart=(ws>=0&&ws<=6)?ws:5;
     state.settings.trackPeriod=$("#sTrack").value==="1";
@@ -1243,32 +1599,18 @@ document.addEventListener("click",function(ev){
   }
 
   if(el.id==="eAdd"){ submitEntry(); return; }
-  if(el.id==="eCancel"){ resetEntryForm(); return; }
-  if(el.classList.contains("ee")){
-    var en=state.entries.filter(function(x){ return x.id===el.dataset.id; })[0];
-    if(!en) return;
-    editingId=en.id;
-    $("#eProject").value=en.projectId; $("#eDate").value=en.date;
-    $("#eHours").value=fmt(en.hours); $("#eNote").value=en.note||"";
-    $("#eAdd").textContent="Update entry"; $("#eCancel").style.display="";
-    $("#entryHint").textContent="Editing an existing entry.";
-    $("#eHours").focus(); return;
-  }
-  if(el.classList.contains("ed")){
-    if(!confirm("Delete this entry?")) return;
-    removeEntry(el.dataset.id);
-    if(editingId===el.dataset.id) resetEntryForm();
-    render(); return;
-  }
+  if(el.classList.contains("ee")){ entryModal(el.dataset.id,null); return; }
+  if(el.classList.contains("ed")){ deleteEntryWithUndo(el.dataset.id); return; }
 
   if(el.id==="wAdd"){ submitWin(); return; }
   if(el.id==="wCancel"){ resetWinForm(); return; }
   if(el.classList.contains("we")){
     var w=state.wins.filter(function(x){ return x.id===el.dataset.id; })[0];
     if(!w) return;
-    editingWin=w.id; $("#wText").value=w.text; $("#wProject").value=w.projectId||"";
+    editingWin=w.id; $("#wText").value=w.text; $("#wProject").value=w.projectId||""; $("#wDate").value=w.date;
     $("#wAdd").textContent="Update win"; $("#wCancel").style.display="";
-    $("#wText").focus(); return;
+    var wt=$("#wText"); if(wt.scrollIntoView) wt.scrollIntoView({block:"center"});
+    wt.focus(); return;
   }
   if(el.classList.contains("wd")){
     if(!confirm("Delete this win?")) return;
@@ -1301,18 +1643,22 @@ document.addEventListener("input",function(ev){
   if(ev.target.id==="reportNote"){ state.reportNote=ev.target.value; markDirty(); }
   if(ev.target.id==="owner"){ state.owner=ev.target.value.trim(); markDirty(); updatePrintHead(); }
   if(ev.target.id==="fSearch"){ filters.text=ev.target.value; renderBoard(range()); }
+  if(ev.target.classList&&ev.target.classList.contains("tagname")){ tagDraft[+ev.target.dataset.i].name=ev.target.value; }
 });
 document.addEventListener("change",function(ev){
   if(ev.target.id==="fTag"){ filters.tag=ev.target.value; renderBoard(range()); }
   if(ev.target.id==="fHours"){ filters.hours=ev.target.checked; renderBoard(range()); }
   if(ev.target.id==="fSort"){ filters.sort=ev.target.value; renderBoard(range()); }
+  if(ev.target.id==="wSort"){ state.settings.winSort=ev.target.value; markDirty(); renderWins(range()); }
+  if(ev.target.id==="printEntries"){ state.settings.printEntries[view]=ev.target.checked; markDirty(); render(); }
 });
 $("#scrim").addEventListener("click",function(ev){ if(ev.target===$("#scrim")) closeModal(); });
 document.addEventListener("keydown",function(ev){
   if(ev.key==="Escape"&&$("#scrim").classList.contains("open")) closeModal();
   if(ev.key==="Enter"&&(ev.target.id==="eHours"||ev.target.id==="eNote")) submitEntry();
+  if(ev.key==="Enter"&&(ev.target.id==="xHours"||ev.target.id==="xNote")){ ev.preventDefault(); saveEntryModal(); }
   if(ev.key==="Enter"&&ev.target.id==="pName"){ ev.preventDefault(); saveProjectModal(); }
-  if(ev.key==="Enter"&&ev.metaKey&&ev.target.id==="wText") submitWin();
+  if(ev.key==="Enter"&&(ev.metaKey||ev.ctrlKey)&&ev.target.id==="wText") submitWin();
 });
 $("#fileInput").addEventListener("change",function(){
   var f=this.files[0]; if(!f) return;
@@ -1325,37 +1671,27 @@ function submitEntry(){
   if(!pid){ toast("Create a project first"); projectModal(null); return; }
   if(!date){ toast("Pick a date"); return; }
   if(!(h>0)){ toast("Enter time as 1.5, 90m, or 1:30"); $("#eHours").focus(); return; }
-  if(editingId){
-    var e=state.entries.filter(function(x){ return x.id===editingId; })[0];
-    if(e){ e.projectId=pid; e.date=date; e.hours=Math.round(h*1000)/1000; e.note=$("#eNote").value.trim(); markDirty(); }
-    resetEntryForm(); render(); toast("Entry updated"); return;
-  }
-  logTime(pid,date,h,$("#eNote").value);
+  var e=logTime(pid,date,h,$("#eNote").value);
   $("#eHours").value=""; $("#eNote").value=""; $("#eHours").focus();
-  render(); toast("Logged "+fmtH(h));
-}
-function resetEntryForm(){
-  editingId=null;
-  $("#eAdd").textContent="Log time"; $("#eCancel").style.display="none";
-  $("#eHours").value=""; $("#eNote").value=""; $("#eDate").value=iso(new Date());
-  $("#entryHint").textContent="For backdating or adding detail. Accepts 1.5, 90m, 1:30, or 1h30.";
+  render();
+  toast("Logged "+fmtH(h)+" on "+prettyDate(date),function(){ removeEntry(e.id); render(); toast("Removed"); });
 }
 
 function submitWin(){
-  var text=$("#wText").value.trim();
+  var text=$("#wText").value.trim(), date=$("#wDate").value||defaultWinDate();
   if(!text){ toast("Write the win first"); $("#wText").focus(); return; }
+  var r=range(), inView=date>=r[0]&&date<=r[1];
+  var where=inView?"":" It is dated "+prettyDate(date)+", so it shows in that "+view+".";
   if(editingWin){
     var w=state.wins.filter(function(x){ return x.id===editingWin; })[0];
-    if(w){ w.text=text; w.projectId=$("#wProject").value; markDirty(); }
-    resetWinForm(); render(); toast("Win updated"); return;
+    if(w){ w.text=text; w.projectId=$("#wProject").value; w.date=date; markDirty(); }
+    resetWinForm(); render(); toast("Win updated."+where); return;
   }
-  var r=range(), today=iso(new Date());
-  var date=(today>=r[0]&&today<=r[1])?today:r[0];
   state.wins.push({id:uid(),date:date,text:text,projectId:$("#wProject").value});
-  markDirty(); resetWinForm(); render(); toast("Win added");
+  markDirty(); resetWinForm(); render(); toast("Win added."+where);
 }
 function resetWinForm(){
-  editingWin=null; $("#wText").value=""; $("#wProject").value="";
+  editingWin=null; $("#wText").value=""; $("#wProject").value=""; $("#wDate").value=defaultWinDate();
   $("#wAdd").textContent="Add win"; $("#wCancel").style.display="none";
 }
 
@@ -1363,7 +1699,7 @@ function resetWinForm(){
 function toggleTimer(pid){
   if(timer&&timer.projectId===pid){
     var hrs=(Date.now()-timer.startedAt)/3600000; timer=null;
-    if(hrs*60<1){ render(); toast("Timer stopped — under a minute, nothing logged"); return; }
+    if(hrs*60<1){ render(); toast("Timer stopped. Under a minute, so nothing was logged."); return; }
     logTime(pid,iso(new Date()),Math.round(hrs*100)/100,"");
     render(); toast("Logged "+fmtH(Math.round(hrs*100)/100)+" from the timer"); return;
   }
@@ -1390,7 +1726,7 @@ if(!state.projects.length){
   addProject("Vendor migration","PLM Division",["Ben Okafor","Priya Nair"]);
   addProject("Audit readiness","SMS",[]);
   addProject("Intake & support","Home Office",[]);
-  dirty=false; $("#fileState").textContent="— unsaved";
+  dirty=false; $("#fileState").textContent="· unsaved";
 }
 render();
 })();
