@@ -1,0 +1,24 @@
+{
+  "format": "flowtext",
+  "version": 1,
+  "savedAt": "2026-10-04T18:45:00.000Z",
+  "text": "title: Configuration Item (CI) Identification Process\nlanes: CM, Systems Engineering, Supporting Functions, Program Management, Acquirer\n\n# Inputs. Each function maintains its own products. CM reads them.\nstart -> fork 1\nfork 1 -> Systems Engineering: Maintain architecture and decomposition -> join 1\nfork 1 -> Supporting Functions: Maintain hazard, criticality, and support analyses -> join 1\nfork 1 -> Acquirer: Set contract and directed CIs -> join 1\n\n# Candidate CI identification and selection. CM decides.\njoin 1 -> CM: Nominate candidate CIs from source material -> Pass the three qualifying gates?\nPass the three qualifying gates? -yes-> Run criteria screen (a) to (g)\nPass the three qualifying gates? -no-> Record do-not-designate rationale and parent CI\nRun criteria screen (a) to (g) -> Supporting Functions: Concur on technical basis -> CM: Any criterion met?\nAny criterion met? -no-> Record do-not-designate rationale and parent CI -> Build CI structure and boundary set\nAny criterion met? -yes-> Designate CI and record rationale\n\n# CI structure and interfaces. CM owns coverage. Systems Engineering owns content.\nDesignate CI and record rationale -> Build CI structure and boundary set -> Systems Engineering: Identify interface requirements -> CM: Record interface register and verify coverage\n\n# Acquirer review and concurrence\nRecord interface register and verify coverage -> Program Management: Approve CI list for submittal -> CM: Submit CI list with rationale -> Acquirer: Acquirer concurs?\nAcquirer concurs? ..no, revise..> Run criteria screen (a) to (g)\n\n# Identifiers, documentation, and baselines\nAcquirer concurs? -yes-> CM: Assign identifiers -> Determine configuration documentation -> Establish baselines and record in CSA -> Re-evaluation trigger?\n\n# Maintenance and iteration\nRe-evaluation trigger? ..yes, re-run..> Nominate candidate CIs from source material\nRe-evaluation trigger? -no-> end\n",
+  "settings": {
+    "font": "Calibri",
+    "fontSize": 14,
+    "boxWidth": "normal",
+    "editorSize": 17,
+    "uniform": true,
+    "shade": true,
+    "dark": false,
+    "laneFont": "same",
+    "laneSize": 0,
+    "laneBold": true,
+    "laneInk": "#0d0d0d",
+    "laneBg": "#ffffff",
+    "ppt": "fit",
+    "rowSpace": 0,
+    "decFill": "#fff4d1",
+    "endPlace": "lane"
+  }
+}
