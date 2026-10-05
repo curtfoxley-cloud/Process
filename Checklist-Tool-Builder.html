@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tool Builder</title>
+<style>
+:root{
+  --ink:#1E262E; --ink-2:#2C3841; --slate:#5C6D78; --mute:#8998A2;
+  --paper:#FFFFFF; --surface:#F4F6F7; --surface-2:#EDF0F1; --rule:#D6DCDF;
+  --rust:#A8481F; --rust-soft:#F2E4DD; --rust-ink:#7E340F;
+  --amber:#9A6508; --amber-soft:#F6ECD8;
+  --alert:#8E2F2F; --alert-soft:#F4E2E2;
+  --teal:#1F5F5B; --teal-soft:#DFEAE8;
+  --serif:Georgia,Cambria,"Times New Roman",serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--surface);font-size:14px;line-height:1.5;display:flex;flex-direction:column;overflow:hidden}
+button{font-family:inherit;font-size:inherit;cursor:pointer;color:inherit}
+input,textarea,select{font-family:inherit;font-size:13.5px;color:inherit}
+:focus-visible{outline:2px solid var(--rust);outline-offset:2px}
+
+/* ---- top bar ---- */
+.bb{background:var(--ink);color:#fff;padding:9px 16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;flex:none}
+.brand{margin-right:auto;min-width:0}
+.brand b{font-family:var(--serif);font-size:16px;font-weight:400;display:block;line-height:1.2}
+.brand span{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#93A2AB}
+.tb{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.tb button{background:transparent;border:1px solid #47565F;color:#E9EEF0;border-radius:4px;padding:6px 11px;font-size:12.5px;font-weight:600}
+.tb button:hover{background:#2C3841;border-color:#6A7B85}
+.tb button.pri{background:var(--rust);border-color:var(--rust);color:#fff}
+.tb button.pri:hover{background:var(--rust-ink)}
+.tb button[disabled]{opacity:.4;cursor:default}
+.tb .sep{width:1px;height:22px;background:#47565F;margin:0 2px}
+.menu{position:relative}
+.menu .pop{display:none;position:absolute;right:0;top:calc(100% + 6px);z-index:60;background:var(--paper);color:var(--ink);
+  border:1px solid var(--rule);border-radius:6px;box-shadow:0 8px 24px rgba(30,38,46,.18);min-width:290px;padding:6px}
+.menu.open .pop{display:block}
+.pop button{display:block;width:100%;text-align:left;border:0;background:none;color:var(--ink);padding:9px 11px;border-radius:4px;font-size:13px;font-weight:400}
+.pop button b{display:block;font-weight:600}
+.pop button span{color:var(--slate);font-size:12px}
+.pop button:hover{background:var(--surface)}
+
+/* ---- banner ---- */
+.banner{flex:none;background:var(--amber-soft);border-bottom:1px solid #E4D3AF;padding:8px 16px;font-size:13px;display:none;gap:10px;align-items:center;flex-wrap:wrap}
+.banner.on{display:flex}
+.banner.good{background:var(--teal-soft);border-color:#BFD5D2}
+.banner.bad{background:var(--alert-soft);border-color:#E0BFBF}
+.banner button{border:1px solid var(--rule);background:var(--paper);border-radius:4px;padding:4px 10px;font-size:12.5px;font-weight:600}
+.banner .x{margin-left:auto;border:0;background:none;font-size:16px;color:var(--slate)}
+
+/* ---- layout ---- */
+.layout{flex:1;display:grid;grid-template-columns:210px minmax(380px,1fr) minmax(380px,1.05fr);min-height:0}
+.side{border-right:1px solid var(--rule);background:var(--paper);overflow-y:auto;padding:12px 8px}
+.side .lab{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--mute);font-weight:700;margin:4px 8px 6px}
+.side button.sec{display:flex;width:100%;text-align:left;border:0;background:none;padding:7px 9px;border-radius:4px;font-size:13px;color:var(--ink-2);gap:8px;align-items:baseline}
+.side button.sec:hover{background:var(--surface)}
+.side button.sec.on{background:var(--rust-soft);color:var(--rust-ink);font-weight:600}
+.side button.sec .n{font-family:var(--mono);font-size:10px;color:var(--mute);min-width:16px}
+.side button.sec .bad{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--alert);font-weight:700}
+.probs{margin:16px 6px 0;border-top:1px solid var(--rule);padding-top:12px}
+.probs .ok{font-size:12px;color:var(--teal)}
+.probs ul{margin:4px 0 0;padding:0;list-style:none}
+.probs li{font-size:12px;color:var(--alert);margin-bottom:6px;cursor:pointer;line-height:1.4}
+.probs li:hover{text-decoration:underline}
+
+.editor{overflow-y:auto;padding:20px 22px 80px;min-width:0}
+.editor h2{font-family:var(--serif);font-size:23px;font-weight:400;margin:0 0 4px}
+.editor .intro{color:var(--slate);font-size:13.5px;margin:0 0 18px;max-width:68ch}
+.editor .intro p{margin:0 0 7px}
+
+.f{margin:0 0 14px}
+.f>label,.f .flab{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--slate);font-weight:700;margin-bottom:4px}
+.f input[type=text],.f input[type=number],.f textarea,.f select{width:100%;padding:7px 9px;border:1px solid var(--rule);border-radius:4px;background:var(--paper)}
+.f textarea{resize:vertical;line-height:1.5;min-height:38px}
+.f input:focus,.f textarea:focus,.f select:focus{outline:2px solid var(--rust);outline-offset:0;border-color:var(--rust)}
+.f .help{font-size:12px;color:var(--slate);margin-top:4px;line-height:1.45}
+.f .help code,.intro code,.help code{font-family:var(--mono);font-size:11.5px;background:var(--surface-2);padding:0 4px;border-radius:3px}
+.f.ck{display:flex;gap:8px;align-items:flex-start}
+.f.ck input{margin:3px 0 0;accent-color:var(--rust)}
+.f.ck label{font-family:inherit;font-size:13.5px;letter-spacing:0;text-transform:none;color:var(--ink-2);font-weight:400;margin:0;cursor:pointer}
+.f.ck .help{margin-top:1px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+.grp{border:1px solid var(--rule);border-radius:6px;padding:12px 14px 2px;margin:0 0 16px;background:var(--paper)}
+.grp>.gt{font-family:var(--serif);font-size:15px;margin:0 0 10px;color:var(--ink)}
+.grp>.gh{font-size:12px;color:var(--slate);margin:-6px 0 10px}
+.alt{border-left:3px solid var(--teal);padding-left:10px}
+.alt>label{color:var(--teal)!important}
+.multi{display:flex;gap:14px;flex-wrap:wrap}
+.multi label{display:flex;gap:6px;align-items:center;font-size:13px;cursor:pointer}
+.multi input{accent-color:var(--rust)}
+
+/* ---- lists ---- */
+.lst{margin:0 0 16px}
+.lst>.lh{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.lst>.lh .flab{margin:0;font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--slate);font-weight:700}
+.lst>.lh .cnt{font-family:var(--mono);font-size:10px;color:var(--mute)}
+.lst>.help{font-size:12px;color:var(--slate);margin:-2px 0 8px}
+.add{border:1px dashed var(--mute);background:var(--paper);color:var(--slate);border-radius:4px;padding:6px 12px;font-size:12.5px;font-weight:600}
+.add:hover{border-color:var(--rust);color:var(--rust-ink)}
+.it{background:var(--paper);border:1px solid var(--rule);border-radius:6px;margin-bottom:6px}
+.it.open{border-color:#C9D1D5;box-shadow:0 1px 4px rgba(30,38,46,.06)}
+.it>.ih{display:flex;align-items:center;gap:6px;padding:6px 6px 6px 10px;cursor:pointer;min-height:36px}
+.it>.ih .tw{font-size:10px;color:var(--mute);width:12px;flex:none;transition:transform .12s}
+.it.open>.ih .tw{transform:rotate(90deg)}
+.it>.ih .sm{flex:1;min-width:0;font-size:13px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.it>.ih .sm b{font-family:var(--mono);font-size:11.5px;color:var(--rust-ink);margin-right:6px}
+.it>.ih .ib{border:1px solid transparent;background:none;color:var(--mute);border-radius:3px;width:26px;height:26px;padding:0;font-size:13px;line-height:1;flex:none}
+.it>.ih .ib:hover{border-color:var(--rule);color:var(--ink);background:var(--surface)}
+.it>.ih .ib.del:hover{color:var(--alert);border-color:#E0BFBF;background:var(--alert-soft)}
+.it>.ib2{display:none;padding:10px 12px 2px;border-top:1px solid var(--surface-2)}
+.it.open>.ib2{display:block}
+.it .it{background:var(--surface)}
+.it .it .it{background:var(--paper)}
+.it.flash{animation:fl 1s ease}
+@keyframes fl{0%{background:var(--rust-soft)}100%{}}
+
+/* ---- conditions ---- */
+.cond{border:1px solid var(--rule);border-radius:6px;padding:8px 10px;background:var(--surface)}
+.it .it .cond{background:var(--paper)}
+.cond .always{font-size:12.5px;color:var(--slate);font-style:italic;margin:2px 0 6px}
+.cg{border-left:3px solid var(--slate);padding:2px 0 2px 9px;margin:4px 0}
+.cg .cgh{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);font-weight:700;margin-bottom:4px}
+.cr{display:flex;gap:5px;align-items:center;margin-bottom:5px;flex-wrap:wrap}
+.cr select,.cr input{padding:5px 6px;border:1px solid var(--rule);border-radius:4px;background:var(--paper);font-size:12.5px;max-width:100%}
+.f .cr select,.f .cr input{width:auto}
+.cr select.subj{flex:1 1 150px;min-width:0}
+.cr select.op{flex:0 0 auto}
+.cr .val{flex:0 1 130px;min-width:64px}
+.cr .miss{border-color:var(--alert);background:var(--alert-soft)}
+.cr .rm{border:0;background:none;color:var(--mute);font-size:15px;padding:0 4px}
+.cr .rm:hover{color:var(--alert)}
+.cor{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--rust-ink);font-weight:700;margin:6px 0}
+.cbtn{border:0;background:none;color:var(--rust-ink);font-weight:600;font-size:12.5px;padding:2px 0;margin-right:14px;text-decoration:underline;text-underline-offset:3px}
+
+/* ---- labels table ---- */
+.lbl{display:grid;grid-template-columns:minmax(150px,34%) 1fr;gap:6px 12px;align-items:start}
+.lbl .k{font-size:12.5px;color:var(--ink-2);padding-top:7px}
+.lbl .k small{display:block;font-family:var(--mono);font-size:10px;color:var(--mute)}
+.lbl textarea{width:100%;padding:6px 8px;border:1px solid var(--rule);border-radius:4px;background:var(--paper);resize:vertical;min-height:34px}
+
+/* ---- preview ---- */
+.preview{border-left:1px solid var(--rule);display:flex;flex-direction:column;min-width:0;background:#E3E8EA}
+.pvbar{display:flex;gap:8px;align-items:center;padding:7px 12px;background:var(--paper);border-bottom:1px solid var(--rule);flex-wrap:wrap}
+.pvbar .t{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--slate);font-weight:700;margin-right:auto}
+.pvbar button{border:1px solid var(--rule);background:var(--paper);border-radius:4px;padding:4px 10px;font-size:12px;font-weight:600;color:var(--ink-2)}
+.pvbar button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.pvwrap{flex:1;min-height:0;display:flex;justify-content:center;overflow:auto}
+.pvwrap iframe{border:0;background:var(--surface);width:100%;height:100%;display:block}
+.pvwrap.phone{padding:14px 0}
+.pvwrap.phone iframe{width:390px;height:auto;min-height:calc(100% - 0px);border-radius:14px;box-shadow:0 4px 20px rgba(30,38,46,.2)}
+
+/* ---- record preview ---- */
+.preview{position:relative;min-height:0;overflow:hidden}
+.layout{grid-template-rows:minmax(0,1fr)}
+.pvrec{display:none;flex:0 0 42%;min-height:0;flex-direction:column;border-top:3px solid var(--ink-2);background:var(--paper)}
+.preview.rec .pvrec{display:flex}
+.pvrh{display:flex;gap:10px;align-items:baseline;padding:7px 12px;border-bottom:1px solid var(--rule);flex-wrap:wrap}
+.pvrh .t{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--slate);font-weight:700}
+#pvrs{font-size:12px;color:var(--slate)}
+#pvrt{flex:1;margin:0;overflow:auto;padding:10px 14px;font-family:var(--mono);font-size:11.5px;line-height:1.55;color:var(--ink-2);white-space:pre-wrap;word-break:break-word}
+.pvbar button[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+/* ---- help page ---- */
+.help{position:fixed;inset:0;z-index:80;background:var(--surface);display:none;flex-direction:column}
+.help.on{display:flex}
+.hp-top{display:flex;gap:10px;align-items:center;padding:10px 16px;background:var(--ink);color:#fff;flex-wrap:wrap}
+.hp-top b{font-family:var(--serif);font-weight:400;font-size:17px;margin-right:auto}
+.hp-top input{padding:6px 10px;border-radius:4px;border:1px solid #47565F;background:#2C3841;color:#fff;min-width:200px}
+.hp-top input::placeholder{color:#93A2AB}
+.hp-top button{background:transparent;border:1px solid #47565F;color:#E9EEF0;border-radius:4px;padding:6px 12px;font-size:12.5px;font-weight:600}
+.hp-top button.pri{background:var(--rust);border-color:var(--rust);color:#fff}
+.hp-main{flex:1;min-height:0;display:grid;grid-template-columns:250px 1fr}
+.hp-toc{overflow-y:auto;background:var(--paper);border-right:1px solid var(--rule);padding:14px 10px}
+.hp-toc a{display:block;padding:6px 9px;border-radius:4px;color:var(--ink-2);text-decoration:none;font-size:13px}
+.hp-toc a:hover{background:var(--surface)}
+.hp-body{overflow-y:auto;padding:24px 32px 120px}
+.hp-sec{max-width:760px;margin:0 0 30px;scroll-margin-top:16px}
+.hp-sec h3{font-family:var(--serif);font-weight:400;font-size:24px;margin:0 0 10px;padding-bottom:6px;border-bottom:1px solid var(--rule)}
+.hp-sec h4{font-family:var(--serif);font-weight:400;font-size:16px;margin:18px 0 6px;color:var(--ink)}
+.hp-sec p,.hp-sec li{font-size:14px;color:var(--ink-2);line-height:1.6}
+.hp-sec p{margin:0 0 9px}
+.hp-sec ul,.hp-sec ol{margin:0 0 10px;padding-left:22px}
+.hp-sec li{margin-bottom:5px}
+.hp-sec code{font-family:var(--mono);font-size:12px;background:var(--surface-2);padding:0 4px;border-radius:3px}
+.hp-task{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:12px 16px;margin:0 0 12px}
+.hp-task h4{margin:0 0 6px}
+.hp-task ol{margin-bottom:4px}
+.hp-note{font-size:13px!important;color:var(--slate)!important;border-left:3px solid var(--teal);padding-left:9px;margin:6px 0 2px!important}
+.hp-t{border-collapse:collapse;margin:4px 0 12px;font-size:13.5px;width:100%}
+.hp-t th{text-align:left;background:var(--surface-2);font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--slate);padding:6px 9px}
+.hp-t td{border-top:1px solid var(--rule);padding:7px 9px;vertical-align:top;color:var(--ink-2)}
+.hp-ex{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:10px 12px;margin:0 0 12px;font-size:13px}
+.hp-ex .cg div{padding:2px 0}
+.hp-go{border:1px solid var(--rule);background:var(--paper);border-radius:4px;padding:4px 10px;font-size:12.5px;font-weight:600;color:var(--rust-ink)}
+.hp-none{padding:24px 32px;color:var(--slate);grid-column:2;grid-row:1;margin:0}
+@media(max-width:760px){.hp-none{grid-column:1;grid-row:2}}
+.hp-steps li{margin-bottom:8px}
+.start-cta{display:flex;gap:14px;align-items:center;flex-wrap:wrap;background:var(--rust-soft);border:1px solid #E3CCC2;border-radius:6px;padding:12px 16px;margin:0 0 14px}
+.start-cta p{margin:0;flex:1;min-width:220px;font-size:13.5px;color:var(--ink-2)}
+.start-cta button{border:1px solid var(--rust);background:var(--rust);color:#fff;border-radius:4px;padding:8px 14px;font-weight:600}
+@media(max-width:760px){
+  .hp-main{grid-template-columns:1fr}
+  .hp-toc{display:flex;gap:4px;overflow-x:auto;border-right:0;border-bottom:1px solid var(--rule);padding:8px}
+  .hp-toc a{white-space:nowrap;flex:none}
+  .hp-body{padding:16px 16px 80px}
+  .hp-top input{min-width:0;flex:1}
+  .hp-top b{flex-basis:100%;font-size:15px}
+}
+@media print{
+  body{overflow:visible;display:block;height:auto}
+  body.printing>*:not(#help){display:none!important}
+  body.printing .help{position:static;display:block}
+  body.printing .hp-top,body.printing .hp-toc,body.printing .hp-go{display:none}
+  body.printing .hp-main{display:block}
+  body.printing .hp-body{overflow:visible;padding:0}
+  body.printing .hp-sec{display:block!important;break-inside:auto}
+}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:9px 16px;border-radius:5px;font-size:13px;opacity:0;pointer-events:none;transition:all .2s;z-index:90;display:flex;gap:12px;align-items:center}
+.toast.on{opacity:1;transform:translateX(-50%);pointer-events:auto}
+.toast button{background:none;border:0;color:#F2C4AE;font-weight:700;text-decoration:underline;padding:0}
+
+.mtabs{display:none}
+.help-card{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:14px 16px;margin:0 0 14px;font-size:13.5px;color:var(--ink-2)}
+.help-card h3{font-family:var(--serif);font-weight:400;font-size:16px;margin:0 0 6px}
+.help-card p{margin:0 0 8px}
+.help-card ul,.help-card ol{margin:0 0 8px;padding-left:20px}
+.help-card li{margin-bottom:4px}
+.kbd{font-family:var(--mono);font-size:11px;border:1px solid var(--rule);border-bottom-width:2px;border-radius:3px;padding:0 4px;background:var(--paper)}
+
+@media(max-width:1180px){
+  .layout{grid-template-columns:180px 1fr 1fr}
+}
+@media(max-width:960px){
+  body{overflow:auto}
+  .layout{display:block}
+  .side{border-right:0;border-bottom:1px solid var(--rule);padding:8px}
+  .side .secs{display:flex;gap:4px;overflow-x:auto;padding-bottom:4px}
+  .side .lab{display:none}
+  .side button.sec{white-space:nowrap;width:auto;flex:none}
+  .probs{margin:8px 4px 0}
+  .mtabs{display:flex;gap:0;background:var(--paper);border-bottom:1px solid var(--rule)}
+  .mtabs button{flex:1;border:0;background:none;padding:10px;font-weight:600;color:var(--slate);border-bottom:3px solid transparent}
+  .mtabs button.on{color:var(--rust-ink);border-bottom-color:var(--rust)}
+  body.m-edit .preview{display:none}
+  body.m-prev .editor{display:none}
+  body.m-prev .side{display:none}
+  .preview{border-left:0;height:calc(100vh - 110px)}
+  .editor{padding:16px 14px 60px}
+  .row2{grid-template-columns:1fr}
+}
+
+</style>
+</head>
+<body>
+<header class="bb">
+  <div class="brand"><b id="brand-t">Tool Builder</b><span id="brand-s"></span></div>
+  <div class="tb">
+    <div class="menu" id="newmenu">
+      <button id="newbtn" aria-haspopup="true">New</button>
+      <div class="pop" role="menu">
+        <button id="new-start" role="menuitem"><b>Start from the current tool</b><span>A copy of the Rev D tool this builder came with.</span></button>
+        <button id="new-blank" role="menuitem"><b>Start from a blank tool</b><span>The same parts, with placeholder content.</span></button>
+      </div>
+    </div>
+    <button id="openbtn" title="Open a saved project, or a tool this builder exported">Open</button>
+    <input type="file" id="openfile" accept=".json,.html,.htm,application/json,text/html" style="display:none">
+    <button id="saveproj" title="Save your work to a file you can open later">Save project</button>
+    <span class="sep"></span>
+    <button id="undo" title="Undo (Ctrl+Z)">Undo</button>
+    <button id="redo" title="Redo (Ctrl+Y)">Redo</button>
+    <span class="sep"></span>
+    <button id="helpbtn" title="Open the help page">Help</button>
+    <button id="export" class="pri" title="Download the finished tool as one HTML file">Export tool</button>
+  </div>
+</header>
+<div class="banner" id="banner" role="status"></div>
+<div class="mtabs"><button id="mt-edit" class="on">Edit</button><button id="mt-prev">Preview</button></div>
+<main class="layout">
+  <nav class="side" aria-label="Builder sections">
+    <div class="lab">Sections</div>
+    <div class="secs" id="secs"></div>
+    <div class="probs" id="probs"></div>
+  </nav>
+  <section class="editor" id="editor" aria-label="Editor"></section>
+  <section class="preview" aria-label="Live preview">
+    <div class="pvbar">
+      <span class="t">Live preview</span>
+      <button id="pv-desk" class="on">Desktop</button>
+      <button id="pv-phone">Phone</button>
+      <button id="pv-rec" title="Show the text the tool will record for these answers" aria-pressed="false">Record</button>
+      <button id="pv-reset" title="Clear the answers in the preview">Clear answers</button>
+      <button id="pv-open" title="Open the preview in its own tab">Open in tab</button>
+    </div>
+    <div class="pvwrap" id="pvwrap"></div>
+    <div class="pvrec" id="pvrec" aria-label="Record preview">
+      <div class="pvrh"><span class="t">Record preview</span><span id="pvrs"></span></div>
+      <pre id="pvrt"></pre>
+    </div>
+  </section>
+</main>
+<div class="help" id="help" role="dialog" aria-modal="true" aria-labelledby="hp-title" aria-hidden="true">
+  <div class="hp-top">
+    <b id="hp-title">Help</b>
+    <input id="hp-q" type="search" placeholder="Search the help" aria-label="Search the help">
+    <button id="hp-print">Print</button>
+    <button id="hp-close" class="pri">Close</button>
+  </div>
+  <div class="hp-main">
+    <nav class="hp-toc" id="hp-toc" aria-label="Help contents"></nav>
+    <div class="hp-body" id="hp-body"></div>
+    <p id="hp-none" class="hp-none" style="display:none">Nothing in the help matches that search.</p>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script>
+/* Tool Builder. One file, offline. Generated tools carry their own definition. */
+var PARTS={"css":":root{\n  --ink:#1E262E; --ink-2:#2C3841; --slate:#5C6D78; --mute:#8998A2;\n  --paper:#FFFFFF; --surface:#F4F6F7; --surface-2:#EDF0F1; --rule:#D6DCDF;\n  --rust:#A8481F; --rust-soft:#F2E4DD; --rust-ink:#7E340F;\n  --amber:#9A6508; --amber-soft:#F6ECD8;\n  --serif:Georgia,Cambria,\"Times New Roman\",serif;\n  --sans:-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Arial,sans-serif;\n  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;\n}\n*{box-sizing:border-box}\nbody{margin:0;font-family:var(--sans);color:var(--ink);background:var(--surface);font-size:15px;line-height:1.55}\nbutton{font-family:inherit;font-size:inherit;cursor:pointer}\ninput,textarea{font-family:inherit;font-size:14px;color:inherit}\n.top{background:var(--ink);color:#fff;padding:13px 20px}\n.top b{font-family:var(--serif);font-size:16px;display:block;line-height:1.2}\n.top span{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#93A2AB}\n.wrap{max-width:900px;margin:0 auto;padding:24px 20px 24px}\nh1{font-family:var(--serif);font-size:27px;font-weight:400;margin:0 0 6px;line-height:1.2}\n.lede{font-size:14px;color:var(--slate);margin:0 0 22px}\n.lab{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--rust-ink);font-weight:700;margin-bottom:8px}\n.card{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:18px 20px;margin:0 0 16px}\n.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}\n.fld label{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--slate);font-weight:700;margin-bottom:4px}\n.fld input,.fld textarea{width:100%;padding:7px 9px;border:1px solid var(--rule);border-radius:4px;background:var(--paper)}\n.fld input:focus,.fld textarea:focus,select:focus{outline:2px solid var(--rust);outline-offset:1px}\n.gate{display:flex;gap:14px;align-items:flex-start;padding:11px 0;border-bottom:1px solid var(--rule)}\n.gate:last-of-type{border-bottom:none}\n.gate .q{flex:1;font-size:14px}\n.gate .note{display:block;font-size:12.5px;color:var(--slate);margin-top:3px}\n.radios{display:flex;gap:12px;white-space:nowrap;padding-top:1px}\n.radios label{font-size:13.5px;color:var(--ink-2);cursor:pointer}\ninput[type=radio]{accent-color:var(--rust);margin-right:3px}\ntable.scr{border-collapse:collapse;width:100%;font-size:14px}\ntable.scr thead th{background:var(--ink);color:#fff;text-align:left;padding:8px 10px;font-size:11.5px;font-weight:700;letter-spacing:.04em}\ntable.scr thead th.c{text-align:center;width:46px}\ntable.scr td{padding:9px 10px;border-top:1px solid var(--rule);vertical-align:top}\ntable.scr tr.on td{background:var(--rust-soft)}\ntd.k{font-family:var(--mono);font-size:12px;color:var(--rust-ink);font-weight:700;width:38px}\ntd.c{text-align:center}\n.crit{color:var(--ink-2)}\n.subnote{display:block;font-family:var(--serif);font-style:italic;font-size:12px;line-height:1.45;color:var(--slate);margin-top:4px}\n.flag{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--amber);background:var(--amber-soft);border:1px solid #E4D3AF;border-radius:3px;padding:1px 5px;margin-left:6px;white-space:nowrap}\n.rat{width:100%;margin-top:6px;padding:5px 8px;border:1px solid var(--rule);border-radius:4px;font-size:13px;background:var(--surface)}\n.rat+.rat{margin-top:5px}\n.rat:focus{background:var(--paper)}\n.verdict{position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--paper);border-top:4px solid var(--slate);box-shadow:0 -2px 14px rgba(30,38,46,.11);max-height:56vh;overflow-y:auto}\n.vin{max-width:900px;margin:0 auto;padding:14px 20px 16px}\n.verdict.yes{border-top-color:var(--rust)}\n.verdict.hold{border-top-color:var(--amber)}\n.verdict h2{font-family:var(--serif);font-size:21px;font-weight:400;margin:0 0 4px}\n.verdict p{margin:0;font-size:13.5px;color:var(--slate)}\n.hits{font-size:13px;color:var(--ink-2);margin:8px 0 0}\n.warn{background:var(--amber-soft);border:1px solid #E4D3AF;border-radius:5px;padding:11px 13px;margin-top:12px;font-size:13px;color:var(--ink-2)}\n.lnk{background:none;border:0;padding:0;color:var(--rust-ink);font-weight:700;text-decoration:underline}\n.lnk:focus-visible{outline:2px solid var(--rust);outline-offset:2px}\n.btnrow{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:14px}\n.btn{border:1px solid var(--rule);background:var(--paper);color:var(--ink);border-radius:4px;padding:9px 16px;font-size:13.5px;font-weight:600}\n.btn:hover{background:var(--surface)}\n.btn:focus-visible{outline:2px solid var(--rust);outline-offset:2px}\n.btn.pri{background:var(--rust);border-color:var(--rust);color:#fff}\n.btn.pri:hover{background:var(--rust-ink)}\n.btn.pri[disabled]{background:var(--mute);border-color:var(--mute);cursor:not-allowed}\n.btn.gh{background:transparent;color:var(--slate)}\n#msg{font-size:12.5px;color:var(--slate)}\nh2.sect{font-family:var(--serif);font-size:19px;font-weight:400;margin:30px 0 10px}\nh2.sect.gn{margin:16px 0 10px}\nhr.bar{border:0;border-top:2px solid var(--ink-2);margin:34px 0 0}\n.small{font-size:12.5px;color:var(--slate)}\n.foot{font-size:12.5px;color:var(--slate);border-top:1px solid var(--rule);padding-top:14px;margin-top:26px}\n.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}\n@media(max-width:680px){\n  .grid{grid-template-columns:1fr}\n  .gate{flex-direction:column;gap:6px}\n  table.scr thead th.c{width:38px}\n  table.scr td,table.scr thead th{padding:7px 5px}\n}\n@media print{\n  .top,.btnrow,#msg{display:none}\n  body{background:#fff;font-size:11pt;padding-bottom:0!important}\n  .verdict{position:static;box-shadow:none;max-height:none;overflow:visible;border:1px solid var(--rule);border-top:4px solid var(--slate);border-radius:6px;margin-top:16px}\n  .vin{padding:16px 20px}\n  .card{break-inside:avoid}\n}\n\n/* shared additions for generated tools */\n.pull{font-family:var(--serif);font-size:15px;font-style:italic;color:var(--ink-2);border-left:3px solid var(--rust);padding-left:12px;margin:14px 0;max-width:62ch}\n#app{display:contents}\n","runtime":"/* ================= shared runtime: included in every generated tool ================= */\nvar DEF=JSON.parse(document.getElementById('tool-def').textContent);\nvar PREVIEW=!!window.TOOL_PREVIEW;\n\n/* ---- offline .docx writer: a docx is a ZIP of XML parts, stored uncompressed ---- */\nvar CRC=(function(){var t=new Uint32Array(256),c,n,k;for(n=0;n<256;n++){c=n;for(k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);t[n]=c>>>0;}return t;})();\nfunction crc32(b){var c=0xFFFFFFFF;for(var i=0;i<b.length;i++)c=CRC[(c^b[i])&0xFF]^(c>>>8);return (c^0xFFFFFFFF)>>>0;}\nfunction utf8(s){return new TextEncoder().encode(s);}\nfunction makeZip(files){\n  var parts=[],cen=[],off=0;\n  function u16(v){return [v&255,(v>>8)&255];} function u32(v){return [v&255,(v>>8)&255,(v>>16)&255,(v>>>24)&255];}\n  files.forEach(function(f){\n    var nm=utf8(f.name),dt=utf8(f.data),c=crc32(dt);\n    var lo=[].concat(u32(0x04034b50),u16(20),u16(0x0800),u16(0),u16(0),u16(0),u32(c),u32(dt.length),u32(dt.length),u16(nm.length),u16(0));\n    parts.push(new Uint8Array(lo),nm,dt);\n    var ce=[].concat(u32(0x02014b50),u16(20),u16(20),u16(0x0800),u16(0),u16(0),u16(0),u32(c),u32(dt.length),u32(dt.length),u16(nm.length),u16(0),u16(0),u16(0),u16(0),u32(0),u32(off));\n    ce.name=nm; cen.push(ce); off+=lo.length+nm.length+dt.length;\n  });\n  var cd=[],cl=0; cen.forEach(function(c){cd.push(new Uint8Array(c),c.name);cl+=c.length+c.name.length;});\n  var end=new Uint8Array([].concat(u32(0x06054b50),u16(0),u16(0),u16(files.length),u16(files.length),u32(cl),u32(off),u16(0)));\n  var all=parts.concat(cd,[end]),tot=all.reduce(function(n,a){return n+a.length;},0),out=new Uint8Array(tot),p=0;\n  all.forEach(function(a){out.set(a,p);p+=a.length;});\n  return out;\n}\nfunction xe(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/<\/g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;').replace(/'/g,'&apos;').replace(/[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F]/g,'');}\nfunction rt(s){return String(s==null?'':s).split(/\\r?\\n/).map(function(l,i){return (i?'<w:br/>':'')+'<w:t xml:space=\"preserve\">'+xe(l)+'<\/w:t>';}).join('');}\nfunction P(t,o){o=o||{};return '<w:p><w:pPr>'+(o.after!==undefined?'<w:spacing w:after=\"'+o.after+'\"/>':'')+(o.keep?'<w:keepNext/>':'')+'<\/w:pPr><w:r><w:rPr>'+(o.b?'<w:b/>':'')+(o.i?'<w:i/>':'')+(o.sz?'<w:sz w:val=\"'+o.sz+'\"/><w:szCs w:val=\"'+o.sz+'\"/>':'')+(o.color?'<w:color w:val=\"'+o.color+'\"/>':'')+'<\/w:rPr>'+rt(t)+'<\/w:r><\/w:p>';}\nfunction TC(x,w,o){o=o||{};return '<w:tc><w:tcPr><w:tcW w:w=\"'+w+'\" w:type=\"dxa\"/>'+(o.shade?'<w:shd w:val=\"clear\" w:fill=\"'+o.shade+'\"/>':'')+'<w:vAlign w:val=\"center\"/><\/w:tcPr>'+x+'<\/w:tc>';}\nfunction TB(rows,w){\n  var b=['top','left','bottom','right','insideH','insideV'].map(function(s){return '<w:'+s+' w:val=\"single\" w:sz=\"4\" w:space=\"0\" w:color=\"D6DCDF\"/>';}).join('');\n  var grid='<w:tblGrid>'+w.map(function(n){return '<w:gridCol w:w=\"'+n+'\"/>';}).join('')+'<\/w:tblGrid>';\n  return '<w:tbl><w:tblPr><w:tblW w:w=\"9360\" w:type=\"dxa\"/><w:tblBorders>'+b+'<\/w:tblBorders><w:tblCellMar><w:top w:w=\"60\" w:type=\"dxa\"/><w:left w:w=\"90\" w:type=\"dxa\"/><w:bottom w:w=\"60\" w:type=\"dxa\"/><w:right w:w=\"90\" w:type=\"dxa\"/><\/w:tblCellMar><\/w:tblPr>'+grid+\n    rows.map(function(r){return '<w:tr>'+r.map(function(c,i){return TC(c.xml,w[i],c);}).join('')+'<\/w:tr>';}).join('')+'<\/w:tbl>';\n}\nfunction MK(on){return P(on?'X':'',{b:true});}\nfunction packDocx(body,title,author){\n  var doc='<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><w:document xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\"><w:body>'+body+'<w:sectPr><w:pgSz w:w=\"12240\" w:h=\"15840\"/><w:pgMar w:top=\"1080\" w:right=\"1080\" w:bottom=\"1080\" w:left=\"1080\" w:header=\"720\" w:footer=\"720\" w:gutter=\"0\"/><\/w:sectPr><\/w:body><\/w:document>';\n  return makeZip([\n   {name:'[Content_Types].xml',data:'<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\"><Default Extension=\"rels\" ContentType=\"application/vnd.openxmlformats-package.relationships+xml\"/><Default Extension=\"xml\" ContentType=\"application/xml\"/><Override PartName=\"/word/document.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml\"/><Override PartName=\"/word/styles.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml\"/><Override PartName=\"/docProps/core.xml\" ContentType=\"application/vnd.openxmlformats-package.core-properties+xml\"/><\/Types>'},\n   {name:'_rels/.rels',data:'<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"><Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument\" Target=\"word/document.xml\"/><Relationship Id=\"rId2\" Type=\"http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties\" Target=\"docProps/core.xml\"/><\/Relationships>'},\n   {name:'docProps/core.xml',data:'<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><cp:coreProperties xmlns:cp=\"http://schemas.openxmlformats.org/package/2006/metadata/core-properties\" xmlns:dc=\"http://purl.org/dc/elements/1.1/\"><dc:title>'+xe(title)+'<\/dc:title><dc:creator>'+xe(author)+'<\/dc:creator><\/cp:coreProperties>'},\n   {name:'word/_rels/document.xml.rels',data:'<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"><Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles\" Target=\"styles.xml\"/><\/Relationships>'},\n   {name:'word/styles.xml',data:'<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii=\"Calibri\" w:hAnsi=\"Calibri\"/><w:sz w:val=\"20\"/><\/w:rPr><\/w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after=\"80\" w:line=\"240\" w:lineRule=\"auto\"/><\/w:pPr><\/w:pPrDefault><\/w:docDefaults><w:style w:type=\"paragraph\" w:default=\"1\" w:styleId=\"Normal\"><w:name w:val=\"Normal\"/><\/w:style><\/w:styles>'},\n   {name:'word/document.xml',data:doc}\n  ]);\n}\nfunction dlBytes(bytes,name,mime){\n  var u=URL.createObjectURL(new Blob([bytes],{type:mime||'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}));\n  var a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();document.body.removeChild(a);\n  setTimeout(function(){URL.revokeObjectURL(u);},4000);\n}\nvar DOCX_MIME='application/vnd.openxmlformats-officedocument.wordprocessingml.document';\n\n/* ---- small helpers ---- */\nvar $=function(id){return document.getElementById(id);};\nfunction esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/<\/g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');}\nfunction today(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}\nfunction slugN(s,n,dflt){return String(s||dflt||'item').replace(/[^A-Za-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,n||50);}\nfunction per(t){t=String(t||'').trim();return /[.!?]$/.test(t)?t:t+'.';}\nfunction arr(x){return Array.isArray(x)?x:[];}\nfunction lines(x){\n  if(Array.isArray(x)) return x.filter(function(s){return String(s).trim();});\n  return String(x||'').split(/\\r?\\n/).map(function(s){return s.trim();}).filter(Boolean);\n}\n/* Light markup for prose fields. **bold**, *italic*, `mono`, a new line is a line break. */\nfunction MD(s){\n  return esc(s).replace(/\\*\\*([^*]+)\\*\\*/g,'<b>$1<\/b>')\n    .replace(/(^|[^*])\\*([^*\\s][^*]*)\\*/g,'$1<i>$2<\/i>')\n    .replace(/`([^`]+)`/g,'<span style=\"font-family:var(--mono)\">$1<\/span>')\n    .replace(/\\r?\\n/g,'<br>');\n}\n/* Plain text of the same markup, for Word and Copy. */\nfunction PLAIN(s){return String(s==null?'':s).replace(/\\*\\*([^*]+)\\*\\*/g,'$1').replace(/`([^`]+)`/g,'$1');}\n/* Fill {tokens} from a map. Unknown tokens stay as typed, so a mistake is visible. */\nfunction fill(s,map){\n  return String(s==null?'':s).replace(/\\{([A-Za-z0-9_:\\-]+)\\}/g,function(m,k){\n    if(map&&Object.prototype.hasOwnProperty.call(map,k)) return map[k];\n    if(map&&map.__fn){var r=map.__fn(k); if(r!==undefined) return r;}\n    return m;\n  });\n}\n/* A template line that is only a list token expands to the list. Empty lines drop out. */\nfunction expand(tpl,lists,map){\n  var out=[];\n  String(tpl||'').split(/\\r?\\n/).forEach(function(l){\n    var t=l.trim(), m=/^\\{([A-Za-z0-9_:\\-]+)\\}$/.exec(t);\n    if(m&&lists&&Object.prototype.hasOwnProperty.call(lists,m[1])){ out=out.concat(lists[m[1]]); return; }\n    if(m&&lists&&lists.__fn){var r=lists.__fn(m[1]); if(Array.isArray(r)){ out=out.concat(r); return; }}\n    var f=fill(t,map).trim(); if(f) out.push(f);\n  });\n  return out.join('\\n');\n}\n/* Conditions. A condition is a list of groups. Any group may match.\n   Every row in a group must hold. An empty condition always holds. */\nfunction COND(c,get){\n  if(!c||!c.length) return true;\n  return c.some(function(g){\n    return arr(g).every(function(r){\n      var x=get(r.s); if(x==null) x='';\n      switch(r.o){\n        case 'is': return String(x)===String(r.v);\n        case 'not': return String(x)!==String(r.v);\n        case 'set': return String(x)!=='';\n        case 'unset': return String(x)==='';\n        case 'gte': return (+x||0)>=(+r.v||0);\n        case 'lte': return (+x||0)<=(+r.v||0);\n        case 'eq': return (+x||0)===(+r.v||0);\n      }\n      return false;\n    });\n  });\n}\nfunction copyText(t,btn,msgEl){\n  function ok(){btn.textContent='Copied';setTimeout(function(){btn.textContent='Copy';},2000);}\n  function fb(){var ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity=0;\n    document.body.appendChild(ta);ta.select();try{document.execCommand('copy');ok();}catch(e){if(msgEl)msgEl.textContent='Copy failed.';}\n    document.body.removeChild(ta);}\n  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(ok,fb);}else fb();\n}\nfunction guardUnload(test){\n  if(PREVIEW) return;\n  window.addEventListener('beforeunload',function(e){ if(test()){e.preventDefault();e.returnValue='';} });\n}\n","engine":"/* ================= checklist engine. Everything on the page comes from DEF. ================= */\nvar T=DEF.tool||{}, M=DEF.meta||{}, G=DEF.gates||{}, S=DEF.screen||{}, PA=DEF.parent||{}, LB=DEF.labels||{};\nvar GATES=arr(G.items), ROWS=arr(S.rows), COLS=arr(S.cols), FIELDS=arr(M.fields);\nvar VERDICTS=arr(DEF.verdicts), RULES=arr(DEF.rules), WARNS=arr(DEF.warnings);\nvar SIG=DEF.sigs||{}, REC=DEF.record||{};\nfunction L(k,d){return LB[k]!=null&&LB[k]!==''?LB[k]:d;}\n\n/* ---- page skeleton ---- */\n(function build(){\n  var h='';\n  h+='<div class=\"top\"><b>'+esc(T.barTitle)+'<\/b><span>'+esc(T.barSub)+'<\/span><\/div><div class=\"wrap\">';\n  h+='<h1>'+esc(T.h1)+'<\/h1><p class=\"lede\">'+MD(T.lede)+'<\/p>';\n  if(FIELDS.length){\n    h+='<div class=\"card\"><div class=\"lab\">'+esc(M.label)+'<\/div><div class=\"grid\">';\n    FIELDS.forEach(function(f){h+='<div class=\"fld\"><label for=\"f-'+esc(f.id)+'\">'+esc(f.label)+'<\/label><input id=\"f-'+esc(f.id)+'\"><\/div>';});\n    h+='<\/div><\/div>';\n  }\n  if(GATES.length){\n    h+='<div class=\"card\"><div class=\"lab\">'+esc(G.label)+'<\/div>';\n    GATES.forEach(function(g){\n      h+='<div class=\"gate\"><span class=\"q\">'+MD(g.text)+(g.note?'<span class=\"note\">'+MD(g.note)+'<\/span>':'')+'<\/span><span class=\"radios\">'+\n        arr(g.opts).map(function(o){return '<label><input type=\"radio\" name=\"g-'+esc(g.id)+'\" value=\"'+esc(o.v)+'\">'+esc(o.l)+'<\/label>';}).join('')+'<\/span><\/div>';\n    });\n    h+='<\/div>';\n  }\n  if(ROWS.length){\n    h+='<div class=\"card\" id=\"screen-card\"><div class=\"lab\">'+esc(S.label)+'<\/div>'+\n      (S.note?'<p class=\"small\" style=\"margin:-2px 0 12px\">'+MD(S.note)+'<\/p>':'')+\n      '<table class=\"scr\"><thead><tr><th>'+esc(L('refHead','Ref'))+'<\/th><th>'+esc(L('critHead','Criterion'))+'<\/th>'+\n      COLS.map(function(c){return '<th class=\"c\">'+esc(c.l)+'<\/th>';}).join('')+'<\/tr><\/thead><tbody id=\"crit\"><\/tbody><\/table>'+\n      (S.extraOn?'<div class=\"fld\" style=\"margin-top:14px\"><label for=\"f-supp\">'+esc(S.extraLabel)+'<\/label><input id=\"f-supp\" placeholder=\"'+esc(S.extraPh)+'\"><\/div>':'')+\n      '<\/div>';\n  }\n  h+='<div class=\"card\" id=\"parent-card\" style=\"display:none\"><div class=\"fld\"><label for=\"f-parent\" id=\"parent-label\">'+esc(PA.label)+'<\/label>'+\n     '<input id=\"f-parent\" placeholder=\"'+esc(PA.placeholder)+'\"><\/div><\/div>';\n  h+='<div class=\"verdict\" id=\"verdict\" role=\"status\" aria-live=\"polite\"><div class=\"vin\">'+\n     '<h2 id=\"v-title\"><\/h2><p id=\"v-desc\"><\/p><div class=\"hits\" id=\"v-hits\"><\/div><div id=\"v-warn\"><\/div>'+\n     '<div class=\"fld\" style=\"margin-top:12px\"><label for=\"f-rat\">'+esc(L('ratLabel','Rationale for the record'))+'<\/label><textarea id=\"f-rat\" rows=\"4\"><\/textarea><\/div>'+\n     '<div class=\"btnrow\"><button class=\"btn pri\" id=\"dl\" disabled>'+esc(L('dlButton','Download the checklist as Word'))+'<\/button>'+\n     '<button class=\"btn\" id=\"copy\">Copy<\/button><button class=\"btn gh\" id=\"reset\">Clear<\/button><span id=\"msg\"><\/span><\/div><\/div><\/div>';\n  var N=DEF.notes||{};\n  if(arr(N.paras).length||N.heading){\n    h+='<hr class=\"bar\"><h2 class=\"sect gn\">'+esc(N.heading)+'<\/h2>';\n    arr(N.paras).forEach(function(p){ h+=p.style==='pull'?'<p class=\"pull\">'+MD(p.text)+'<\/p>':'<p class=\"small\">'+MD(p.text)+'<\/p>'; });\n  }\n  var F=arr((DEF.footer||{}).paras);\n  if(F.length) h+='<div class=\"foot\">'+F.map(function(p){return '<p>'+MD(p.text)+'<\/p>';}).join('')+'<\/div>';\n  h+='<\/div>';\n  document.getElementById('app').innerHTML=h;\n  document.title=T.pageTitle||T.barTitle||'Tool';\n})();\n\nFIELDS.forEach(function(f){ if(f.auto==='today') $('f-'+f.id).value=today(); });\n\nvar tb=$('crit');\nROWS.forEach(function(c){\n  var tr=document.createElement('tr');\n  tr.id='row-'+c.id;\n  var flag=c.flag?'<span class=\"flag\">'+esc(c.flag)+'<\/span>':'';\n  var note=c.note?'<span class=\"subnote\">'+MD(c.note)+'<\/span>':'';\n  var cells='<td class=\"k\">'+esc(c.id)+'<\/td><td><span class=\"crit\">'+MD(c.text)+'<\/span>'+flag+note+\n    (S.evidence!==false?\n    '<input class=\"rat\" id=\"rat-'+esc(c.id)+'\" placeholder=\"'+esc(L('ratPh','Rationale'))+'\" aria-label=\"Criterion '+esc(c.id)+' rationale\">'+\n    '<input class=\"rat\" id=\"doc-'+esc(c.id)+'\" placeholder=\"'+esc(L('docPh','Document reference'))+'\" aria-label=\"Criterion '+esc(c.id)+' document reference\">':'')+'<\/td>';\n  COLS.forEach(function(v){\n    cells+='<td class=\"c\"><input type=\"radio\" name=\"c-'+esc(c.id)+'\" value=\"'+esc(v.v)+'\" aria-label=\"'+esc(c.id)+' '+esc(v.v)+'\"><\/td>';\n  });\n  tr.innerHTML=cells; tb.appendChild(tr);\n});\n\nfunction pick(n){var e=document.querySelector('input[name=\"'+(window.CSS&&CSS.escape?CSS.escape(n):n)+'\"]:checked');return e?e.value:'';}\nfunction fval(id){var e=$(id);return e?e.value:'';}\nfunction hitV(){return S.hitValue||'yes';}\nfunction state(){\n  var a={},r={},d={},g={};\n  ROWS.forEach(function(c){a[c.id]=pick('c-'+c.id);r[c.id]=fval('rat-'+c.id);d[c.id]=fval('doc-'+c.id);});\n  GATES.forEach(function(x){g[x.id]=pick('g-'+x.id);});\n  return {g:g, ans:a, rat:r, doc:d,\n    yes:ROWS.filter(function(c){return a[c.id]===hitV();}),\n    answered:ROWS.every(function(c){return a[c.id];}),\n    gatesDone:GATES.every(function(x){return g[x.id];})};\n}\nfunction getter(s,vk){\n  return function(k){\n    if(k==='verdict') return vk;\n    if(k==='done:gates') return s.gatesDone?'yes':'no';\n    if(k==='done:screen') return s.answered?'yes':'no';\n    if(k.indexOf('cnt:')===0){var v=k.slice(4);return ROWS.filter(function(c){return s.ans[c.id]===v;}).length;}\n    if(k.indexOf('a:')===0){var id=k.slice(2); if(id in s.g) return s.g[id]; return s.ans[id]||'';}\n    return '';\n  };\n}\nvar NOMATCH={key:'',title:'No rule matched',desc:'Add a rule in the builder that covers this combination of answers.',style:'hold',showScreen:true,blocksDownload:true};\nfunction verdict(){\n  var s=state(), get=getter(s,'');\n  for(var i=0;i<RULES.length;i++){\n    if(COND(RULES[i].when,get)){\n      var v=VERDICTS.filter(function(x){return x.key===RULES[i].verdict;})[0];\n      if(v) return v;\n    }\n  }\n  return NOMATCH;\n}\nfunction vcls(v){return v.style==='yes'?'yes':v.style==='hold'?'hold':'';}\nfunction warnList(s,v){var get=getter(s,v.key);return WARNS.filter(function(w){return COND(w.when,get);});}\nfunction refresh(){\n  var s=state(), v=verdict();\n  if($('screen-card')) $('screen-card').style.opacity = v.showScreen ? '1' : '.45';\n  ROWS.forEach(function(c){ $('row-'+c.id).className = s.ans[c.id]===hitV() ? 'on' : ''; });\n  $('verdict').className='verdict '+vcls(v);\n  $('v-title').textContent=v.title||'';\n  $('v-desc').textContent=v.desc||'';\n  $('v-hits').innerHTML = (v.showHits && s.yes.length)\n    ? '<b>'+esc(L('hitsLabel','Criteria met:'))+'<\/b> '+s.yes.map(function(c){return esc(c.id);}).join(', ')\n    : '';\n  $('parent-card').style.display = v.needsParent ? '' : 'none';\n  $('parent-label').textContent = v.parentLabel || PA.label || '';\n  var w='';\n  warnList(s,v).forEach(function(x){ if(x.title||x.text) w+='<div class=\"warn\"><b>'+esc(x.title)+'<\/b> '+MD(x.text)+'<\/div>'; });\n  var r=$('f-rat');\n  if(r.dataset.auto!=='0'){\n    r.value = suggest(v,s); r.dataset.auto='1'; r.dataset.sig = sig(v,s);\n  } else if(r.dataset.sig !== sig(v,s)){\n    w+='<div class=\"warn\"><b>'+esc(L('staleTitle','The rationale is stale.'))+'<\/b> '+esc(L('staleText','The screen has changed since this rationale was written by hand. Update it, or'))+' <button type=\"button\" class=\"lnk\" id=\"regen\">'+esc(L('staleLink','regenerate it'))+'<\/button> '+esc(L('staleTail','from the current answers.'))+'<\/div>';\n  }\n  $('v-warn').innerHTML=w;\n  $('dl').disabled = !!v.blocksDownload;\n  fitPad();\n}\nfunction sig(v,s){\n  return v.key+'|'+ROWS.map(function(c){return (s.ans[c.id]||'')+'~'+(s.rat[c.id]||'')+'~'+(s.doc[c.id]||'');}).join('|')\n    +'|'+GATES.map(function(x){return s.g[x.id];}).join('');\n}\ndocument.addEventListener('click',function(e){\n  if(e.target && e.target.id==='regen'){\n    var s=state(),v=verdict(),r=$('f-rat');\n    r.value=suggest(v,s); r.dataset.auto='1'; r.dataset.sig=sig(v,s); refresh();\n  }\n});\nfunction fitPad(){\n  var v=$('verdict');\n  if(v) document.body.style.paddingBottom=(v.offsetHeight+20)+'px';\n}\nwindow.addEventListener('resize',fitPad);\nfunction evid(c,s){\n  var t='',r=(s.rat[c.id]||'').trim(),d=(s.doc[c.id]||'').trim();\n  if(r) t+=fill(L('evidRat',' Rationale: {x}'),{x:per(r)});\n  if(d) t+=fill(L('evidDoc',' Document Reference: {x}'),{x:per(d)});\n  return t;\n}\nfunction metLine(c,s){return fill(L('metLine','Meets criterion {id}: {text}'),{id:c.id,text:per(PLAIN(c.text))})+evid(c,s);}\nfunction otherLine(c,s){\n  return fill(L('otherLine','Criteria {id} answered {ANSWER}: {text}'),\n    {id:c.id,ANSWER:((s.ans[c.id]||'not answered').toUpperCase()),text:per(PLAIN(c.text))})+evid(c,s);\n}\nfunction hasEvid(c,s){return !!((s.rat[c.id]||'').trim()||(s.doc[c.id]||'').trim());}\nfunction suggest(v,s){\n  return expand(v.rat,{\n    met:s.yes.map(function(c){return metLine(c,s);}),\n    others:ROWS.filter(function(c){return s.ans[c.id]!==hitV() && hasEvid(c,s);}).map(function(c){return otherLine(c,s);})\n  },{metIds:s.yes.map(function(c){return c.id;}).join(', '),count:String(s.yes.length)});\n}\ndocument.addEventListener('change',refresh);\ndocument.addEventListener('input',refresh);\n$('f-rat').addEventListener('input',function(){this.dataset.auto='0';this.dataset.sig=sig(verdict(),state());});\n\nfunction meta(){var m={};FIELDS.forEach(function(f){m[f.id]=fval('f-'+f.id);});return m;}\nfunction textOut(){\n  var s=state(),v=verdict(),m=meta(),Ls=[];\n  Ls.push(T.textTitle||'','');\n  FIELDS.forEach(function(f){Ls.push(f.label+': '+m[f.id]);});\n  Ls.push('');\n  if(GATES.length){\n    Ls.push(G.textHeading||G.label);\n    GATES.forEach(function(g){Ls.push('  '+PLAIN(g.short||g.text)+': '+(s.g[g.id]||'-'));});\n  }\n  if($('f-parent').value) Ls.push('  '+(PA.textLabel||'Parent')+': '+$('f-parent').value);\n  Ls.push('');\n  if(v.showScreen&&ROWS.length){\n    Ls.push(S.textHeading||S.label);\n    ROWS.forEach(function(c){\n      Ls.push('  ('+c.id+') '+PLAIN(c.text)+'  ['+(s.ans[c.id]||'-').toUpperCase()+']');\n      var r=(s.rat[c.id]||'').trim(), dr=(s.doc[c.id]||'').trim();\n      if(r) Ls.push('      Rationale: '+r);\n      if(dr) Ls.push('      Document reference: '+dr);\n    });\n    if(S.extraOn) Ls.push('',(S.extraText||S.extraLabel)+': '+(fval('f-supp')||S.extraBlank||''),'');\n    else Ls.push('');\n  }\n  Ls.push(L('textResult','Result')+': '+(v.result||v.title),'',L('textRat','Rationale')+': '+$('f-rat').value);\n  warnList(s,v).forEach(function(w){ if(w.copyText) Ls.push('',PLAIN(w.copyText)); });\n  Ls.push('',SIG.textIntro||'');\n  arr(SIG.items).forEach(function(x){\n    var n=String(x.note||'').trim().replace(/\\.$/,'');\n    if(n) n=', '+n.charAt(0).toLowerCase()+n.slice(1);\n    Ls.push('  '+x.name+n+': ________  Date: ________');\n  });\n  if(REC.textClosing) Ls.push('',REC.textClosing);\n  return Ls.join('\\n');\n}\nfunction docBody(){\n  var s=state(),v=verdict(),m=meta(),b=[];\n  b.push(P(T.docTitle||'',{b:true,sz:32,after:40}));\n  if(T.docSub) b.push(P(T.docSub,{sz:18,color:'5C6D78',after:160}));\n  if(FIELDS.length){\n    var mr=[];\n    for(var i=0;i<FIELDS.length;i+=2){\n      var a=FIELDS[i], c=FIELDS[i+1];\n      mr.push([{xml:P(a.label,{b:true,sz:18}),shade:'F4F6F7'},{xml:P(m[a.id],{sz:20})},\n        {xml:P(c?c.label:'',{b:true,sz:18}),shade:'F4F6F7'},{xml:P(c?m[c.id]:'',{sz:20})}]);\n    }\n    b.push(TB(mr,[1700,3000,1700,2960]));\n    b.push(P('',{after:160}));\n  }\n  if(GATES.length){\n    b.push(P(G.docHeading||G.label,{b:true,sz:24,keep:true}));\n    var gr=[],maxN=0;\n    GATES.forEach(function(g){maxN=Math.max(maxN,arr(g.opts).length);});\n    GATES.forEach(function(g){\n      var row=[{xml:P(PLAIN(g.short||g.text),{sz:18})}], o=arr(g.opts).slice();\n      if(G.docOrder==='yesfirst'){var rk=function(x){return x.v==='yes'?0:x.v==='no'?1:2;};o.sort(function(x,y){return rk(x)-rk(y);});}\n      for(var k=0;k<maxN;k++){ var x=o[k];\n        row.push({xml:MK(x&&s.g[g.id]===x.v),shade:'F4F6F7'},{xml:P(x?x.l:'',{sz:17})}); }\n      gr.push(row);\n    });\n    var gw=maxN===2?[5760,600,900,600,1500]:(function(){var w=[9360-maxN*1500];for(var k=0;k<maxN;k++)w.push(600,900);return w;})();\n    b.push(TB(gr,gw));\n    if($('f-parent').value) b.push(P((PA.docLabel||'Parent')+': '+$('f-parent').value,{sz:20}));\n    b.push(P('',{after:160}));\n  }\n  if(v.showScreen&&ROWS.length){\n    var ev=S.evidence!==false;\n    b.push(P(S.docHeading||S.label,{b:true,sz:24,keep:true}));\n    if(S.note) b.push(P(PLAIN(S.note),{sz:17,color:'5C6D78'}));\n    var hd=[{xml:P(L('refHead','Ref'),{b:true,sz:17}),shade:'EDF0F1'},{xml:P(L('critHead','Criterion'),{b:true,sz:17}),shade:'EDF0F1'}];\n    if(ev) hd.push({xml:P(L('evidHead','Rationale and document reference'),{b:true,sz:17}),shade:'EDF0F1'});\n    COLS.forEach(function(c){hd.push({xml:P(c.l,{b:true,sz:17}),shade:'EDF0F1'});});\n    var rows=[hd];\n    ROWS.forEach(function(c){\n      var a=s.ans[c.id], r=(s.rat[c.id]||'').trim(), dr=(s.doc[c.id]||'').trim(), e='';\n      if(r) e+=P('Rationale: '+r,{sz:17});\n      if(dr) e+=P('Document reference: '+dr,{sz:17});\n      if(!e) e=P('—',{sz:17,color:'8998A2'});\n      var row=[{xml:P(c.id,{b:true,sz:18})},{xml:P(PLAIN(c.text),{sz:18})+(c.note?P(PLAIN(c.note),{sz:15,color:'5C6D78',i:true}):'')}];\n      if(ev) row.push({xml:e});\n      COLS.forEach(function(col){row.push({xml:MK(a===col.v)});});\n      rows.push(row);\n    });\n    var aw=COLS.map(function(){return 700;}); if(aw.length) aw[aw.length-1]+=20;\n    var asum=aw.reduce(function(x,y){return x+y;},0);\n    var w=ev?[560,9360-560-2880-asum,2880]:[560,9360-560-asum];\n    b.push(TB(rows,w.concat(aw)));\n    if(S.extraOn) b.push(P((S.extraDoc||S.extraLabel)+': '+(fval('f-supp')||S.extraBlank||''),{sz:17,after:160}));\n    else b.push(P('',{after:160}));\n  }\n  b.push(P(L('resultHeading','Result'),{b:true,sz:24,keep:true}));\n  var res=arr(DEF.results);\n  if(res.length){\n    var rr=[],rw=[];\n    res.forEach(function(x,i){rr.push({xml:P(x,{b:true,sz:18}),shade:'F4F6F7'},{xml:MK(v.result===x)});rw.push(i?2400:2200,600);});\n    b.push(TB([rr],rw));\n  } else b.push(P(v.title,{b:true,sz:18}));\n  b.push(P('',{after:80}));\n  b.push(P(L('ratHeading','Rationale'),{b:true,sz:20}));\n  b.push(TB([[{xml:P($('f-rat').value,{sz:20})}]],[9360]));\n  b.push(P('',{after:160}));\n  warnList(s,v).forEach(function(w){ if(w.wordText) b.push(P(PLAIN(w.wordText),{sz:18,color:'7E340F',after:160})); });\n\n  if(arr(SIG.items).length){\n    b.push(P(SIG.heading||'Signatures',{b:true,sz:24,keep:true}));\n    if(SIG.intro) b.push(P(SIG.intro,{sz:17,color:'5C6D78',keep:true,after:120}));\n    b.push(TB(arr(SIG.items).map(function(x){\n      return [{xml:P(x.name,{b:true,sz:18})+(x.note?P(x.note,{sz:15,color:'5C6D78'}):''),shade:'F4F6F7'},{xml:P('')},{xml:P('Date',{b:true,sz:18}),shade:'F4F6F7'},{xml:P('')}];\n    }),[2600,3360,900,2500]));\n  }\n  if(SIG.disclaimer) b.push(P(SIG.disclaimer,{sz:15,color:'8998A2',after:40}));\n  if(REC.wordClosing) b.push(P(REC.wordClosing,{sz:15,color:'8998A2'}));\n  return b.join('');\n}\n$('dl').addEventListener('click',function(){\n  var m=meta(), nf=M.nameField;\n  if(nf && !String(m[nf]||'').trim()){ $('f-'+nf).focus(); $('msg').textContent=M.nameMsg||'Fill in the name first.'; return; }\n  if(verdict().needsParent && !$('f-parent').value.trim()){\n    $('f-parent').focus();\n    $('msg').textContent=PA.msg||'Name the parent item first.';\n    return;\n  }\n  try{\n    var name=nf?m[nf]:'';\n    var b=packDocx(docBody(),(T.docTitle||'Checklist')+(name?': '+name:''),M.authorField?m[M.authorField]:'');\n    dlBytes(b,(T.fileStem||'Checklist')+'_'+slugN(name,50)+'_'+((M.dateField&&m[M.dateField])||today())+'.docx',DOCX_MIME);\n    $('msg').textContent='Downloaded.';\n  }catch(e){ $('msg').textContent='Build failed: '+e.message; }\n});\n$('copy').addEventListener('click',function(){ copyText(textOut(),$('copy'),$('msg')); });\n$('reset').addEventListener('click',function(){\n  if(!confirm('Clear the form?')) return;\n  document.querySelectorAll('input[type=radio]').forEach(function(r){r.checked=false;});\n  document.querySelectorAll('input[type=text],input:not([type]),textarea').forEach(function(i){i.value='';});\n  FIELDS.forEach(function(f){ if(f.auto==='today') $('f-'+f.id).value=today(); });\n  $('f-rat').dataset.auto='1'; $('msg').textContent=''; refresh();\n});\nguardUnload(function(){\n  return (M.nameField&&fval('f-'+M.nameField)) || GATES.some(function(g){return pick('g-'+g.id);}) || ROWS.some(function(c){return pick('c-'+c.id);});\n});\n\n/* ---- the builder keeps answers across a preview refresh ---- */\nwindow.__getState=function(){\n  var o={v:{},r:{},auto:$('f-rat').dataset.auto,sig:$('f-rat').dataset.sig};\n  document.querySelectorAll('input[id],textarea[id]').forEach(function(e){ if(e.type!=='radio') o.v[e.id]=e.value; });\n  document.querySelectorAll('input[type=radio]:checked').forEach(function(e){ o.r[e.name]=e.value; });\n  return o;\n};\nwindow.__setState=function(o){\n  if(!o) return;\n  Object.keys(o.v||{}).forEach(function(id){ var e=$(id); if(e&&id!=='f-rat') e.value=o.v[id]; });\n  Object.keys(o.r||{}).forEach(function(n){\n    document.querySelectorAll('input[type=radio]').forEach(function(e){ if(e.name===n&&e.value===o.r[n]) e.checked=true; });\n  });\n  if(o.auto==='0'){ $('f-rat').value=(o.v||{})['f-rat']||''; $('f-rat').dataset.auto='0'; $('f-rat').dataset.sig=o.sig||''; }\n  refresh();\n};\nwindow.__recordText=function(){var v=verdict();return {text:textOut(),note:v.blocksDownload?'Incomplete. The Word download stays blocked until the verdict is complete.':'This is the Copy text. The Word record carries the same content.'};};\nwindow.textOut=textOut; window.verdict=verdict;\nrefresh();\n"};
+var STARTER={"builder":"checklist","version":1,"tool":{"id":"ci-selection-checklist","exportName":"ci-identification-tool_RevD_DRAFT","pageTitle":"CI Selection Criteria Checklist","barTitle":"CI Selection Criteria Checklist","barSub":"Configuration Management · Rev C draft","h1":"Is this item a Configuration Item?","lede":"The checklist, on one page. Fill it in, read the verdict, download the completed form.","docTitle":"CI Selection Criteria Checklist","docSub":"Complete one checklist per candidate item.","textTitle":"CI SELECTION CRITERIA CHECKLIST","fileStem":"CI-Selection-Checklist"},"meta":{"label":"Candidate item","fields":[{"id":"item","label":"Candidate item","auto":""},{"id":"pin","label":"PIN / model ref","auto":""},{"id":"assessor","label":"Assessor","auto":""},{"id":"date","label":"Date","auto":"today"}],"nameField":"item","dateField":"date","authorField":"assessor","nameMsg":"Name the candidate item first."},"gates":{"label":"Step 1 · Gates","docHeading":"Step 1. Gates","textHeading":"Step 1. Gates","docOrder":"yesfirst","items":[{"id":"item","short":"Candidate is an item","text":"Is the candidate an item, rather than a function, task, failure mode, feature, or location?","note":"Only an item can be a CI. A label is a signal that items worth screening exist nearby.","opts":[{"v":"yes","l":"Yes"},{"v":"no","l":"No"}]},{"id":"gate","short":"Satisfies a system end-use function","text":"Does the item satisfy a system end-use function?","note":"A small part carrying an external criticality designation does satisfy this gate. Failing it here skips the safety screen.","opts":[{"v":"yes","l":"Yes"},{"v":"no","l":"No"}]},{"id":"proc","short":"Child of a COTS, catalogue, or vendor item procured inseparable from its parent","text":"Is the item a child item of a commercial-off-the-shelf (COTS), catalogue, or vendor item and is being procured inseparable from its higher parent item?","note":"If yes, screen the procured higher parent item instead. Do not decompose COTS, catalogue, or vendor items where our company is not the design authority.","opts":[{"v":"no","l":"No"},{"v":"yes","l":"Yes"}]}]},"screen":{"label":"Step 2 · Criteria screen","docHeading":"Step 2. Criteria Screen","textHeading":"Step 2. Criteria screen","note":"One or more YES answers requires CI designation and submittal for Acquirer concurrence.","cols":[{"v":"yes","l":"Yes"},{"v":"no","l":"No"},{"v":"na","l":"N/A"}],"hitValue":"yes","evidence":true,"rows":[{"id":"a","text":"Critical to the functioning of the system","flag":"","note":""},{"id":"b","text":"Failure might result in serious injury, loss of life, or loss of primary system capability.","flag":"Mandatory for safety","note":"Includes critical safety items, safety critical items, items that trace to safety critical functions or critical/key characteristics, and items flagged by failure modes and effects or criticality analysis, single point or common mode failure identification, or a maintainability or health-monitoring driven limit. Consider both direct failure modes and cascading effects."},{"id":"c","text":"Technology is complex, not well known, and critical to acquisition, operational, or supportability goals","flag":"","note":""},{"id":"d","text":"The item is under control as designated by the Acquirer","flag":"","note":"Broader than a contract line naming the item as a CI. Any designation assigned by a customer or government activity engages this criterion."},{"id":"e","text":"Requires separate type designation, versions, or nomenclatures","flag":"","note":""},{"id":"f","text":"Critical or high risk; failure would have significant financial impact","flag":"","note":""},{"id":"g","text":"Requires dedicated logistics support elements (e.g., APL/AEL/ACL provisioning lists, special test equipment, technical manuals, PMS MIP/MRC, danger/caution tag-out).","flag":"","note":""},{"id":"SW","text":"Item is computer software","flag":"","note":""}],"extraOn":true,"extraLabel":"Supplemental screening applied","extraPh":"Leave blank if the program has adopted none","extraText":"Supplemental screening","extraDoc":"Supplemental screening (optional)","extraBlank":"None adopted by this program."},"parent":{"label":"Parent CI whose documentation controls this item","placeholder":"Required. The record is not complete without it","textLabel":"Parent CI","docLabel":"Parent CI controlling this item","msg":"Name the parent item first. The record is not complete without it."},"results":["DESIGNATE AS CI","DO NOT DESIGNATE"],"verdicts":[{"key":"not-item","title":"Not an item","style":"neutral","result":"DO NOT DESIGNATE","showScreen":false,"needsParent":false,"parentLabel":"","showHits":false,"blocksDownload":false,"desc":"A function, task, failure mode, feature, or location cannot be designated. Ask for the items behind the label and screen those.","rat":"Not screened. The candidate is not an item."},{"key":"procured","title":"Assess at the procurement level","style":"neutral","result":"DO NOT DESIGNATE","showScreen":false,"needsParent":true,"parentLabel":"Higher parent item procured as a unit, screened in place of this item","showHits":false,"blocksDownload":false,"desc":"The item is procured inseparable from a COTS, catalogue, or vendor parent. The customer-facing CI is the parent as procured.","rat":"Not screened at this level. The item is a child of a COTS, catalogue, or vendor item and is procured inseparable from its higher parent item."},{"key":"no-gate","title":"Fails the end-use function gate","style":"neutral","result":"DO NOT DESIGNATE","showScreen":false,"needsParent":true,"parentLabel":"","showHits":false,"blocksDownload":false,"desc":"Not a CI candidate. Controlled within the parent CI’s configuration documentation.","rat":"Not designated. No system end-use function."},{"key":"incomplete-gates","title":"Incomplete","style":"hold","result":"","showScreen":true,"needsParent":false,"parentLabel":"","showHits":false,"blocksDownload":true,"desc":"Answer the three gates.","rat":""},{"key":"incomplete-screen","title":"Incomplete","style":"hold","result":"","showScreen":true,"needsParent":false,"parentLabel":"","showHits":false,"blocksDownload":true,"desc":"Answer all eight rows of the criteria screen.","rat":""},{"key":"designate","title":"Designate as a CI","style":"yes","result":"DESIGNATE AS CI","showScreen":true,"needsParent":false,"parentLabel":"","showHits":true,"blocksDownload":false,"desc":"One or more criteria apply. Every one is recorded, so the designation survives if a single fact later changes.","rat":"Designated.\n{met}\n{others}"},{"key":"no-crit","title":"Do not designate","style":"neutral","result":"DO NOT DESIGNATE","showScreen":true,"needsParent":true,"parentLabel":"","showHits":false,"blocksDownload":false,"desc":"Passes the gate. No criterion applies. Controlled within the parent CI’s configuration documentation.","rat":"Not designated. Passes the end-use function gate. No criterion applies.\n{others}"}],"rules":[{"when":[[{"s":"a:item","o":"is","v":"no"}]],"verdict":"not-item"},{"when":[[{"s":"a:proc","o":"is","v":"yes"}]],"verdict":"procured"},{"when":[[{"s":"a:gate","o":"is","v":"no"}]],"verdict":"no-gate"},{"when":[[{"s":"done:gates","o":"is","v":"no"}]],"verdict":"incomplete-gates"},{"when":[[{"s":"done:screen","o":"is","v":"no"}]],"verdict":"incomplete-screen"},{"when":[[{"s":"cnt:yes","o":"gte","v":"1"}]],"verdict":"designate"},{"when":[],"verdict":"no-crit"}],"warnings":[{"title":"System Safety concurrence required.","when":[[{"s":"a:b","o":"is","v":"yes"},{"s":"verdict","o":"not","v":"designate"},{"s":"verdict","o":"not","v":"incomplete-gates"},{"s":"verdict","o":"not","v":"incomplete-screen"}]],"text":"Criterion (b) was answered yes and the item is not designated. Disposition through the safety disposition gate and record it.","copyText":"","wordText":""},{"title":"","text":"","when":[[{"s":"a:b","o":"is","v":"yes"},{"s":"verdict","o":"not","v":"designate"}]],"copyText":"System Safety concurrence required. Criterion (b) answered yes and the item is not designated.","wordText":"Criterion (b) was answered yes and the item is not designated. System Safety concurrence is required and the proposal is dispositioned through the safety disposition gate."},{"title":"Software CI.","when":[[{"s":"a:SW","o":"is","v":"yes"},{"s":"verdict","o":"is","v":"designate"}]],"text":"That software is a CI is a rule. How much software is one CI is a judgment: own end-use function, own specification, own interfaces, own qualification test, own version identity. Screen it through Appendix D, reading version identifier for PIN and build or load for variant.","copyText":"","wordText":""}],"sigs":{"heading":"Concurrence signatures","intro":"Record each concurrence that applies. CI selection is a CM decision; the concurrences confirm that the technical basis is sound, they do not make the selection.","textIntro":"Concurrence signatures. Record each concurrence that applies.","items":[{"name":"System Safety","note":"Required if criterion (b) was answered yes and the item is not designated."},{"name":"RM&SH","note":"Required where the determination rests on failure modes and effects or criticality analysis, single point or common mode failure identification, or a maintainability or health-monitoring driven limit."},{"name":"Systems Engineering","note":"Required on the end-use function gate and where the determination rests on specification or interface considerations."},{"name":"CM, determination","note":""}],"disclaimer":"This record is an assessment. It is not a concurrence."},"record":{"wordClosing":"Attach this completed checklist to the CI Selection Rationale Record. Retained for the program life, for every candidate, including items not designated.","textClosing":"Attach to the CI Selection Rationale Record. Retained for the program life, for every candidate, including items not designated."},"labels":{"refHead":"Ref","critHead":"Criterion","evidHead":"Rationale and document reference","ratPh":"Rationale","docPh":"Document reference","hitsLabel":"Criteria met:","ratLabel":"Rationale for the record","dlButton":"Download the checklist as Word","resultHeading":"Result","ratHeading":"Rationale","textResult":"Result","textRat":"Rationale","metLine":"Meets criterion {id}: {text}","otherLine":"Criteria {id} answered {ANSWER}: {text}","evidRat":" Rationale: {x}","evidDoc":" Document Reference: {x}","staleTitle":"The rationale is stale.","staleText":"The screen has changed since this rationale was written by hand. Update it, or","staleLink":"regenerate it","staleTail":"from the current answers."},"notes":{"heading":"General Notes","paras":[{"style":"normal","text":"The above CI selection criteria is per EIA-649-1A §3.2.1(2)."},{"style":"normal","text":"**Safety linkage.** Critical safety items, safety critical items, items that trace to safety critical functions or critical/key characteristics, and items flagged by failure modes and effects or criticality analysis, single point or common mode failure identification, or a maintainability or health-monitoring driven limit are screened against criterion (b) and, where applicable, criterion (a). Such items will nearly always qualify. Consider both direct failure modes and cascading effects. System Safety concurrence is required if criterion (b) was answered yes and the item is not designated.\nRM&SH concurrence is required where the determination rests on failure modes and effects or criticality analysis, single point or common mode failure identification, or a maintainability or health-monitoring driven limit.\nSystems Engineering concurrence is required on the end-use function gate and where the determination rests on specification or interface considerations."},{"style":"normal","text":"**Supplemental Criteria.** Programs may adopt additional criteria to expand CI identification to items that would otherwise not pass the mandatory screening criteria as defined in EIA-649-1A. Supplemental criteria are not allowed to tailor the mandatory criteria. Examples of supplemental criteria are provided in GEIA-HB-649A App. D."},{"style":"normal","text":"**Glossary.** APL, AEL, and ACL are distinctive provisioning lists. PMS MIP/MRC is Planned Maintenance System Documentation."}]},"footer":{"paras":[{"text":"CI selection is a CM decision. The concurrences confirm the technical basis is sound. They do not make the selection. Final designation authority for Acquirer-controlled CIs rests with the Acquirer."},{"text":"**Attach the completed checklist to the CI Selection Rationale Record.** One checklist per candidate item. Retained for the program life, for every candidate, including items not designated."},{"text":"Nothing is saved here. Download before you close the tab. Process document number and revision: `[to be assigned]`"}]}};
+/* Builds a standalone tool file from its parts. Used by the builder and by the build script. */
+function assembleTool(parts, def, preview){
+  function safe(s){ return String(s).replace(/<\/(script)/gi,'<\\/$1').replace(/<!--/g,'<\\!--'); }
+  var json=JSON.stringify(def,null,1).replace(/</g,'\\u003c');
+  var t=(def.tool&&(def.tool.pageTitle||def.tool.barTitle))||'Tool';
+  t=String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  return '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'+
+    '<meta name="viewport" content="width=device-width, initial-scale=1">\n'+
+    '<meta name="generator" content="Tool Builder: '+def.builder+'">\n'+
+    '<title>'+t+'</title>\n<style>\n'+parts.css+'\n</style>\n</head>\n<body>\n<div id="app"></div>\n'+
+    '<!-- The tool definition. The builder reads this block to reopen the tool for editing. -->\n'+
+    '<script type="application/json" id="tool-def">\n'+json+'\n<\/script>\n'+
+    (preview?'<script>window.TOOL_PREVIEW=1;<\/script>\n':'')+
+    '<script>\n'+safe(parts.runtime)+'\n'+safe(parts.engine)+'\n<\/script>\n</body>\n</html>\n';
+}
+if(typeof module!=='undefined') module.exports={assembleTool:assembleTool};
+
+/* Help text and helpers shared by the three builders */
+var MARKUP='Markup: <code>**bold**</code>, <code>*italic*</code>, <code>`mono`</code>. A new line is a line break.';
+var COND_HELP='Rows in one box must all be true. Use <b>Or another set</b> for a second box. Either box can match.';
+var LINES_HELP='One item per line.';
+function startHelp(o){
+  return ''+
+  '<div class="help-card"><h3>How this builder works</h3>'+
+  '<p>The left list holds the parts of the tool. Pick a part and edit it here. The preview on the right updates as you type.</p>'+
+  '<p>Answer questions in the preview to test the logic. Your test answers stay put while you edit.</p>'+
+  '<p>The builder is one web page. It runs offline in your browser. Nothing installs.</p></div>'+
+  '<div class="help-card"><h3>What you have loaded</h3>'+o.loaded+'</div>'+
+  '<div class="help-card"><h3>Save and export</h3><ul>'+
+  '<li><b>Save project</b> writes a <code>.json</code> file. Open it later to keep working.</li>'+
+  '<li><b>Export tool</b> writes one <code>.html</code> file. That file is the finished tool. Share it like the tools you use now.</li>'+
+  '<li>An exported tool carries its own definition. Use <b>Open</b> on an exported tool to edit it again.</li>'+
+  '<li>The builder also keeps your last session in this browser. It offers that session back next time. Do not rely on it. Save the project.</li>'+
+  '<li><b>New</b> starts over from the loaded tool or from a blank one. <b>Undo</b> brings back what you had.</li></ul></div>'+
+  '<div class="help-card"><h3>How the logic works</h3>'+o.logic+'</div>'+
+  '<div class="help-card"><h3>Conditions</h3>'+
+  '<p>A condition tests an answer, a count, or the verdict. Pick what to test, how to test it, and the value.</p>'+
+  '<p>Rows inside one box must all be true. <b>Or another set</b> adds a second box. Either box can match. A condition with no rows always applies.</p></div>'+
+  '<div class="help-card"><h3>IDs</h3>'+
+  '<p>Questions, verdicts, and other parts carry short IDs. Rules point at those IDs. Change an ID here and the builder updates every rule that points at it.</p>'+
+  '<p>The <b>Checks</b> list at the left flags broken links. Examples: a rule that names a deleted question, or two questions with the same ID. Click a check to jump to it.</p></div>'+
+  '<div class="help-card"><h3>Text tricks</h3>'+
+  '<p>'+MARKUP+'</p>'+(o.tokens||'')+'</div>';
+}
+function yesNoOpts(){ return [['yes','yes'],['no','no']]; }
+
+/* ================= Checklist builder: sections, subjects, checks ================= */
+function ckAnswerSubjects(d){
+  var out=[];
+  asArr((d.gates||{}).items).forEach(function(g){
+    out.push({id:'a:'+g.id,label:g.id+' · '+(g.short||g.text||''),group:'Step 1 answers',kind:'choice',
+      values:asArr(g.opts).map(function(o){return [o.v,o.l||o.v];})});
+  });
+  var cols=asArr((d.screen||{}).cols).map(function(c){return [c.v,c.l||c.v];});
+  asArr((d.screen||{}).rows).forEach(function(r){
+    out.push({id:'a:'+r.id,label:'('+r.id+') '+String(r.text||'').slice(0,60),group:'Step 2 answers',kind:'choice',values:cols});
+  });
+  out.push({id:'done:gates',short:'Step 1 done',label:'Every Step 1 question is answered',group:'Progress',kind:'choice',values:[['yes','yes'],['no','no']]});
+  out.push({id:'done:screen',short:'Step 2 done',label:'Every Step 2 row is answered',group:'Progress',kind:'choice',values:[['yes','yes'],['no','no']]});
+  asArr((d.screen||{}).cols).forEach(function(c){
+    out.push({id:'cnt:'+c.v,short:'count '+(c.l||c.v),label:'Number of Step 2 rows answered '+(c.l||c.v),group:'Counts',kind:'number'});
+  });
+  return out;
+}
+function ckVerdictOpts(d){ return asArr(d.verdicts).map(function(v){return [v.key,v.key+' · '+(v.title||'')];}); }
+var FAMILY={
+  id:'checklist',
+  name:'Checklist Tool Builder',
+  sub:'One-page checklist tools · offline',
+  others:{tree:'Decision Tree Tool Builder',audit:'Audit Designation Tool Builder'},
+  subjects:function(d,ctx){
+    var s=ckAnswerSubjects(d);
+    if(ctx==='warn') s.push({id:'verdict',short:'verdict',label:'The verdict',group:'Verdict',kind:'verdict',values:ckVerdictOpts(d)});
+    return s;
+  },
+  rename:function(d,kind,old,nw,obj){
+    if(kind==='answer') return renameRefs(d,'a:'+old,'a:'+nw);
+    if(kind==='col'){
+      var rows={}; asArr((d.screen||{}).rows).forEach(function(r){rows['a:'+r.id]=1;});
+      return renameRefs(d,'cnt:'+old,'cnt:'+nw,function(s){return !!rows[s];},old,nw,['hitValue']);
+    }
+    if(kind==='opt'){
+      var g=asArr((d.gates||{}).items).filter(function(x){return asArr(x.opts).indexOf(obj)>=0;})[0];
+      return g?renameRefs(d,null,null,'a:'+g.id,old,nw):0;
+    }
+    if(kind==='verdict') return renameRefs(d,null,null,'verdict',old,nw,['verdict']);
+    if(kind==='field') return renameRefs(d,null,null,null,old,nw,['nameField','dateField','authorField']);
+    return 0;
+  },
+  validate:function(d){
+    var out=[], subs=FAMILY.subjects(d,'warn');
+    var ids=asArr((d.gates||{}).items).map(function(g){return {id:g.id};}).concat(asArr((d.screen||{}).rows));
+    dupes(ids,'id','question','gates',out);
+    dupes(asArr((d.meta||{}).fields),'id','header field','meta',out);
+    dupes(asArr(d.verdicts),'key','verdict','verdicts',out);
+    var vk={}; asArr(d.verdicts).forEach(function(v){vk[v.key]=1;});
+    asArr(d.rules).forEach(function(r,i){
+      if(!vk[r.verdict]) out.push({sec:'rules',msg:'Rule '+(i+1)+' points at verdict "'+(r.verdict||'')+'", which does not exist.'});
+      checkCond(r.when,FAMILY.subjects(d,''),'Rule '+(i+1),'rules',out);
+    });
+    if(asArr(d.rules).length && asArr(asArr(d.rules)[asArr(d.rules).length-1].when).length)
+      out.push({sec:'rules',msg:'The last rule has conditions. Some answers may match no rule. Add a fallback rule with no conditions at the end.'});
+    if(!asArr(d.rules).length) out.push({sec:'rules',msg:'No rules yet. The tool cannot pick a verdict.'});
+    asArr(d.warnings).forEach(function(w,i){ checkCond(w.when,subs,'Warning '+(i+1),'warnings',out); });
+    var res=asArr(d.results);
+    asArr(d.verdicts).forEach(function(v){ if(v.result&&res.indexOf(v.result)<0) out.push({sec:'verdicts',msg:'Verdict '+v.key+' records result "'+v.result+'", which is not in the result list.'}); });
+    var fid={}; asArr((d.meta||{}).fields).forEach(function(f){fid[f.id]=1;});
+    ['nameField','dateField','authorField'].forEach(function(k){ var v=(d.meta||{})[k]; if(v&&!fid[v]) out.push({sec:'meta',msg:'The '+k.replace('Field',' field')+' points at "'+v+'", which is not a header field.'}); });
+    var cols={}; asArr((d.screen||{}).cols).forEach(function(c){cols[c.v]=1;});
+    if(asArr((d.screen||{}).rows).length&&!cols[(d.screen||{}).hitValue]) out.push({sec:'screen',msg:'The highlighted answer is not one of the answer columns.'});
+    return out;
+  },
+  sections:[
+    {id:'start',title:'Start here',html:function(){return startHelp({
+      loaded:'<p>This builder opened with the <b>CI Selection Criteria Checklist</b>. It is a one-page form with gates, a criteria table, a sticky verdict bar, and a Word record.</p><p>Export it unchanged and you get the same page you have now. The answers, the verdict, the rationale, Copy, and the Word record all match.</p><p>Use it to edit that tool. Or use <b>New</b> to start a similar one.</p>',
+      logic:'<p>The tool reads the answers. Then it checks the <b>Rules</b> from top to bottom. The first rule that matches picks the verdict. A rule with no conditions always matches. Keep one at the bottom as the fallback.</p><p>Each <b>Verdict</b> sets the words on the verdict bar, the result in the record, and the rationale text.</p><p><b>Warnings</b> are separate. Each one shows whenever its condition holds. A warning can also add a line to Copy and to the Word record.</p>',
+      tokens:'<p>Rationale templates take tokens. <code>{met}</code> lists every row answered with the highlighted answer. <code>{others}</code> lists other rows that carry a rationale or a document reference. <code>{metIds}</code> gives the row IDs in one line. <code>{count}</code> gives how many.</p>'});}},
+    {id:'page',title:'Page and record titles',intro:'<p>The words around the tool. The header bar, the big title, and the titles on the Word record.</p>',
+     fields:[
+      {t:'group',label:'On the page',k:'tool',fields:[
+        {t:'row',fields:[{t:'text',k:'barTitle',label:'Header bar title'},{t:'text',k:'barSub',label:'Header bar subtitle',help:'Revision and owner, for example.'}]},
+        {t:'text',k:'h1',label:'Big title'},
+        {t:'area',k:'lede',label:'Line under the title',help:MARKUP},
+        {t:'text',k:'pageTitle',label:'Browser tab title'}]},
+      {t:'group',label:'On the record',k:'tool',fields:[
+        {t:'row',fields:[{t:'text',k:'docTitle',label:'Word record title'},{t:'text',k:'textTitle',label:'Copy text title',help:'First line of the copied text.'}]},
+        {t:'text',k:'docSub',label:'Word record subtitle'},
+        {t:'row',fields:[{t:'text',k:'fileStem',label:'Word file name start',code:true,help:'The tool adds the item name and the date.'},
+          {t:'text',k:'exportName',label:'Exported tool file name',code:true,help:'The builder adds <code>.html</code>.'}]}]}
+     ]},
+    {id:'meta',title:'Header fields',intro:'<p>The boxes at the top of the form, such as item name, assessor, and date.</p>',
+     fields:[
+      {t:'obj',k:'meta',fields:[
+        {t:'text',k:'label',label:'Card label'},
+        {t:'list',k:'fields',label:'Fields',addLabel:'Add a field',
+         sum:function(f){return [f.id,' '+(f.label||'')];},
+         add:function(){return {id:'field'+Math.floor(Math.random()*900+100),label:'New field',auto:''};},
+         item:[{t:'row',fields:[{t:'text',k:'label',label:'Label'},{t:'text',k:'id',label:'ID',code:true,kind:'field',help:'Short, no spaces.'}]},
+               {t:'select',k:'auto',label:'Starts with',opts:[['','Blank'],['today','Today’s date']]}]},
+        {t:'row',fields:[
+          {t:'select',k:'nameField',label:'Name field',opts:function(d){return [['','(none)']].concat(asArr((d.meta||{}).fields).map(function(f){return [f.id,f.label];}));},help:'Required before download. Used in the file name.'},
+          {t:'select',k:'dateField',label:'Date field',opts:function(d){return [['','(none)']].concat(asArr((d.meta||{}).fields).map(function(f){return [f.id,f.label];}));},help:'Used in the file name.'}]},
+        {t:'row',fields:[
+          {t:'select',k:'authorField',label:'Author field',opts:function(d){return [['','(none)']].concat(asArr((d.meta||{}).fields).map(function(f){return [f.id,f.label];}));},help:'Stored as the Word file author.'},
+          {t:'text',k:'nameMsg',label:'Message when the name is missing'}]}
+      ]}]},
+    {id:'gates',title:'Step 1 · Gates',intro:'<p>Questions answered first. A gate can end the screen. For example, “Not an item” ends it. The <b>Rules</b> section decides that.</p>',
+     fields:[{t:'obj',k:'gates',fields:[
+      {t:'row',fields:[{t:'text',k:'label',label:'Card label'},{t:'text',k:'textHeading',label:'Heading in Copy'}]},
+      {t:'row',fields:[{t:'text',k:'docHeading',label:'Heading in Word'},
+        {t:'select',k:'docOrder',label:'Option order in Word',opts:[['screen','Same as the page'],['yesfirst','Yes first, then No']]}]},
+      {t:'list',k:'items',label:'Gate questions',addLabel:'Add a gate',
+       sum:function(g){return [g.id,' '+(g.short||g.text||'')];},
+       add:function(){return {id:'gate'+Math.floor(Math.random()*900+100),short:'New gate',text:'New gate question?',note:'',opts:[{v:'yes',l:'Yes'},{v:'no',l:'No'}]};},
+       item:[
+        {t:'row',fields:[{t:'text',k:'id',label:'ID',code:true,kind:'answer',help:'Rules use this ID.'},{t:'text',k:'short',label:'Short label',help:'Used in Copy and Word.'}]},
+        {t:'area',k:'text',label:'Question',help:MARKUP},
+        {t:'area',k:'note',label:'Note under the question',help:MARKUP},
+        {t:'list',k:'opts',label:'Answer buttons',addLabel:'Add an answer',
+         sum:function(o){return [o.v,' '+(o.l||'')];}, add:function(){return {v:'maybe',l:'Maybe'};},
+         item:[{t:'row',fields:[{t:'text',k:'l',label:'Label'},{t:'text',k:'v',label:'Value',code:true,kind:'opt',help:'Rules test this value.'}]}]}
+       ]}
+     ]}]},
+    {id:'screen',title:'Step 2 · Criteria table',intro:'<p>The table of criteria. Each row takes one answer from the columns.</p>',
+     fields:[{t:'obj',k:'screen',fields:[
+      {t:'row',fields:[{t:'text',k:'label',label:'Card label'},{t:'text',k:'textHeading',label:'Heading in Copy'}]},
+      {t:'text',k:'docHeading',label:'Heading in Word'},
+      {t:'area',k:'note',label:'Note above the table',help:MARKUP},
+      {t:'list',k:'cols',label:'Answer columns',addLabel:'Add a column',
+       sum:function(c){return [c.v,' '+(c.l||'')];}, add:function(){return {v:'tbd',l:'TBD'};},
+       item:[{t:'row',fields:[{t:'text',k:'l',label:'Heading'},{t:'text',k:'v',label:'Value',code:true,kind:'col'}]}]},
+      {t:'row',fields:[
+        {t:'select',k:'hitValue',label:'Highlighted answer',opts:function(d){return asArr((d.screen||{}).cols).map(function(c){return [c.v,c.l];});},help:'Rows with this answer turn rust and count as met.'},
+        {t:'check',k:'evidence',label:'Ask for a rationale and a document reference on each row'}]},
+      {t:'list',k:'rows',label:'Criteria rows',addLabel:'Add a row',
+       sum:function(r){return [r.id,' '+String(r.text||'')];},
+       add:function(d){return {id:'x'+(asArr((d.screen||{}).rows).length+1),text:'New criterion',flag:'',note:''};},
+       item:[
+        {t:'row',fields:[{t:'text',k:'id',label:'Ref',code:true,kind:'answer'},{t:'text',k:'flag',label:'Flag tag',help:'Short tag shown beside the text. Leave blank for none.'}]},
+        {t:'area',k:'text',label:'Criterion',help:MARKUP},
+        {t:'area',k:'note',label:'Note under the criterion',help:'Shown in italics.'}
+       ]},
+      {t:'group',label:'Extra field under the table',fields:[
+        {t:'check',k:'extraOn',label:'Show an extra field under the table',rerender:true},
+        {t:'row',show:function(o){return o.extraOn;},fields:[{t:'text',k:'extraLabel',label:'Label'},{t:'text',k:'extraPh',label:'Placeholder'}]},
+        {t:'row',show:function(o){return o.extraOn;},fields:[{t:'text',k:'extraText',label:'Label in Copy'},{t:'text',k:'extraDoc',label:'Label in Word'}]},
+        {t:'text',k:'extraBlank',label:'Text when left blank',show:function(o){return o.extraOn;}}]}
+     ]}]},
+    {id:'verdicts',title:'Verdicts',intro:'<p>Each verdict is one possible outcome. The <b>Rules</b> section picks which one shows.</p>',
+     fields:[
+      {t:'area',k:'results',label:'Result boxes in the Word record',arr:true,rows:2,help:LINES_HELP+' Each verdict marks one of these with an X.'},
+      {t:'list',k:'verdicts',label:'Verdicts',addLabel:'Add a verdict',
+       sum:function(v){return [v.key,' '+(v.title||'')];},
+       add:function(){return {key:'new-verdict',title:'New verdict',desc:'',style:'neutral',result:'',showScreen:true,needsParent:false,parentLabel:'',showHits:false,blocksDownload:false,rat:''};},
+       item:[
+        {t:'row',fields:[{t:'text',k:'key',label:'ID',code:true,kind:'verdict'},{t:'text',k:'title',label:'Title'}]},
+        {t:'area',k:'desc',label:'Description'},
+        {t:'row',fields:[
+          {t:'select',k:'style',label:'Bar color',opts:[['neutral','Slate (neutral)'],['yes','Rust (designate)'],['hold','Amber (hold or incomplete)']]},
+          {t:'select',k:'result',label:'Result box marked',opts:function(d){return [['','(none)']].concat(asArr(d.results).map(function(r){return [r,r];}));}}]},
+        {t:'check',k:'showScreen',label:'Keep Step 2 bright and include it in the record'},
+        {t:'check',k:'showHits',label:'List the criteria met on the verdict bar'},
+        {t:'check',k:'blocksDownload',label:'Block the Word download (use for incomplete states)'},
+        {t:'check',k:'needsParent',label:'Ask for the parent item, and require it before download',rerender:true},
+        {t:'text',k:'parentLabel',label:'Parent field label for this verdict',help:'Leave blank for the default label.',show:function(o){return o.needsParent;}},
+        {t:'area',k:'rat',label:'Rationale template',rows:3,help:'One line per sentence. <code>{met}</code> and <code>{others}</code> expand into lines.'}
+       ]},
+      {t:'group',label:'Parent item field',k:'parent',help:'Shown only for verdicts that ask for it.',fields:[
+        {t:'text',k:'label',label:'Default label'},{t:'text',k:'placeholder',label:'Placeholder'},
+        {t:'row',fields:[{t:'text',k:'textLabel',label:'Label in Copy'},{t:'text',k:'docLabel',label:'Label in Word'}]},
+        {t:'text',k:'msg',label:'Message when missing'}]}
+     ]},
+    {id:'rules',title:'Rules',intro:'<p>The tool checks these from top to bottom. The first rule that matches picks the verdict. Use the arrows to reorder. Keep a rule with no conditions at the bottom as the fallback.</p>',
+     fields:[{t:'list',k:'rules',label:'Rules, in order',addLabel:'Add a rule',
+       sum:function(r,i){ return [String(i+1),' '+(r.verdict||'(no verdict)')+'  ←  '+condText(r.when,'')]; },
+       add:function(d){return {when:[],verdict:(asArr(d.verdicts)[0]||{}).key||''};},
+       item:[{t:'select',k:'verdict',label:'Verdict',opts:function(d){return ckVerdictOpts(d);}},
+             {t:'cond',k:'when',label:'When',ctx:'',help:COND_HELP}]}]},
+    {id:'warnings',title:'Warnings',intro:'<p>Amber boxes on the verdict bar. Each one shows whenever its condition holds. A warning can also add a line to Copy and to Word.</p><p>Leave the title and the text blank for a record-only line.</p>',
+     fields:[{t:'list',k:'warnings',label:'Warnings',addLabel:'Add a warning',
+       sum:function(w){return (w.title||(w.copyText||w.wordText?'(record only) '+(w.copyText||w.wordText):'(empty)'))+'  ←  '+condText(w.when,'warn');},
+       add:function(){return {title:'New warning.',text:'',when:[],copyText:'',wordText:''};},
+       item:[{t:'text',k:'title',label:'Bold opening'},{t:'area',k:'text',label:'Text',help:MARKUP},
+             {t:'cond',k:'when',label:'Show when',ctx:'warn',help:COND_HELP},
+             {t:'area',k:'copyText',label:'Line added to Copy',help:'Leave blank for none.'},
+             {t:'area',k:'wordText',label:'Paragraph added to the Word record',help:'Leave blank for none.'}]}]},
+    {id:'sigs',title:'Signatures and closing',intro:'<p>The concurrence block at the end of the record.</p>',
+     fields:[{t:'obj',k:'sigs',fields:[
+       {t:'text',k:'heading',label:'Heading in Word'},
+       {t:'area',k:'intro',label:'Intro in Word'},
+       {t:'text',k:'textIntro',label:'Intro in Copy'},
+       {t:'list',k:'items',label:'Signature lines',addLabel:'Add a signature line',
+        sum:function(s){return s.name||'(unnamed)';}, add:function(){return {name:'New function',note:''};},
+        item:[{t:'text',k:'name',label:'Function'},{t:'area',k:'note',label:'When it is required',help:'Leave blank for none.'}]},
+       {t:'text',k:'disclaimer',label:'Line under the signatures'}]},
+      {t:'group',label:'Closing line',k:'record',fields:[
+        {t:'area',k:'wordClosing',label:'In Word'},{t:'area',k:'textClosing',label:'In Copy'}]}]},
+    {id:'notes',title:'Notes and footer',intro:'<p>The General Notes under the form, and the footer.</p>',
+     fields:[
+      {t:'obj',k:'notes',fields:[{t:'text',k:'heading',label:'Notes heading'},
+       {t:'list',k:'paras',label:'Note paragraphs',addLabel:'Add a paragraph',
+        sum:function(p){return String(p.text||'').replace(/\*\*/g,'');}, add:function(){return {style:'normal',text:'**New note.** Text.'};},
+        item:[{t:'select',k:'style',label:'Style',opts:[['normal','Normal'],['pull','Pull quote']]},{t:'area',k:'text',label:'Text',rows:3,help:MARKUP}]}]},
+      {t:'obj',k:'footer',fields:[
+       {t:'list',k:'paras',label:'Footer paragraphs',addLabel:'Add a paragraph',
+        sum:function(p){return String(p.text||'').replace(/\*\*/g,'');}, add:function(){return {text:'New footer line.'};},
+        item:[{t:'area',k:'text',label:'Text',rows:2,help:MARKUP}]}]}
+     ]},
+    {id:'wording',title:'Other wording',intro:'<p>Small labels and sentence patterns. Change them to fit a new tool. Tokens in braces fill in at run time.</p>',
+     fields:[{t:'labels',k:'labels',spec:[
+       ['refHead','Table heading: reference'],['critHead','Table heading: criterion'],['evidHead','Word column: evidence'],
+       ['ratPh','Row placeholder: rationale'],['docPh','Row placeholder: document'],['hitsLabel','Verdict bar: criteria met'],
+       ['ratLabel','Rationale box label'],['dlButton','Download button'],['resultHeading','Word: result heading'],['ratHeading','Word: rationale heading'],
+       ['textResult','Copy: result label'],['textRat','Copy: rationale label'],
+       ['metLine','Rationale line for a met row. {id} {text}'],['otherLine','Rationale line for other rows. {id} {ANSWER} {text}'],
+       ['evidRat','Added rationale. {x}'],['evidDoc','Added document reference. {x}'],
+       ['staleTitle','Stale rationale: title'],['staleText','Stale rationale: text'],['staleLink','Stale rationale: link'],['staleTail','Stale rationale: end']]}]}
+  ],
+  blank:null
+};
+FAMILY.blank={
+  builder:'checklist',version:1,
+  tool:{id:'new-checklist',exportName:'new-checklist-tool',pageTitle:'New Checklist',barTitle:'New Checklist',barSub:'Configuration Management · Draft',
+    h1:'Does this item meet the criteria?',lede:'Fill it in, read the verdict, download the completed form.',
+    docTitle:'New Checklist',docSub:'Complete one checklist per item.',textTitle:'NEW CHECKLIST',fileStem:'New-Checklist'},
+  meta:{label:'Item',fields:[{id:'item',label:'Item',auto:''},{id:'assessor',label:'Assessor',auto:''},{id:'date',label:'Date',auto:'today'}],
+    nameField:'item',dateField:'date',authorField:'assessor',nameMsg:'Name the item first.'},
+  gates:{label:'Step 1 · Gates',docHeading:'Step 1. Gates',textHeading:'Step 1. Gates',docOrder:'screen',
+    items:[{id:'scope',short:'In scope',text:'Is the item in scope for this checklist?',note:'',opts:[{v:'yes',l:'Yes'},{v:'no',l:'No'}]}]},
+  screen:{label:'Step 2 · Criteria',docHeading:'Step 2. Criteria',textHeading:'Step 2. Criteria',note:'One or more YES answers meets the criteria.',
+    cols:[{v:'yes',l:'Yes'},{v:'no',l:'No'},{v:'na',l:'N/A'}],hitValue:'yes',evidence:true,
+    rows:[{id:'a',text:'First criterion',flag:'',note:''},{id:'b',text:'Second criterion',flag:'',note:''}],
+    extraOn:false,extraLabel:'',extraPh:'',extraText:'',extraDoc:'',extraBlank:''},
+  parent:{label:'Parent item',placeholder:'Required. The record is not complete without it',textLabel:'Parent',docLabel:'Parent item',msg:'Name the parent item first.'},
+  results:['MEETS CRITERIA','DOES NOT MEET'],
+  verdicts:[
+    {key:'out',title:'Out of scope',desc:'The item is out of scope. Record it and stop.',style:'neutral',result:'DOES NOT MEET',showScreen:false,needsParent:false,parentLabel:'',showHits:false,blocksDownload:false,rat:'Not screened. The item is out of scope.'},
+    {key:'incomplete',title:'Incomplete',desc:'Answer every question.',style:'hold',result:'',showScreen:true,needsParent:false,parentLabel:'',showHits:false,blocksDownload:true,rat:''},
+    {key:'meets',title:'Meets the criteria',desc:'One or more criteria apply.',style:'yes',result:'MEETS CRITERIA',showScreen:true,needsParent:false,parentLabel:'',showHits:true,blocksDownload:false,rat:'Meets the criteria.\n{met}\n{others}'},
+    {key:'not-met',title:'Does not meet the criteria',desc:'No criterion applies.',style:'neutral',result:'DOES NOT MEET',showScreen:true,needsParent:false,parentLabel:'',showHits:false,blocksDownload:false,rat:'Does not meet the criteria. No criterion applies.\n{others}'}
+  ],
+  rules:[
+    {when:[[{s:'a:scope',o:'is',v:'no'}]],verdict:'out'},
+    {when:[[{s:'done:gates',o:'is',v:'no'}]],verdict:'incomplete'},
+    {when:[[{s:'done:screen',o:'is',v:'no'}]],verdict:'incomplete'},
+    {when:[[{s:'cnt:yes',o:'gte',v:'1'}]],verdict:'meets'},
+    {when:[],verdict:'not-met'}
+  ],
+  warnings:[],
+  sigs:{heading:'Signatures',intro:'',textIntro:'Signatures.',items:[{name:'Assessor',note:''},{name:'Approver',note:''}],disclaimer:''},
+  record:{wordClosing:'',textClosing:''},
+  labels:clone(STARTER.labels),
+  notes:{heading:'General Notes',paras:[{style:'normal',text:'**About this checklist.** Write the notes here.'}]},
+  footer:{paras:[{text:'Nothing is saved here. Download before you close the tab.'}]}
+};
+
+FAMILY.help={
+  family:'one-page checklists with gates, a criteria table, a sticky verdict bar, and a Word record',
+  loaded:'CI Selection Criteria Checklist, Rev C draft',
+  condEx:['<code>item</code> · is · <code>Yes</code>','<code>count Yes</code> · is at least · <code>1</code>','<code>SW</code> · is · <code>Yes</code>'],
+  condShort:'item = no',
+  logic:'<ol><li>The user answers the gates and the criteria table.</li>'+
+    '<li>The tool checks the <b>Rules</b> from top to bottom. The first rule that matches picks the verdict.</li>'+
+    '<li>The verdict sets the verdict bar, the result box in the Word record, and the suggested rationale.</li>'+
+    '<li><b>Warnings</b> run on their own. Each one shows whenever its condition holds.</li></ol>'+
+    '<h4>The loaded rules, in order</h4><ol>'+
+    '<li>Not an item ends the screen.</li><li>A procured child ends the screen.</li><li>No end-use function ends the screen.</li>'+
+    '<li>Any gate unanswered gives Incomplete.</li><li>Any row unanswered gives Incomplete.</li>'+
+    '<li>One or more rows answered Yes gives Designate.</li><li>Anything else gives Do not designate.</li></ol>'+
+    '<p>Order matters. The stopping gates sit above the Incomplete rules, so a stop shows even before the table is filled in.</p>',
+  tokens:'<table class="hp-t"><tr><th>Token</th><th>Where</th><th>Becomes</th></tr>'+
+    '<tr><td><code>{met}</code></td><td>Rationale, on its own line</td><td>One line per row answered with the highlighted answer</td></tr>'+
+    '<tr><td><code>{others}</code></td><td>Rationale, on its own line</td><td>One line per other row that has a rationale or a document reference</td></tr>'+
+    '<tr><td><code>{metIds}</code></td><td>Rationale</td><td>The met row IDs, such as <code>a, b, SW</code></td></tr>'+
+    '<tr><td><code>{count}</code></td><td>Rationale</td><td>How many rows were met</td></tr></table>',
+  checks:['A rule points at a verdict that no longer exists.','A rule or warning tests a question that was deleted.','A rule tests for an answer the question does not offer.','Two questions share an ID.','The last rule has conditions, so some answers may match nothing.','A verdict marks a result box that is not in the result list.'],
+  tasks:[
+    ['Change the wording of a question',['Click <b>Step 1 · Gates</b> or <b>Step 2 · Criteria table</b>.','Click the row to open it.','Edit the text. The preview updates.'],'Wording changes never break the logic. Rules use the ID, not the words.'],
+    ['Add a criteria row',['Click <b>Step 2 · Criteria table</b>.','Click <b>+ Add a row</b> at the bottom of the rows.','Give it a short Ref, such as <code>h</code>. Write the criterion.','Use the arrows to place it.'],'The new row counts toward Designate right away. The loaded rule says one or more Yes rows designate.'],
+    ['Make a gate stop the screen',['Click <b>Step 1 · Gates</b> and add the gate. Note its ID.','Click <b>Verdicts</b> and add a verdict for the stop. Untick <b>Keep Step 2 bright</b>.','Click <b>Rules</b> and add a rule. Pick the new verdict.','Add a condition: the gate ID · is · the stopping answer.','Move the rule up, above the two Incomplete rules.']],
+    ['Change what designates',['Click <b>Rules</b>.','Open the rule that points at <code>designate</code>.','Edit its condition. For example, use <b>count Yes is at least 2</b>.']],
+    ['Show a warning in one case',['Click <b>Warnings</b>, then <b>+ Add a warning</b>.','Write a bold opening and the text.','Set <b>Show when</b>. The verdict is one of the things you can test.','Fill <b>Line added to Copy</b> or <b>Paragraph added to the Word record</b> if the record needs it.']],
+    ['Add or rename a header field',['Click <b>Header fields</b>.','Add a field, or edit a label.','Pick which field is the name, the date, and the author. The file name uses the name and the date.']],
+    ['Add a signature line',['Click <b>Signatures and closing</b>.','Click <b>+ Add a signature line</b>. Name the function and say when it is required.']],
+    ['Issue a new revision',['Change the subtitle in <b>Page and record titles</b>, such as Rev D draft.','Change <b>Exported tool file name</b> to match.','Clear the Checks list.','Click <b>Save project</b>, then <b>Export tool</b>.']]
+  ]
+};
+
+/* ================= Help page. Shared text plus FAMILY.help. ================= */
+function helpTasks(list){
+  return list.map(function(t){
+    return '<div class="hp-task"><h4>'+t[0]+'</h4><ol>'+t[1].map(function(s){return '<li>'+s+'</li>';}).join('')+'</ol>'+(t[2]?'<p class="hp-note">'+t[2]+'</p>':'')+'</div>';
+  }).join('');
+}
+function helpPages(){
+  var H=FAMILY.help||{}, P=[];
+  P.push({id:'about',title:'What this builder does',html:
+    '<p>This builder makes and edits one family of tools: '+H.family+'.</p>'+
+    '<p>It opened loaded with <b>'+H.loaded+'</b>. Export it without changes and you get the same tool you have now. The answers, the verdicts, Copy, and the Word record all match the original.</p>'+
+    '<p>You edit in forms. You never touch code. The builder is one web page. It runs offline in your browser and installs nothing.</p>'+
+    '<p>Use a desktop browser such as Chrome or Edge. The builder works on a phone, but the screen is small for real work.</p>'});
+  P.push({id:'screen',title:'The screen',html:
+    '<h4>Top bar</h4><ul>'+
+    '<li><b>New</b> starts over. Pick the loaded tool or a blank one. Undo brings back what you had.</li>'+
+    '<li><b>Open</b> loads a saved project, or a tool this builder exported.</li>'+
+    '<li><b>Save project</b> saves your work as a file.</li>'+
+    '<li><b>Undo</b> and <b>Redo</b> step through your changes.</li>'+
+    '<li><b>Help</b> opens this page.</li>'+
+    '<li><b>Export tool</b> downloads the finished tool as one HTML file.</li></ul>'+
+    '<h4>Sections list</h4><p>The column on the left. Each entry is one part of the tool. Click one to edit it. A red mark beside an entry means the Checks found a problem there.</p>'+
+    '<h4>Editor</h4><p>The middle column. It holds the forms for the section you picked. Lists open and close when you click a row. The arrows on a row move it up or down. The square copies it. The cross deletes it.</p>'+
+    '<h4>Preview pane</h4><p>The right column. It shows the tool as you build it. It is the real tool, so you can click it, answer it, and download from it.</p><ul>'+
+    '<li><b>Desktop</b> and <b>Phone</b> change the preview width.</li>'+
+    '<li><b>Record</b> opens a second panel under the tool. It shows the text the tool will put in Copy, for the answers in the preview. The Word record carries the same content.</li>'+
+    '<li><b>Clear answers</b> resets the preview.</li>'+
+    '<li><b>Open in tab</b> shows the preview full size in its own tab.</li></ul>'+
+    '<p>On a phone, the editor and the preview share the screen. Use the <b>Edit</b> and <b>Preview</b> tabs under the top bar to switch.</p>'+
+    '<h4>Checks</h4><p>The box under the sections list. It flags broken links in the logic. Click a check to jump to the section that needs work.</p>'});
+  P.push({id:'first',title:'Your first ten minutes',html:'<ol class="hp-steps">'+
+    '<li>Click <b>Page and record titles</b>. Change the header bar subtitle, for example to a new revision. Watch the preview change.</li>'+
+    '<li>Answer a few questions in the preview. Watch the verdict move.</li>'+
+    '<li>Click <b>Record</b> in the preview bar. Read the text the tool will record.</li>'+
+    '<li>Open a question in the editor. Change its wording. The preview keeps your answers.</li>'+
+    '<li>Open <b>Rules</b>'+(FAMILY.id==='audit'?' or <b>Verdicts</b>':'')+'. Read how the verdict is picked. Each row summary shows its conditions in short form.</li>'+
+    '<li>Click <b>Save project</b>. Keep that file. It is your working copy.</li>'+
+    '<li>Click <b>Export tool</b>. Open the downloaded HTML file in your browser. That file is the finished tool.</li></ol>'+
+    '<p>Nothing you do here changes your original tool file. The builder only writes new files when you save or export.</p>'});
+  P.push({id:'tasks',title:'Common tasks',html:helpTasks(H.tasks||[])});
+  P.push({id:'logic',title:'How the logic works',html:H.logic||''});
+  P.push({id:'conditions',title:'Conditions',html:
+    '<p>A condition says when something applies. Rules, warnings, signature lines, and some questions use them.</p>'+
+    '<p>Each row has three parts. Pick what to test. Pick how to test it. Pick the value.</p>'+
+    '<div class="hp-ex"><div class="cg"><div class="cgh">All of these are true</div><div>'+H.condEx[0]+'</div><div>'+H.condEx[1]+'</div></div>'+
+    '<div class="cor">or</div><div class="cg"><div class="cgh">All of these are true</div><div>'+H.condEx[2]+'</div></div></div>'+
+    '<ul><li>Rows in one box must <b>all</b> be true.</li>'+
+    '<li><b>+ And</b> adds a row to a box.</li>'+
+    '<li><b>+ Or another set</b> adds a second box. The condition holds when <b>any</b> box holds.</li>'+
+    '<li>A condition with no rows always holds. Use one on the last rule as the fallback.</li>'+
+    '<li>Counts use <b>is at least</b>, <b>is at most</b>, and <b>is exactly</b>.</li>'+
+    '<li><b>is answered</b> and <b>is not answered</b> test whether the user has picked anything yet.</li></ul>'+
+    '<p>The list rows show conditions in short form. For example: <code>'+H.condShort+'</code>. The symbol <code>≥</code> means at least. <code>≠</code> means is not.</p>'});
+  P.push({id:'ids',title:'IDs and renaming',html:
+    '<p>Questions, answers, verdicts, and other parts carry short IDs. Rules and conditions point at those IDs, not at the wording.</p>'+
+    '<ul><li>Change wording freely. The logic does not care.</li>'+
+    '<li>Change an ID and the builder updates every condition that points at it. A note at the bottom of the screen says how many it changed.</li>'+
+    '<li>Keep IDs short. Use letters, numbers, and dashes. Avoid spaces.</li>'+
+    '<li>Delete a part and any rule that pointed at it breaks. The Checks list names each one. Undo puts the part back.</li>'+
+    (FAMILY.id==='tree'?'<li>Two questions may share an ID when they sit on different paths. Renaming one of them leaves the conditions alone, because the other still uses the old ID.</li>':'')+
+    '</ul><p>Renaming an ID clears the answers in the preview for that question. Answer it again to keep testing.</p>'});
+  P.push({id:'text',title:'Text tricks',html:
+    '<h4>Markup</h4><p>Fields marked for markup accept three styles.</p>'+
+    '<table class="hp-t"><tr><th>Type this</th><th>To get</th></tr>'+
+    '<tr><td><code>**Safety linkage.**</code></td><td><b>Safety linkage.</b></td></tr>'+
+    '<tr><td><code>*in italics*</code></td><td><i>in italics</i></td></tr>'+
+    '<tr><td><code>`[to be assigned]`</code></td><td><span style="font-family:var(--mono)">[to be assigned]</span></td></tr></table>'+
+    '<p>A new line in a markup field becomes a line break.</p>'+
+    '<h4>Lists</h4><p>Fields that say <b>one item per line</b> turn each line into a list item. Blank lines drop out.</p>'+
+    '<h4>Tokens</h4><p>A token is a word in braces. The tool swaps it for live text when it runs.</p>'+(H.tokens||'')+
+    '<p>A misspelled token stays on the page as typed. That makes the mistake easy to spot in the preview.</p>'});
+  P.push({id:'files',title:'Saving, exporting, and sharing',html:
+    '<table class="hp-t"><tr><th>File</th><th>What it is</th><th>What to do with it</th></tr>'+
+    '<tr><td><code>.tool-project.json</code></td><td>Your working copy</td><td>Keep it. Use <b>Open</b> to keep editing.</td></tr>'+
+    '<tr><td><code>.html</code> from Export</td><td>The finished tool</td><td>Share it. People open it in a browser.</td></tr></table>'+
+    '<ul><li>An exported tool also carries its own definition. Use <b>Open</b> on it to edit it again. You can lose the project file and still recover the tool.</li>'+
+    '<li>The builder keeps your last session in this browser. Next time it offers to restore it. Treat that as a safety net only. Save the project.</li>'+
+    '<li>Put the revision in two places: the header bar subtitle and the exported file name. Both sit in <b>Page and record titles</b>.</li>'+
+    '<li>Keep the builder file with your project files. Each builder is self-contained. Copy it to a new computer and it works the same.</li>'+
+    (FAMILY.id==='checklist'?'':'<li>Saved assessments carry the tool ID. A user can reopen a saved assessment only in a tool with the same ID. Keep the ID when you issue a new revision of the same tool. Change it when you make a different tool.</li>')+
+    '</ul>'});
+  P.push({id:'checks',title:'The Checks list',html:
+    '<p>The Checks list reads the whole tool after every change. It flags problems such as these:</p><ul>'+
+    (H.checks||[]).map(function(x){return '<li>'+x+'</li>';}).join('')+
+    '</ul><p>A check does not stop you. You can still preview and export. Clear every check before you issue a tool.</p>'});
+  P.push({id:'keys',title:'Keyboard shortcuts',html:'<table class="hp-t">'+
+    '<tr><td><span class="kbd">Ctrl</span> + <span class="kbd">Z</span></td><td>Undo, when the cursor is not in a text box</td></tr>'+
+    '<tr><td><span class="kbd">Ctrl</span> + <span class="kbd">Y</span></td><td>Redo</td></tr>'+
+    '<tr><td><span class="kbd">Ctrl</span> + <span class="kbd">S</span></td><td>Save project</td></tr>'+
+    '<tr><td><span class="kbd">Esc</span></td><td>Close this help page</td></tr></table>'+
+    '<p>On a Mac, use <span class="kbd">Cmd</span> in place of <span class="kbd">Ctrl</span>.</p>'});
+  P.push({id:'trouble',title:'Troubleshooting',html:
+    '<h4>The preview is blank.</h4><p>Click <b>Clear answers</b>. If it stays blank, undo your last change. A broken token or an empty list rarely blanks the page, but undo will tell you.</p>'+
+    '<h4>A rule never fires.</h4><p>Rules run top to bottom, and the first match wins. A rule higher up probably matches first. Move your rule up, or narrow the one above it.</p>'+
+    '<h4>The verdict says no rule matched.</h4><p>No rule covers those answers. Add a rule with no conditions at the bottom.</p>'+
+    '<h4>Open says the page was not made by a Tool Builder.</h4><p>You opened one of the original tools. The builder cannot read those. It does not need to. Use <b>New</b>, then <b>Start from the current tool</b>. That copy matches the original exactly.</p>'+
+    '<h4>Open says the file belongs to another builder.</h4><p>Each builder handles one family of tools. Open the file in the builder it names.</p>'+
+    '<h4>My preview answers disappeared.</h4><p>That happens after you rename an ID or use Undo. Answer the questions again.</p>'+
+    '<h4>The download did nothing.</h4><p>Your browser may ask where to save, or may block downloads from local files. Check the download bar. Allow downloads for this page if asked.</p>'+
+    '<h4>An emailed tool opens as text.</h4><p>Save the attachment first. Then open the saved file in Chrome or Edge.</p>'+
+    '<h4>The restore offer did not appear.</h4><p>Some browsers do not keep data for local files. Use Save project.</p>'});
+  P.push({id:'ref',title:'Section reference',html:FAMILY.sections.filter(function(s){return s.id!=='start';}).map(function(s){
+    return '<h4>'+escH(s.title)+'</h4>'+(s.intro||'<p></p>')+'<p><button class="hp-go" data-go="'+s.id+'">Go to '+escH(s.title)+' →</button></p>';
+  }).join('')});
+  return P;
+}
+function buildHelp(){
+  $('hp-title').textContent='Help \u00b7 '+FAMILY.name;
+  var P=helpPages(), toc=$('hp-toc'), body=$('hp-body');
+  toc.innerHTML=''; body.innerHTML='';
+  P.forEach(function(p,i){
+    toc.appendChild(el('a',{href:'#hp-'+p.id,'data-id':p.id,text:(i+1)+'. '+p.title,onclick:function(e){e.preventDefault();$('hp-'+p.id).scrollIntoView({block:'start'});}}));
+    body.appendChild(el('section',{id:'hp-'+p.id,class:'hp-sec'},[el('h3',{text:(i+1)+'. '+p.title}),el('div',{html:p.html})]));
+  });
+  body.querySelectorAll('[data-go]').forEach(function(b){ b.addEventListener('click',function(){ closeHelp(); go(b.dataset.go); }); });
+}
+function openHelp(id){
+  if(!$('hp-body').children.length) buildHelp();
+  $('help').classList.add('on'); $('help').setAttribute('aria-hidden','false');
+  $('hp-q').value=''; filterHelp('');
+  if(id&&$('hp-'+id)) $('hp-'+id).scrollIntoView({block:'start'}); else $('hp-body').scrollTop=0;
+  $('hp-close').focus();
+}
+function closeHelp(){ $('help').classList.remove('on'); $('help').setAttribute('aria-hidden','true'); }
+function filterHelp(q){
+  q=String(q||'').toLowerCase().trim(); var n=0;
+  $('hp-body').querySelectorAll('.hp-sec').forEach(function(s){
+    var hit=!q||s.textContent.toLowerCase().indexOf(q)>=0; s.style.display=hit?'':'none'; if(hit) n++;
+    var a=$('hp-toc').querySelector('[data-id="'+s.id.slice(3)+'"]'); if(a) a.style.display=hit?'':'none';
+  });
+  $('hp-none').style.display=n?'none':'block';
+}
+
+/* ================= Tool Builder core. Shared by the three builders. =================
+   FAMILY   : the builder description (sections, subjects, rename, validate, blank)
+   STARTER  : the definition that reproduces the current tool
+   PARTS    : {css, runtime, engine} for the generated tool
+*/
+var DEF=clone(STARTER);
+var CUR='start';
+var OPEN=new WeakSet();
+var DIRTY=false, HIST=[], HPOS=-1, commitT=null, pvT=null, lastPvState=null;
+var LSKEY=null;
+
+function clone(o){return JSON.parse(JSON.stringify(o));}
+function $(id){return document.getElementById(id);}
+function el(tag,attrs,kids){
+  var e=document.createElement(tag);
+  if(attrs) for(var k in attrs){
+    var v=attrs[k];
+    if(v==null||v===false) continue;
+    if(k==='class') e.className=v;
+    else if(k==='text') e.textContent=v;
+    else if(k==='html') e.innerHTML=v;
+    else if(k.slice(0,2)==='on') e.addEventListener(k.slice(2),v);
+    else if(k==='value') e.value=v;
+    else if(k==='checked') e.checked=!!v;
+    else e.setAttribute(k,v===true?'':v);
+  }
+  (kids||[]).forEach(function(c){ if(c==null) return; e.appendChild(typeof c==='string'?document.createTextNode(c):c); });
+  return e;
+}
+function escH(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function asArr(x){return Array.isArray(x)?x:[];}
+function opts(o,item){ return typeof o==='function'?o(DEF,item):(o||[]); }
+function slugF(s){return String(s||'tool').replace(/[^A-Za-z0-9._-]+/g,'-').replace(/^-|-$/g,'').slice(0,80)||'tool';}
+
+/* ---------------- history and autosave ---------------- */
+function snapshot(){ return JSON.stringify(DEF); }
+function pushHist(){
+  var s=snapshot();
+  if(HPOS>=0&&HIST[HPOS]===s) return;
+  HIST=HIST.slice(0,HPOS+1); HIST.push(s); if(HIST.length>150) HIST.shift(); HPOS=HIST.length-1;
+  undoState();
+  if(LSKEY){ try{ localStorage.setItem(LSKEY,JSON.stringify({saved:new Date().toISOString(),def:DEF})); }catch(e){} }
+}
+function commit(now){
+  DIRTY=true;
+  clearTimeout(commitT);
+  if(now) pushHist(); else commitT=setTimeout(pushHist,500);
+  schedulePreview(); checkProblems();
+}
+function undoState(){ $('undo').disabled=HPOS<=0; $('redo').disabled=HPOS>=HIST.length-1; }
+function undo(){ DIRTY=true; clearTimeout(commitT); pushHist(); if(HPOS<=0) return; HPOS--; DEF=JSON.parse(HIST[HPOS]); afterLoad(); undoState(); toast('Undone.'); }
+function redo(){ DIRTY=true; if(HPOS>=HIST.length-1) return; HPOS++; DEF=JSON.parse(HIST[HPOS]); afterLoad(); undoState(); toast('Redone.'); }
+function afterLoad(){
+  OPEN=new WeakSet();
+  if(LSKEY){ try{ localStorage.setItem(LSKEY,JSON.stringify({saved:new Date().toISOString(),def:DEF})); }catch(e){} }
+  renderNav(); renderSection(); schedulePreview(true); checkProblems();
+}
+function loadDef(d,msg){
+  DEF=d; HIST=[]; HPOS=-1; pushHist(); afterLoad(); if(msg) banner(msg,'good');
+}
+
+/* ---------------- banners and toasts ---------------- */
+function banner(html,kind,buttons){
+  var b=$('banner'); b.className='banner on '+(kind||''); b.innerHTML='';
+  b.appendChild(el('span',{html:html}));
+  (buttons||[]).forEach(function(x){ b.appendChild(el('button',{text:x[0],onclick:function(){ x[1](); }})); });
+  b.appendChild(el('button',{class:'x',title:'Dismiss','aria-label':'Dismiss',text:'×',onclick:function(){b.className='banner';}}));
+}
+function hideBanner(){ $('banner').className='banner'; }
+var toastT=null;
+function toast(msg,undoBtn){
+  var t=$('toast'); t.innerHTML=''; t.appendChild(el('span',{text:msg}));
+  if(undoBtn) t.appendChild(el('button',{text:'Undo',onclick:function(){undo();t.className='toast';}}));
+  t.className='toast on'; clearTimeout(toastT); toastT=setTimeout(function(){t.className='toast';},undoBtn?5000:2200);
+}
+
+/* ---------------- navigation ---------------- */
+function renderNav(){
+  var probs=problems(), bySec={};
+  probs.forEach(function(p){bySec[p.sec]=(bySec[p.sec]||0)+1;});
+  var box=$('secs'); box.innerHTML='';
+  FAMILY.sections.forEach(function(s,i){
+    box.appendChild(el('button',{class:'sec'+(s.id===CUR?' on':''),onclick:function(){go(s.id);}},[
+      el('span',{class:'n',text:i?String(i):'•'}), el('span',{text:s.title}),
+      bySec[s.id]?el('span',{class:'bad',text:'!'+bySec[s.id]}):null
+    ]));
+  });
+}
+function go(id,focusItem){
+  CUR=id; renderNav(); renderSection(focusItem);
+  $('editor').scrollTop=0;
+  document.body.classList.add('m-edit'); document.body.classList.remove('m-prev');
+  syncMtabs();
+}
+function section(){ return FAMILY.sections.filter(function(s){return s.id===CUR;})[0]||FAMILY.sections[0]; }
+function renderSection(){
+  var s=section(), ed=$('editor'); ed.innerHTML='';
+  ed.appendChild(el('h2',{text:s.title}));
+  if(s.id==='start') ed.appendChild(el('div',{class:'start-cta'},[
+    el('p',{html:'<b>New here?</b> The help page walks through the screen, the first ten minutes, and the common tasks. The live preview sits to the right'+(window.innerWidth<=960?', behind the <b>Preview</b> tab':'')+'.'}),
+    el('button',{text:'Open the help page',onclick:function(){openHelp();}})]));
+  if(s.intro) ed.appendChild(el('div',{class:'intro',html:s.intro}));
+  if(s.html) ed.appendChild(el('div',{html:typeof s.html==='function'?s.html():s.html}));
+  renderFields(ed,s.fields||[],DEF);
+}
+
+/* ---------------- field rendering ---------------- */
+function getK(obj,k){ if(!k) return obj; var p=k.split('.'),o=obj; for(var i=0;i<p.length;i++){ if(o==null) return undefined; o=o[p[i]]; } return o; }
+function setK(obj,k,v){ var p=k.split('.'),o=obj; for(var i=0;i<p.length-1;i++){ if(o[p[i]]==null||typeof o[p[i]]!=='object') o[p[i]]={}; o=o[p[i]]; } o[p[p.length-1]]=v; }
+function helpEl(h){ return h?el('div',{class:'help',html:h}):null; }
+var ALT_HELP='Used when the <b>Alternate wording</b> condition holds. Leave blank to keep the normal text.';
+function autosize(t){ t.style.height='auto'; t.style.height=Math.min(Math.max(t.scrollHeight+2,38),420)+'px'; }
+
+function renderFields(host,fields,obj,ctx){
+  fields.forEach(function(f){
+    if(f.show && !f.show(obj,DEF)) return;
+    var n=FIELD[f.t]; if(!n){ host.appendChild(el('div',{text:'Unknown field '+f.t})); return; }
+    host.appendChild(n(f,obj,ctx||{}));
+  });
+}
+var FIELD={};
+FIELD.info=function(f){ return el('div',{class:'help-card',html:typeof f.html==='function'?f.html(DEF):f.html}); };
+FIELD.row=function(f,obj,ctx){ var d=el('div',{class:'row2'}); renderFields(d,f.fields,obj,ctx); return d; };
+FIELD.group=function(f,obj,ctx){
+  var d=el('div',{class:'grp'},[el('div',{class:'gt',text:f.label}),f.help?el('div',{class:'gh',html:f.help}):null]);
+  renderFields(d,f.fields,f.k?ensureObj(obj,f.k):obj,ctx); return d;
+};
+FIELD.obj=function(f,obj,ctx){ var d=el('div'); renderFields(d,f.fields,ensureObj(obj,f.k),ctx); return d; };
+function ensureObj(obj,k){ var v=getK(obj,k); if(v==null||typeof v!=='object'){ v={}; setK(obj,k,v);} return v; }
+FIELD.text=function(f,obj){
+  var id='f'+Math.random().toString(36).slice(2,9), v=getK(obj,f.k);
+  var inp=el('input',{type:'text',id:id,value:v==null?'':String(v),placeholder:f.ph||null,spellcheck:f.code?'false':null});
+  if(f.code) inp.style.fontFamily='var(--mono)';
+  var before=null;
+  inp.addEventListener('focus',function(){before=inp.value;});
+  inp.addEventListener('input',function(){ setK(obj,f.k,inp.value); if(f.onInput) f.onInput(obj); commit(); });
+  inp.addEventListener('change',function(){
+    if(f.kind && before!==null && before!==inp.value && before!==''){
+      var n=FAMILY.rename(DEF,f.kind,before,inp.value,obj);
+      if(n) toast('Updated '+n+' reference'+(n>1?'s':'')+' to the new name.');
+      commit(true); renderNav();
+      var st=$('editor').scrollTop; renderSection(); $('editor').scrollTop=st;
+    } else if(f.kind){ commit(true); renderNav(); }
+    before=inp.value;
+  });
+  return el('div',{class:'f'+(f.alt?' alt':'')},[el('label',{for:id,text:f.label}),inp,helpEl(f.help||(f.alt?ALT_HELP:''))]);
+};
+FIELD.num=function(f,obj){
+  var id='f'+Math.random().toString(36).slice(2,9), v=getK(obj,f.k);
+  var inp=el('input',{type:'number',id:id,value:v==null?'':String(v),min:f.min!=null?f.min:null});
+  inp.addEventListener('input',function(){ setK(obj,f.k,inp.value===''?'':+inp.value); commit(); });
+  return el('div',{class:'f'},[el('label',{for:id,text:f.label}),inp,helpEl(f.help)]);
+};
+FIELD.area=function(f,obj){
+  var id='f'+Math.random().toString(36).slice(2,9), v=getK(obj,f.k);
+  if(Array.isArray(v)) v=v.join('\n');
+  var t=el('textarea',{id:id,rows:f.rows||2,placeholder:f.ph||null});
+  t.value=v==null?'':String(v);
+  t.addEventListener('input',function(){
+    var x=t.value; if(f.arr) x=x.split(/\r?\n/).map(function(s){return s.trim();}).filter(Boolean);
+    setK(obj,f.k,x); autosize(t); commit();
+  });
+  setTimeout(function(){autosize(t);},0);
+  return el('div',{class:'f'+(f.alt?' alt':'')},[el('label',{for:id,text:f.label}),t,helpEl(f.help||(f.alt?ALT_HELP:''))]);
+};
+FIELD.check=function(f,obj){
+  var id='f'+Math.random().toString(36).slice(2,9);
+  var c=el('input',{type:'checkbox',id:id,checked:!!getK(obj,f.k)});
+  c.addEventListener('change',function(){ setK(obj,f.k,c.checked); commit(true); if(f.rerender) renderSection(); });
+  return el('div',{class:'f ck'},[c,el('div',{},[el('label',{for:id,text:f.label}),helpEl(f.help)])]);
+};
+FIELD.select=function(f,obj){
+  var id='f'+Math.random().toString(36).slice(2,9), v=getK(obj,f.k); if(v==null) v='';
+  var o=opts(f.opts,obj), s=el('select',{id:id}), found=false;
+  o.forEach(function(x){ var val=Array.isArray(x)?x[0]:x, lab=Array.isArray(x)?x[1]:x;
+    if(String(val)===String(v)) found=true;
+    s.appendChild(el('option',{value:val,text:lab})); });
+  if(!found){ s.insertBefore(el('option',{value:v,text:v===''?'(choose)':'(missing) '+v}),s.firstChild); }
+  s.value=v;
+  s.addEventListener('change',function(){ setK(obj,f.k,s.value); commit(true); if(f.rerender) renderSection(); });
+  return el('div',{class:'f'},[el('label',{for:id,text:f.label}),s,helpEl(f.help)]);
+};
+FIELD.multi=function(f,obj){
+  var v=asArr(getK(obj,f.k)), box=el('div',{class:'multi'});
+  opts(f.opts,obj).forEach(function(x){
+    var val=Array.isArray(x)?x[0]:x, lab=Array.isArray(x)?x[1]:x;
+    var c=el('input',{type:'checkbox',checked:v.indexOf(val)>=0});
+    c.addEventListener('change',function(){
+      var cur=asArr(getK(obj,f.k)).filter(function(y){return y!==val;});
+      if(c.checked) cur.push(val);
+      setK(obj,f.k,cur); commit(true);
+    });
+    box.appendChild(el('label',{},[c,lab]));
+  });
+  return el('div',{class:'f'},[el('span',{class:'flab',text:f.label}),box,helpEl(f.help)]);
+};
+FIELD.labels=function(f,obj){
+  var d=ensureObj(obj,f.k), g=el('div',{class:'lbl'});
+  var seen={};
+  f.spec.forEach(function(s){
+    seen[s[0]]=1;
+    var t=el('textarea',{rows:1}); t.value=d[s[0]]==null?'':d[s[0]];
+    t.addEventListener('input',function(){ d[s[0]]=t.value; autosize(t); commit(); });
+    setTimeout(function(){autosize(t);},0);
+    g.appendChild(el('div',{class:'k'},[s[1],el('small',{text:s[0]})])); g.appendChild(t);
+  });
+  Object.keys(d).forEach(function(k){
+    if(seen[k]) return;
+    var t=el('textarea',{rows:1}); t.value=d[k];
+    t.addEventListener('input',function(){ d[k]=t.value; autosize(t); commit(); });
+    g.appendChild(el('div',{class:'k'},[k])); g.appendChild(t);
+  });
+  return el('div',{class:'f'},[f.label?el('span',{class:'flab',text:f.label}):null,g,helpEl(f.help)]);
+};
+
+/* lists of objects */
+FIELD.list=function(f,obj,ctx){
+  var list=getK(obj,f.k); if(!Array.isArray(list)){ list=[]; setK(obj,f.k,list); }
+  var wrap=el('div',{class:'lst'});
+  var cnt=el('span',{class:'cnt',text:String(list.length)});
+  wrap.appendChild(el('div',{class:'lh'},[el('span',{class:'flab',text:f.label}),cnt]));
+  if(f.help) wrap.appendChild(el('div',{class:'help',html:f.help}));
+  var body=el('div'); wrap.appendChild(body);
+  function draw(){
+    body.innerHTML=''; cnt.textContent=String(list.length);
+    list.forEach(function(item,i){
+      var isObj=item&&typeof item==='object';
+      var sm=el('span',{class:'sm'});
+      function sum(){ var s=f.sum?f.sum(item,i,DEF):(isObj?JSON.stringify(item).slice(0,80):String(item));
+        if(Array.isArray(s)){ sm.innerHTML='<b>'+escH(s[0])+'</b>'+escH(s[1]); } else sm.textContent=s||'(empty)'; }
+      sum();
+      var it=el('div',{class:'it'+(OPEN.has(item)?' open':'')});
+      function btn(txt,title,fn,cls){ return el('button',{class:'ib'+(cls?' '+cls:''),title:title,'aria-label':title,text:txt,onclick:function(e){e.stopPropagation();fn();}}); }
+      var head=el('div',{class:'ih',onclick:function(){ if(OPEN.has(item)) OPEN.delete(item); else OPEN.add(item); it.classList.toggle('open'); if(it.classList.contains('open')&&!bodyBuilt){buildBody();} }},[
+        el('span',{class:'tw',text:'▶'}), sm,
+        btn('↑','Move up',function(){ if(i>0){ list.splice(i-1,0,list.splice(i,1)[0]); commit(true); draw(); } }),
+        btn('↓','Move down',function(){ if(i<list.length-1){ list.splice(i+1,0,list.splice(i,1)[0]); commit(true); draw(); } }),
+        btn('⧉','Duplicate',function(){ var c=clone(item); if(f.onDup) f.onDup(c,list,DEF); list.splice(i+1,0,c); OPEN.add(c); commit(true); draw(); }),
+        btn('✕','Delete',function(){ list.splice(i,1); commit(true); draw(); toast('Deleted.',true); },'del')
+      ]);
+      it.appendChild(head);
+      var ib=el('div',{class:'ib2'}), bodyBuilt=false;
+      function buildBody(){ bodyBuilt=true; ib.innerHTML='';
+        if(isObj) renderFields(ib,f.item,item,ctx);
+        it.addEventListener('input',function(){sum();});
+        it.addEventListener('change',function(){sum();});
+      }
+      if(OPEN.has(item)) buildBody();
+      it.appendChild(ib);
+      body.appendChild(it);
+    });
+  }
+  draw();
+  wrap.appendChild(el('button',{class:'add',text:'+ '+(f.addLabel||'Add'),onclick:function(){
+    var n=f.add?f.add(DEF,list):{}; list.push(n); OPEN.add(n); commit(true); draw();
+    var last=body.lastChild; if(last){ last.classList.add('flash'); var i=last.querySelector('input,textarea'); if(i) i.focus(); }
+  }}));
+  return wrap;
+};
+
+/* conditions */
+var OPS={
+  choice:[['is','is'],['not','is not'],['set','is answered'],['unset','is not answered']],
+  number:[['gte','is at least'],['lte','is at most'],['eq','is exactly']],
+  verdict:[['is','is'],['not','is not'],['set','has a result'],['unset','has no result']]
+};
+FIELD.cond=function(f,obj){
+  var wrap=el('div',{class:'f'});
+  wrap.appendChild(el('span',{class:'flab',text:f.label||'Applies when'}));
+  var box=el('div',{class:'cond'}); wrap.appendChild(box);
+  if(f.help) wrap.appendChild(helpEl(f.help));
+  function C(){ var c=getK(obj,f.k); if(!Array.isArray(c)){ c=[]; setK(obj,f.k,c);} return c; }
+  var SUB=FAMILY.subjects(DEF,f.ctx||'', obj);
+  var SMAP={}; SUB.forEach(function(s){SMAP[s.id]=s;});
+  function draw(){
+    box.innerHTML='';
+    var c=C();
+    if(!c.length) box.appendChild(el('div',{class:'always',text:f.emptyText||'Always applies. Add a condition to narrow it.'}));
+    c.forEach(function(g,gi){
+      if(gi) box.appendChild(el('div',{class:'cor',text:'or'}));
+      var gd=el('div',{class:'cg'},[el('div',{class:'cgh',text:'All of these are true'})]);
+      g.forEach(function(r,ri){
+        var s=SMAP[r.s];
+        var ss=el('select',{class:'subj'+(s?'':' miss'),'aria-label':'Subject'});
+        var groups={};
+        SUB.forEach(function(x){ var gname=x.group||'Answers';
+          if(!groups[gname]){ groups[gname]=el('optgroup',{label:gname}); ss.appendChild(groups[gname]); }
+          groups[gname].appendChild(el('option',{value:x.id,text:x.label})); });
+        if(!s) ss.insertBefore(el('option',{value:r.s,text:'(missing) '+r.s}),ss.firstChild);
+        ss.value=r.s;
+        ss.addEventListener('change',function(){ r.s=ss.value; var ns=SMAP[r.s]; fixRow(r,ns); commit(true); draw(); });
+        var kind=s?s.kind:'choice';
+        var os=el('select',{class:'op','aria-label':'Test'});
+        (OPS[kind]||OPS.choice).forEach(function(o){ os.appendChild(el('option',{value:o[0],text:o[1]})); });
+        if(!(OPS[kind]||OPS.choice).some(function(o){return o[0]===r.o;})) os.insertBefore(el('option',{value:r.o,text:r.o}),os.firstChild);
+        os.value=r.o;
+        os.addEventListener('change',function(){ r.o=os.value; commit(true); draw(); });
+        var val=null;
+        if(r.o!=='set'&&r.o!=='unset'){
+          if(kind==='number'){
+            val=el('input',{type:'number',class:'val',value:r.v,'aria-label':'Value'});
+            val.addEventListener('input',function(){ r.v=val.value; commit(); });
+          } else {
+            val=el('select',{class:'val','aria-label':'Value'});
+            var vs=s?s.values||[]:[], ok=false;
+            vs.forEach(function(x){ if(String(x[0])===String(r.v)) ok=true; val.appendChild(el('option',{value:x[0],text:x[1]})); });
+            if(!ok){ val.insertBefore(el('option',{value:r.v,text:r.v===''?'(choose)':'(missing) '+r.v}),val.firstChild); val.classList.add(r.v===''?'x':'miss'); }
+            val.value=r.v;
+            val.addEventListener('change',function(){ r.v=val.value; commit(true); draw(); });
+          }
+        }
+        var rm=el('button',{class:'rm',title:'Remove this condition','aria-label':'Remove this condition',text:'✕',onclick:function(){
+          g.splice(ri,1); if(!g.length) c.splice(gi,1); commit(true); draw(); }});
+        gd.appendChild(el('div',{class:'cr'},[ss,os,val,rm]));
+      });
+      gd.appendChild(el('button',{class:'cbtn',text:'+ And',onclick:function(){ g.push(newRow()); commit(true); draw(); }}));
+      box.appendChild(gd);
+    });
+    box.appendChild(el('div',{},[
+      el('button',{class:'cbtn',text:c.length?'+ Or another set':'+ Add a condition',onclick:function(){ c.push([newRow()]); commit(true); draw(); }})
+    ]));
+  }
+  function newRow(){ var s=SUB[0]||{id:'',kind:'choice',values:[]}; var r={s:s.id,o:'',v:''}; fixRow(r,s); return r; }
+  function fixRow(r,s){
+    var kind=s?s.kind:'choice', ops=OPS[kind]||OPS.choice;
+    if(!ops.some(function(o){return o[0]===r.o;})) r.o=ops[0][0];
+    if(kind==='number'){ if(r.v===''||isNaN(+r.v)) r.v='1'; }
+    else { var vs=(s&&s.values)||[]; if(!vs.some(function(x){return String(x[0])===String(r.v);})) r.v=vs.length?vs[0][0]:''; }
+  }
+  draw();
+  return wrap;
+};
+
+/* a condition in a few words, for list summaries */
+function condText(c,ctx){
+  c=asArr(c); if(!c.length) return 'always';
+  var m={}; FAMILY.subjects(DEF,ctx||'warn').forEach(function(s){m[s.id]=s;});
+  var OPW={is:'=',not:'\u2260',gte:'\u2265',lte:'\u2264',eq:'=',set:'answered',unset:'unanswered'};
+  return c.map(function(g){ return asArr(g).map(function(r){
+    var s=m[r.s], nm=r.s.indexOf('a:')===0?r.s.slice(2):(s?s.short||s.label:r.s);
+    if(r.o==='set'||r.o==='unset') return nm+' '+OPW[r.o];
+    return nm+' '+(OPW[r.o]||r.o)+' '+r.v; }).join(' and '); }).join('  or  ');
+}
+
+/* ---------------- problems ---------------- */
+function problems(){ try{ return FAMILY.validate(DEF)||[]; }catch(e){ return [{sec:'start',msg:'Check failed: '+e.message}]; } }
+var probT=null;
+function checkProblems(){ clearTimeout(probT); probT=setTimeout(drawProblems,300); }
+function drawProblems(){
+  var p=problems(), box=$('probs'); box.innerHTML='';
+  box.appendChild(el('div',{class:'lab',text:'Checks'}));
+  if(!p.length) box.appendChild(el('div',{class:'ok',text:'No problems found.'}));
+  else {
+    var ul=el('ul'); p.slice(0,30).forEach(function(x){
+      var sec=FAMILY.sections.filter(function(s){return s.id===x.sec;})[0];
+      ul.appendChild(el('li',{text:(sec?sec.title+': ':'')+x.msg,onclick:function(){go(x.sec);}})); });
+    box.appendChild(ul);
+  }
+  renderNav();
+}
+/* shared checks every builder uses */
+function checkCond(c,subs,where,sec,out){
+  var m={}; subs.forEach(function(s){m[s.id]=s;});
+  asArr(c).forEach(function(g){ asArr(g).forEach(function(r){
+    var s=m[r.s];
+    if(!s){ out.push({sec:sec,msg:where+' tests '+r.s+', which no longer exists.'}); return; }
+    if(s.kind!=='number'&&r.o!=='set'&&r.o!=='unset'&&!(s.values||[]).some(function(x){return String(x[0])===String(r.v);}))
+      out.push({sec:sec,msg:where+' tests '+s.label+' for "'+r.v+'", which is not one of its answers.'});
+  });});
+}
+function dupes(list,key,what,sec,out){
+  var seen={}; asArr(list).forEach(function(x){ var k=x[key]; if(!k) out.push({sec:sec,msg:'A '+what+' has no ID.'}); else if(seen[k]) out.push({sec:sec,msg:'Two '+what+'s share the ID '+k+'.'}); seen[k]=1; });
+}
+/* renames a reference everywhere in the definition. Returns the count. */
+function renameRefs(def,subjectOld,subjectNew,valueSubject,valOld,valNew,fieldNames){
+  var n=0;
+  (function walk(o){
+    if(Array.isArray(o)){ o.forEach(walk); return; }
+    if(!o||typeof o!=='object') return;
+    if(typeof o.s==='string'&&typeof o.o==='string'){
+      if(subjectOld&&o.s===subjectOld){ o.s=subjectNew; n++; }
+      if(valueSubject&&(o.s===valueSubject||(typeof valueSubject==='function'&&valueSubject(o.s)))&&o.v===valOld){ o.v=valNew; n++; }
+      return;
+    }
+    (fieldNames||[]).forEach(function(f){ if(o[f]===valOld&&valOld!==undefined){ o[f]=valNew; n++; } });
+    for(var k in o) walk(o[k]);
+  })(def);
+  return n;
+}
+
+/* ---------------- preview ---------------- */
+function buildHTML(preview){ return assembleTool(PARTS,DEF,preview); }
+function schedulePreview(now){ clearTimeout(pvT); pvT=setTimeout(drawPreview,now?0:380); }
+function drawPreview(){
+  var host=$('pvwrap'), old=host.querySelector('iframe'), st=null, sy=0;
+  if(old){ try{ var w=old.contentWindow; if(w.__getState) st=w.__getState(); sy=w.scrollY||0; }catch(e){} }
+  if(st===null) st=lastPvState;
+  var f=el('iframe',{title:'Live preview of the tool'});
+  f.addEventListener('load',function(){
+    try{
+      var w=f.contentWindow;
+      if(st&&w.__setState) w.__setState(st);
+      w.scrollTo(0,sy);
+      lastPvState=null;
+    }catch(e){}
+  });
+  f.srcdoc=buildHTML(true);
+  if(old) host.replaceChild(f,old); else host.appendChild(f);
+}
+var recT=null;
+function recOn(){ return $('pv-rec').getAttribute('aria-pressed')==='true'; }
+function drawRecord(){
+  if(!recOn()) return;
+  var f=$('pvwrap').querySelector('iframe'), out=null;
+  try{ var w=f&&f.contentWindow; if(w&&w.__recordText) out=w.__recordText(); }catch(e){}
+  if(!out){ $('pvrs').textContent='Loading the preview.'; return; }
+  $('pvrs').textContent=out.note||'';
+  if($('pvrt').textContent!==out.text) $('pvrt').textContent=out.text;
+}
+function toggleRecord(){
+  var on=!recOn(); $('pv-rec').setAttribute('aria-pressed',on?'true':'false');
+  document.querySelector('.preview').classList.toggle('rec',on);
+  clearInterval(recT); if(on){ drawRecord(); recT=setInterval(drawRecord,600); }
+}
+function restartPreview(){ lastPvState=null; var old=$('pvwrap').querySelector('iframe'); if(old) old.remove(); drawPreview(); }
+
+/* ---------------- files ---------------- */
+function download(name,text,mime){
+  var u=URL.createObjectURL(new Blob([text],{type:mime}));
+  var a=el('a',{href:u,download:name}); document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function(){URL.revokeObjectURL(u);},4000);
+}
+function exportName(){ var t=DEF.tool||{}; return slugF(t.exportName||t.pageTitle||t.barTitle); }
+function doExport(){
+  var p=problems();
+  download(exportName()+'.html',buildHTML(false),'text/html');
+  DIRTY=false;
+  toast(p.length?'Tool exported. '+p.length+' check'+(p.length>1?'s':'')+' still open.':'Tool exported.');
+}
+function doSaveProject(){
+  download(exportName()+'.tool-project.json',JSON.stringify({toolBuilderProject:FAMILY.id,saved:new Date().toISOString(),def:DEF},null,1),'application/json');
+  DIRTY=false; toast('Project saved.');
+}
+function readDefFrom(text,name){
+  var d=null;
+  if(/^\s*</.test(text)){
+    var m=/<script type="application\/json" id="tool-def">([\s\S]*?)<\/script>/.exec(text);
+    if(!m) throw new Error('This page was not made by a Tool Builder. The built-in starter already matches the original tool. Use New, then Start from the current tool.');
+    d=JSON.parse(m[1]);
+  } else {
+    var o=JSON.parse(text);
+    d=o&&o.def?o.def:o;
+  }
+  if(!d||typeof d!=='object'||!d.builder) throw new Error('No tool definition found in '+name+'.');
+  if(d.builder!==FAMILY.id) throw new Error('This file belongs to the '+(FAMILY.others[d.builder]||d.builder)+'. Open it there.');
+  return d;
+}
+function doOpen(ev){
+  var f=ev.target.files&&ev.target.files[0]; if(!f) return;
+  var r=new FileReader();
+  r.onload=function(){
+    try{ var d=readDefFrom(r.result,f.name); loadDef(d,'Opened <b>'+escH(f.name)+'</b>. Edits now apply to this tool.'); go('start'); }
+    catch(e){ banner(escH(e.message),'bad'); }
+  };
+  r.readAsText(f); ev.target.value='';
+}
+function newFrom(kind){
+  closeMenus();
+  var cur=snapshot();
+  loadDef(clone(kind==='blank'?FAMILY.blank:STARTER), kind==='blank'?'Started a blank tool. Your previous work is one Undo away.':'Started from the current tool. Your previous work is one Undo away.');
+  HIST.unshift(cur); HPOS=HIST.length-1; undoState();
+  go('start');
+}
+function closeMenus(){ document.querySelectorAll('.menu.open').forEach(function(m){m.classList.remove('open');}); }
+function syncMtabs(){
+  var e=document.body.classList.contains('m-prev');
+  $('mt-edit').className=e?'':'on'; $('mt-prev').className=e?'on':'';
+}
+
+/* ---------------- start up ---------------- */
+function boot(){
+  document.title=FAMILY.name;
+  $('brand-t').textContent=FAMILY.name;
+  $('brand-s').textContent=FAMILY.sub;
+  $('undo').addEventListener('click',undo); $('redo').addEventListener('click',redo);
+  $('export').addEventListener('click',doExport);
+  $('saveproj').addEventListener('click',doSaveProject);
+  $('openbtn').addEventListener('click',function(){$('openfile').click();});
+  $('openfile').addEventListener('change',doOpen);
+  $('newbtn').addEventListener('click',function(e){ e.stopPropagation(); $('newmenu').classList.toggle('open'); });
+  $('new-start').addEventListener('click',function(){newFrom('start');});
+  $('new-blank').addEventListener('click',function(){newFrom('blank');});
+  document.addEventListener('click',function(e){ if(!e.target.closest('.menu')) closeMenus(); });
+  $('pv-desk').addEventListener('click',function(){ $('pvwrap').className='pvwrap'; this.className='on'; $('pv-phone').className=''; });
+  $('pv-phone').addEventListener('click',function(){ $('pvwrap').className='pvwrap phone'; this.className='on'; $('pv-desk').className=''; });
+  $('pv-rec').addEventListener('click',toggleRecord);
+  $('helpbtn').addEventListener('click',function(){openHelp();});
+  $('hp-close').addEventListener('click',closeHelp);
+  $('hp-q').addEventListener('input',function(){filterHelp(this.value);});
+  $('hp-print').addEventListener('click',function(){ filterHelp(''); document.body.classList.add('printing'); window.print(); setTimeout(function(){document.body.classList.remove('printing');},500); });
+  $('pv-reset').addEventListener('click',function(){ restartPreview(); toast('Preview answers cleared.'); });
+  $('pv-open').addEventListener('click',function(){
+    var w=window.open('','_blank'); if(!w){ toast('The browser blocked the new tab.'); return; }
+    w.document.open(); w.document.write(buildHTML(true)); w.document.close();
+  });
+  $('mt-edit').addEventListener('click',function(){ document.body.classList.add('m-edit'); document.body.classList.remove('m-prev'); syncMtabs(); });
+  $('mt-prev').addEventListener('click',function(){ document.body.classList.add('m-prev'); document.body.classList.remove('m-edit'); syncMtabs(); schedulePreview(true); });
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape'&&$('help').classList.contains('on')){ closeHelp(); return; }
+    var mod=e.ctrlKey||e.metaKey;
+    if(mod&&!e.shiftKey&&e.key.toLowerCase()==='z'&&!/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)){ e.preventDefault(); undo(); }
+    if(mod&&(e.key.toLowerCase()==='y'||(e.shiftKey&&e.key.toLowerCase()==='z'))&&!/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)){ e.preventDefault(); redo(); }
+    if(mod&&e.key.toLowerCase()==='s'){ e.preventDefault(); doSaveProject(); }
+  });
+  document.body.classList.add('m-edit');
+  pushHist(); renderNav(); renderSection(); drawPreview(); drawProblems();
+  /* offer to restore the last session on this computer */
+  try{
+    var raw=localStorage.getItem('toolbuilder:'+FAMILY.id+':last');
+    if(raw){
+      var o=JSON.parse(raw);
+      if(o&&o.def&&JSON.stringify(o.def)!==JSON.stringify(STARTER)){
+        var when=new Date(o.saved);
+        banner('Your last session in this builder was kept on this computer ('+escH(when.toLocaleString())+').','',
+          [['Restore it',function(){ loadDef(o.def,'Last session restored.'); }],['Keep the starter',hideBanner]]);
+      }
+    }
+  }catch(e){}
+  /* from now on, keep this session for next time */
+  LSKEY='toolbuilder:'+FAMILY.id+':last';
+}
+window.addEventListener('beforeunload',function(e){
+  if(DIRTY){ e.preventDefault(); e.returnValue=''; }
+});
+boot();
+
+</script>
+</body>
+</html>

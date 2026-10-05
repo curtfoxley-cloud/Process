@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tool Builder</title>
+<style>
+:root{
+  --ink:#1E262E; --ink-2:#2C3841; --slate:#5C6D78; --mute:#8998A2;
+  --paper:#FFFFFF; --surface:#F4F6F7; --surface-2:#EDF0F1; --rule:#D6DCDF;
+  --rust:#A8481F; --rust-soft:#F2E4DD; --rust-ink:#7E340F;
+  --amber:#9A6508; --amber-soft:#F6ECD8;
+  --alert:#8E2F2F; --alert-soft:#F4E2E2;
+  --teal:#1F5F5B; --teal-soft:#DFEAE8;
+  --serif:Georgia,Cambria,"Times New Roman",serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--surface);font-size:14px;line-height:1.5;display:flex;flex-direction:column;overflow:hidden}
+button{font-family:inherit;font-size:inherit;cursor:pointer;color:inherit}
+input,textarea,select{font-family:inherit;font-size:13.5px;color:inherit}
+:focus-visible{outline:2px solid var(--rust);outline-offset:2px}
+
+/* ---- top bar ---- */
+.bb{background:var(--ink);color:#fff;padding:9px 16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;flex:none}
+.brand{margin-right:auto;min-width:0}
+.brand b{font-family:var(--serif);font-size:16px;font-weight:400;display:block;line-height:1.2}
+.brand span{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#93A2AB}
+.tb{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.tb button{background:transparent;border:1px solid #47565F;color:#E9EEF0;border-radius:4px;padding:6px 11px;font-size:12.5px;font-weight:600}
+.tb button:hover{background:#2C3841;border-color:#6A7B85}
+.tb button.pri{background:var(--rust);border-color:var(--rust);color:#fff}
+.tb button.pri:hover{background:var(--rust-ink)}
+.tb button[disabled]{opacity:.4;cursor:default}
+.tb .sep{width:1px;height:22px;background:#47565F;margin:0 2px}
+.menu{position:relative}
+.menu .pop{display:none;position:absolute;right:0;top:calc(100% + 6px);z-index:60;background:var(--paper);color:var(--ink);
+  border:1px solid var(--rule);border-radius:6px;box-shadow:0 8px 24px rgba(30,38,46,.18);min-width:290px;padding:6px}
+.menu.open .pop{display:block}
+.pop button{display:block;width:100%;text-align:left;border:0;background:none;color:var(--ink);padding:9px 11px;border-radius:4px;font-size:13px;font-weight:400}
+.pop button b{display:block;font-weight:600}
+.pop button span{color:var(--slate);font-size:12px}
+.pop button:hover{background:var(--surface)}
+
+/* ---- banner ---- */
+.banner{flex:none;background:var(--amber-soft);border-bottom:1px solid #E4D3AF;padding:8px 16px;font-size:13px;display:none;gap:10px;align-items:center;flex-wrap:wrap}
+.banner.on{display:flex}
+.banner.good{background:var(--teal-soft);border-color:#BFD5D2}
+.banner.bad{background:var(--alert-soft);border-color:#E0BFBF}
+.banner button{border:1px solid var(--rule);background:var(--paper);border-radius:4px;padding:4px 10px;font-size:12.5px;font-weight:600}
+.banner .x{margin-left:auto;border:0;background:none;font-size:16px;color:var(--slate)}
+
+/* ---- layout ---- */
+.layout{flex:1;display:grid;grid-template-columns:210px minmax(380px,1fr) minmax(380px,1.05fr);min-height:0}
+.side{border-right:1px solid var(--rule);background:var(--paper);overflow-y:auto;padding:12px 8px}
+.side .lab{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--mute);font-weight:700;margin:4px 8px 6px}
+.side button.sec{display:flex;width:100%;text-align:left;border:0;background:none;padding:7px 9px;border-radius:4px;font-size:13px;color:var(--ink-2);gap:8px;align-items:baseline}
+.side button.sec:hover{background:var(--surface)}
+.side button.sec.on{background:var(--rust-soft);color:var(--rust-ink);font-weight:600}
+.side button.sec .n{font-family:var(--mono);font-size:10px;color:var(--mute);min-width:16px}
+.side button.sec .bad{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--alert);font-weight:700}
+.probs{margin:16px 6px 0;border-top:1px solid var(--rule);padding-top:12px}
+.probs .ok{font-size:12px;color:var(--teal)}
+.probs ul{margin:4px 0 0;padding:0;list-style:none}
+.probs li{font-size:12px;color:var(--alert);margin-bottom:6px;cursor:pointer;line-height:1.4}
+.probs li:hover{text-decoration:underline}
+
+.editor{overflow-y:auto;padding:20px 22px 80px;min-width:0}
+.editor h2{font-family:var(--serif);font-size:23px;font-weight:400;margin:0 0 4px}
+.editor .intro{color:var(--slate);font-size:13.5px;margin:0 0 18px;max-width:68ch}
+.editor .intro p{margin:0 0 7px}
+
+.f{margin:0 0 14px}
+.f>label,.f .flab{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--slate);font-weight:700;margin-bottom:4px}
+.f input[type=text],.f input[type=number],.f textarea,.f select{width:100%;padding:7px 9px;border:1px solid var(--rule);border-radius:4px;background:var(--paper)}
+.f textarea{resize:vertical;line-height:1.5;min-height:38px}
+.f input:focus,.f textarea:focus,.f select:focus{outline:2px solid var(--rust);outline-offset:0;border-color:var(--rust)}
+.f .help{font-size:12px;color:var(--slate);margin-top:4px;line-height:1.45}
+.f .help code,.intro code,.help code{font-family:var(--mono);font-size:11.5px;background:var(--surface-2);padding:0 4px;border-radius:3px}
+.f.ck{display:flex;gap:8px;align-items:flex-start}
+.f.ck input{margin:3px 0 0;accent-color:var(--rust)}
+.f.ck label{font-family:inherit;font-size:13.5px;letter-spacing:0;text-transform:none;color:var(--ink-2);font-weight:400;margin:0;cursor:pointer}
+.f.ck .help{margin-top:1px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+.grp{border:1px solid var(--rule);border-radius:6px;padding:12px 14px 2px;margin:0 0 16px;background:var(--paper)}
+.grp>.gt{font-family:var(--serif);font-size:15px;margin:0 0 10px;color:var(--ink)}
+.grp>.gh{font-size:12px;color:var(--slate);margin:-6px 0 10px}
+.alt{border-left:3px solid var(--teal);padding-left:10px}
+.alt>label{color:var(--teal)!important}
+.multi{display:flex;gap:14px;flex-wrap:wrap}
+.multi label{display:flex;gap:6px;align-items:center;font-size:13px;cursor:pointer}
+.multi input{accent-color:var(--rust)}
+
+/* ---- lists ---- */
+.lst{margin:0 0 16px}
+.lst>.lh{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.lst>.lh .flab{margin:0;font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--slate);font-weight:700}
+.lst>.lh .cnt{font-family:var(--mono);font-size:10px;color:var(--mute)}
+.lst>.help{font-size:12px;color:var(--slate);margin:-2px 0 8px}
+.add{border:1px dashed var(--mute);background:var(--paper);color:var(--slate);border-radius:4px;padding:6px 12px;font-size:12.5px;font-weight:600}
+.add:hover{border-color:var(--rust);color:var(--rust-ink)}
+.it{background:var(--paper);border:1px solid var(--rule);border-radius:6px;margin-bottom:6px}
+.it.open{border-color:#C9D1D5;box-shadow:0 1px 4px rgba(30,38,46,.06)}
+.it>.ih{display:flex;align-items:center;gap:6px;padding:6px 6px 6px 10px;cursor:pointer;min-height:36px}
+.it>.ih .tw{font-size:10px;color:var(--mute);width:12px;flex:none;transition:transform .12s}
+.it.open>.ih .tw{transform:rotate(90deg)}
+.it>.ih .sm{flex:1;min-width:0;font-size:13px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.it>.ih .sm b{font-family:var(--mono);font-size:11.5px;color:var(--rust-ink);margin-right:6px}
+.it>.ih .ib{border:1px solid transparent;background:none;color:var(--mute);border-radius:3px;width:26px;height:26px;padding:0;font-size:13px;line-height:1;flex:none}
+.it>.ih .ib:hover{border-color:var(--rule);color:var(--ink);background:var(--surface)}
+.it>.ih .ib.del:hover{color:var(--alert);border-color:#E0BFBF;background:var(--alert-soft)}
+.it>.ib2{display:none;padding:10px 12px 2px;border-top:1px solid var(--surface-2)}
+.it.open>.ib2{display:block}
+.it .it{background:var(--surface)}
+.it .it .it{background:var(--paper)}
+.it.flash{animation:fl 1s ease}
+@keyframes fl{0%{background:var(--rust-soft)}100%{}}
+
+/* ---- conditions ---- */
+.cond{border:1px solid var(--rule);border-radius:6px;padding:8px 10px;background:var(--surface)}
+.it .it .cond{background:var(--paper)}
+.cond .always{font-size:12.5px;color:var(--slate);font-style:italic;margin:2px 0 6px}
+.cg{border-left:3px solid var(--slate);padding:2px 0 2px 9px;margin:4px 0}
+.cg .cgh{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);font-weight:700;margin-bottom:4px}
+.cr{display:flex;gap:5px;align-items:center;margin-bottom:5px;flex-wrap:wrap}
+.cr select,.cr input{padding:5px 6px;border:1px solid var(--rule);border-radius:4px;background:var(--paper);font-size:12.5px;max-width:100%}
+.f .cr select,.f .cr input{width:auto}
+.cr select.subj{flex:1 1 150px;min-width:0}
+.cr select.op{flex:0 0 auto}
+.cr .val{flex:0 1 130px;min-width:64px}
+.cr .miss{border-color:var(--alert);background:var(--alert-soft)}
+.cr .rm{border:0;background:none;color:var(--mute);font-size:15px;padding:0 4px}
+.cr .rm:hover{color:var(--alert)}
+.cor{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--rust-ink);font-weight:700;margin:6px 0}
+.cbtn{border:0;background:none;color:var(--rust-ink);font-weight:600;font-size:12.5px;padding:2px 0;margin-right:14px;text-decoration:underline;text-underline-offset:3px}
+
+/* ---- labels table ---- */
+.lbl{display:grid;grid-template-columns:minmax(150px,34%) 1fr;gap:6px 12px;align-items:start}
+.lbl .k{font-size:12.5px;color:var(--ink-2);padding-top:7px}
+.lbl .k small{display:block;font-family:var(--mono);font-size:10px;color:var(--mute)}
+.lbl textarea{width:100%;padding:6px 8px;border:1px solid var(--rule);border-radius:4px;background:var(--paper);resize:vertical;min-height:34px}
+
+/* ---- preview ---- */
+.preview{border-left:1px solid var(--rule);display:flex;flex-direction:column;min-width:0;background:#E3E8EA}
+.pvbar{display:flex;gap:8px;align-items:center;padding:7px 12px;background:var(--paper);border-bottom:1px solid var(--rule);flex-wrap:wrap}
+.pvbar .t{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--slate);font-weight:700;margin-right:auto}
+.pvbar button{border:1px solid var(--rule);background:var(--paper);border-radius:4px;padding:4px 10px;font-size:12px;font-weight:600;color:var(--ink-2)}
+.pvbar button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.pvwrap{flex:1;min-height:0;display:flex;justify-content:center;overflow:auto}
+.pvwrap iframe{border:0;background:var(--surface);width:100%;height:100%;display:block}
+.pvwrap.phone{padding:14px 0}
+.pvwrap.phone iframe{width:390px;height:auto;min-height:calc(100% - 0px);border-radius:14px;box-shadow:0 4px 20px rgba(30,38,46,.2)}
+
+/* ---- record preview ---- */
+.preview{position:relative;min-height:0;overflow:hidden}
+.layout{grid-template-rows:minmax(0,1fr)}
+.pvrec{display:none;flex:0 0 42%;min-height:0;flex-direction:column;border-top:3px solid var(--ink-2);background:var(--paper)}
+.preview.rec .pvrec{display:flex}
+.pvrh{display:flex;gap:10px;align-items:baseline;padding:7px 12px;border-bottom:1px solid var(--rule);flex-wrap:wrap}
+.pvrh .t{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--slate);font-weight:700}
+#pvrs{font-size:12px;color:var(--slate)}
+#pvrt{flex:1;margin:0;overflow:auto;padding:10px 14px;font-family:var(--mono);font-size:11.5px;line-height:1.55;color:var(--ink-2);white-space:pre-wrap;word-break:break-word}
+.pvbar button[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+/* ---- help page ---- */
+.help{position:fixed;inset:0;z-index:80;background:var(--surface);display:none;flex-direction:column}
+.help.on{display:flex}
+.hp-top{display:flex;gap:10px;align-items:center;padding:10px 16px;background:var(--ink);color:#fff;flex-wrap:wrap}
+.hp-top b{font-family:var(--serif);font-weight:400;font-size:17px;margin-right:auto}
+.hp-top input{padding:6px 10px;border-radius:4px;border:1px solid #47565F;background:#2C3841;color:#fff;min-width:200px}
+.hp-top input::placeholder{color:#93A2AB}
+.hp-top button{background:transparent;border:1px solid #47565F;color:#E9EEF0;border-radius:4px;padding:6px 12px;font-size:12.5px;font-weight:600}
+.hp-top button.pri{background:var(--rust);border-color:var(--rust);color:#fff}
+.hp-main{flex:1;min-height:0;display:grid;grid-template-columns:250px 1fr}
+.hp-toc{overflow-y:auto;background:var(--paper);border-right:1px solid var(--rule);padding:14px 10px}
+.hp-toc a{display:block;padding:6px 9px;border-radius:4px;color:var(--ink-2);text-decoration:none;font-size:13px}
+.hp-toc a:hover{background:var(--surface)}
+.hp-body{overflow-y:auto;padding:24px 32px 120px}
+.hp-sec{max-width:760px;margin:0 0 30px;scroll-margin-top:16px}
+.hp-sec h3{font-family:var(--serif);font-weight:400;font-size:24px;margin:0 0 10px;padding-bottom:6px;border-bottom:1px solid var(--rule)}
+.hp-sec h4{font-family:var(--serif);font-weight:400;font-size:16px;margin:18px 0 6px;color:var(--ink)}
+.hp-sec p,.hp-sec li{font-size:14px;color:var(--ink-2);line-height:1.6}
+.hp-sec p{margin:0 0 9px}
+.hp-sec ul,.hp-sec ol{margin:0 0 10px;padding-left:22px}
+.hp-sec li{margin-bottom:5px}
+.hp-sec code{font-family:var(--mono);font-size:12px;background:var(--surface-2);padding:0 4px;border-radius:3px}
+.hp-task{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:12px 16px;margin:0 0 12px}
+.hp-task h4{margin:0 0 6px}
+.hp-task ol{margin-bottom:4px}
+.hp-note{font-size:13px!important;color:var(--slate)!important;border-left:3px solid var(--teal);padding-left:9px;margin:6px 0 2px!important}
+.hp-t{border-collapse:collapse;margin:4px 0 12px;font-size:13.5px;width:100%}
+.hp-t th{text-align:left;background:var(--surface-2);font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--slate);padding:6px 9px}
+.hp-t td{border-top:1px solid var(--rule);padding:7px 9px;vertical-align:top;color:var(--ink-2)}
+.hp-ex{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:10px 12px;margin:0 0 12px;font-size:13px}
+.hp-ex .cg div{padding:2px 0}
+.hp-go{border:1px solid var(--rule);background:var(--paper);border-radius:4px;padding:4px 10px;font-size:12.5px;font-weight:600;color:var(--rust-ink)}
+.hp-none{padding:24px 32px;color:var(--slate);grid-column:2;grid-row:1;margin:0}
+@media(max-width:760px){.hp-none{grid-column:1;grid-row:2}}
+.hp-steps li{margin-bottom:8px}
+.start-cta{display:flex;gap:14px;align-items:center;flex-wrap:wrap;background:var(--rust-soft);border:1px solid #E3CCC2;border-radius:6px;padding:12px 16px;margin:0 0 14px}
+.start-cta p{margin:0;flex:1;min-width:220px;font-size:13.5px;color:var(--ink-2)}
+.start-cta button{border:1px solid var(--rust);background:var(--rust);color:#fff;border-radius:4px;padding:8px 14px;font-weight:600}
+@media(max-width:760px){
+  .hp-main{grid-template-columns:1fr}
+  .hp-toc{display:flex;gap:4px;overflow-x:auto;border-right:0;border-bottom:1px solid var(--rule);padding:8px}
+  .hp-toc a{white-space:nowrap;flex:none}
+  .hp-body{padding:16px 16px 80px}
+  .hp-top input{min-width:0;flex:1}
+  .hp-top b{flex-basis:100%;font-size:15px}
+}
+@media print{
+  body{overflow:visible;display:block;height:auto}
+  body.printing>*:not(#help){display:none!important}
+  body.printing .help{position:static;display:block}
+  body.printing .hp-top,body.printing .hp-toc,body.printing .hp-go{display:none}
+  body.printing .hp-main{display:block}
+  body.printing .hp-body{overflow:visible;padding:0}
+  body.printing .hp-sec{display:block!important;break-inside:auto}
+}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:9px 16px;border-radius:5px;font-size:13px;opacity:0;pointer-events:none;transition:all .2s;z-index:90;display:flex;gap:12px;align-items:center}
+.toast.on{opacity:1;transform:translateX(-50%);pointer-events:auto}
+.toast button{background:none;border:0;color:#F2C4AE;font-weight:700;text-decoration:underline;padding:0}
+
+.mtabs{display:none}
+.help-card{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:14px 16px;margin:0 0 14px;font-size:13.5px;color:var(--ink-2)}
+.help-card h3{font-family:var(--serif);font-weight:400;font-size:16px;margin:0 0 6px}
+.help-card p{margin:0 0 8px}
+.help-card ul,.help-card ol{margin:0 0 8px;padding-left:20px}
+.help-card li{margin-bottom:4px}
+.kbd{font-family:var(--mono);font-size:11px;border:1px solid var(--rule);border-bottom-width:2px;border-radius:3px;padding:0 4px;background:var(--paper)}
+
+@media(max-width:1180px){
+  .layout{grid-template-columns:180px 1fr 1fr}
+}
+@media(max-width:960px){
+  body{overflow:auto}
+  .layout{display:block}
+  .side{border-right:0;border-bottom:1px solid var(--rule);padding:8px}
+  .side .secs{display:flex;gap:4px;overflow-x:auto;padding-bottom:4px}
+  .side .lab{display:none}
+  .side button.sec{white-space:nowrap;width:auto;flex:none}
+  .probs{margin:8px 4px 0}
+  .mtabs{display:flex;gap:0;background:var(--paper);border-bottom:1px solid var(--rule)}
+  .mtabs button{flex:1;border:0;background:none;padding:10px;font-weight:600;color:var(--slate);border-bottom:3px solid transparent}
+  .mtabs button.on{color:var(--rust-ink);border-bottom-color:var(--rust)}
+  body.m-edit .preview{display:none}
+  body.m-prev .editor{display:none}
+  body.m-prev .side{display:none}
+  .preview{border-left:0;height:calc(100vh - 110px)}
+  .editor{padding:16px 14px 60px}
+  .row2{grid-template-columns:1fr}
+}
+
+</style>
+</head>
+<body>
+<header class="bb">
+  <div class="brand"><b id="brand-t">Tool Builder</b><span id="brand-s"></span></div>
+  <div class="tb">
+    <div class="menu" id="newmenu">
+      <button id="newbtn" aria-haspopup="true">New</button>
+      <div class="pop" role="menu">
+        <button id="new-start" role="menuitem"><b>Start from the current tool</b><span>A copy of the Rev D tool this builder came with.</span></button>
+        <button id="new-blank" role="menuitem"><b>Start from a blank tool</b><span>The same parts, with placeholder content.</span></button>
+      </div>
+    </div>
+    <button id="openbtn" title="Open a saved project, or a tool this builder exported">Open</button>
+    <input type="file" id="openfile" accept=".json,.html,.htm,application/json,text/html" style="display:none">
+    <button id="saveproj" title="Save your work to a file you can open later">Save project</button>
+    <span class="sep"></span>
+    <button id="undo" title="Undo (Ctrl+Z)">Undo</button>
+    <button id="redo" title="Redo (Ctrl+Y)">Redo</button>
+    <span class="sep"></span>
+    <button id="helpbtn" title="Open the help page">Help</button>
+    <button id="export" class="pri" title="Download the finished tool as one HTML file">Export tool</button>
+  </div>
+</header>
+<div class="banner" id="banner" role="status"></div>
+<div class="mtabs"><button id="mt-edit" class="on">Edit</button><button id="mt-prev">Preview</button></div>
+<main class="layout">
+  <nav class="side" aria-label="Builder sections">
+    <div class="lab">Sections</div>
+    <div class="secs" id="secs"></div>
+    <div class="probs" id="probs"></div>
+  </nav>
+  <section class="editor" id="editor" aria-label="Editor"></section>
+  <section class="preview" aria-label="Live preview">
+    <div class="pvbar">
+      <span class="t">Live preview</span>
+      <button id="pv-desk" class="on">Desktop</button>
+      <button id="pv-phone">Phone</button>
+      <button id="pv-rec" title="Show the text the tool will record for these answers" aria-pressed="false">Record</button>
+      <button id="pv-reset" title="Clear the answers in the preview">Clear answers</button>
+      <button id="pv-open" title="Open the preview in its own tab">Open in tab</button>
+    </div>
+    <div class="pvwrap" id="pvwrap"></div>
+    <div class="pvrec" id="pvrec" aria-label="Record preview">
+      <div class="pvrh"><span class="t">Record preview</span><span id="pvrs"></span></div>
+      <pre id="pvrt"></pre>
+    </div>
+  </section>
+</main>
+<div class="help" id="help" role="dialog" aria-modal="true" aria-labelledby="hp-title" aria-hidden="true">
+  <div class="hp-top">
+    <b id="hp-title">Help</b>
+    <input id="hp-q" type="search" placeholder="Search the help" aria-label="Search the help">
+    <button id="hp-print">Print</button>
+    <button id="hp-close" class="pri">Close</button>
+  </div>
+  <div class="hp-main">
+    <nav class="hp-toc" id="hp-toc" aria-label="Help contents"></nav>
+    <div class="hp-body" id="hp-body"></div>
+    <p id="hp-none" class="hp-none" style="display:none">Nothing in the help matches that search.</p>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script>
+/* Tool Builder. One file, offline. Generated tools carry their own definition. */
+var PARTS={"css":":root{\n  --ink:#1E262E; --ink-2:#2C3841; --slate:#5C6D78; --mute:#8998A2;\n  --paper:#FFFFFF; --surface:#F4F6F7; --surface-2:#EDF0F1; --rule:#D6DCDF;\n  --rust:#A8481F; --rust-soft:#F2E4DD; --rust-ink:#7E340F;\n  --teal:#1F5F5B; --teal-soft:#DFEAE8;\n  --amber:#9A6508; --amber-soft:#F6ECD8;\n  --alert:#8E2F2F; --alert-soft:#F4E2E2;\n  --serif:Georgia,Cambria,\"Times New Roman\",serif;\n  --sans:-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Arial,sans-serif;\n  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;\n}\n*{box-sizing:border-box}\nbody{margin:0;font-family:var(--sans);color:var(--ink);background:var(--surface);font-size:15px;line-height:1.55}\nbutton{font-family:inherit;cursor:pointer}\ninput{font-family:inherit;font-size:14px;color:inherit}\n.top{background:var(--ink);color:#fff;padding:13px 20px}\n.top b{font-family:var(--serif);font-size:16px;display:block;line-height:1.2}\n.top span{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#93A2AB}\n.wrap{max-width:820px;margin:0 auto;padding:24px 20px 70px}\nh1{font-family:var(--serif);font-size:27px;font-weight:400;margin:0 0 6px;line-height:1.2}\n.lede{font-size:14px;color:var(--slate);margin:0 0 20px;max-width:64ch}\n.lab{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--rust-ink);font-weight:700;margin-bottom:8px}\n.card{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:16px 18px;margin:0 0 18px}\n.card p{margin:0;font-size:13.5px;color:var(--ink-2)}\n.card p+p{margin-top:9px}\n.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}\n.fld label{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--slate);font-weight:700;margin-bottom:4px}\n.fld input{width:100%;padding:7px 9px;border:1px solid var(--rule);border-radius:4px;background:var(--paper)}\n.fld input:focus{outline:2px solid var(--rust);outline-offset:1px}\n\n.tally{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin:0 0 16px}\n.chip{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;\n  padding:3px 9px;border-radius:3px;border:1px solid var(--rule);background:var(--surface-2);color:var(--slate);white-space:nowrap}\n.chip.on{background:var(--rust-soft);color:var(--rust-ink);border-color:#E3CCC2}\n.chip.hold{background:var(--amber-soft);color:var(--amber);border-color:#E4D3AF}\n.chip.count{background:none;border-color:transparent;color:var(--mute)}\n\n#tree{position:relative;padding-left:30px}\n#tree:before{content:\"\";position:absolute;left:8px;top:10px;bottom:26px;width:2px;background:var(--rule)}\n.phead{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;\n  color:var(--rust-ink);font-weight:700;margin:20px 0 2px;position:relative;background:var(--surface);padding:2px 0}\n.phead:first-child{margin-top:0}\n.pnote{font-size:12.5px;color:var(--slate);margin:0 0 8px;max-width:62ch}\n\n.node{position:relative;margin-bottom:6px}\n.node:before{content:\"\";position:absolute;left:-26px;top:13px;width:14px;height:2px;background:var(--rule)}\n.node:after{content:\"\";position:absolute;left:-30px;top:8px;width:11px;height:11px;border-radius:50%;\n  background:var(--paper);border:2px solid var(--rule)}\n.node.done:after{background:var(--slate);border-color:var(--slate)}\n.node.fired:after{background:var(--rust);border-color:var(--rust)}\n.node.opn:after{background:var(--amber);border-color:var(--amber)}\n.node.here:after{background:var(--paper);border-color:var(--rust);box-shadow:0 0 0 3px var(--rust-soft)}\n.node.pending{opacity:.55}\n\n.node .row{display:flex;gap:10px;align-items:baseline;padding:5px 0;font-size:13.5px;color:var(--mute)}\n.node .g{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--mute);min-width:28px}\n.node.done .row,.node.fired .row,.node.opn .row{color:var(--ink-2)}\n.node.done .g,.node.fired .g,.node.opn .g{color:var(--rust-ink)}\n.node .owner{display:block;font-size:12px;color:var(--amber);margin-top:2px}\n.node .ans{margin-left:auto;font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.06em;\n  text-transform:uppercase;padding:2px 7px;border-radius:3px;background:var(--surface-2);color:var(--slate);\n  white-space:nowrap;cursor:pointer;border:1px solid var(--rule)}\n.node.fired .ans{background:var(--rust-soft);color:var(--rust-ink);border-color:#E3CCC2}\n.node.opn .ans{background:var(--amber-soft);color:var(--amber);border-color:#E4D3AF}\n.node .ans:hover{border-color:var(--slate)}\n.node .ans:focus-visible{outline:2px solid var(--rust);outline-offset:2px}\n\n.node.here{background:var(--paper);border:1px solid var(--rule);border-left:3px solid var(--rust);\n  border-radius:0 6px 6px 0;padding:14px 16px;margin:10px 0 12px -3px}\n.node.here:before{top:22px}\n.node.here:after{top:17px}\n.node.here .row{padding:0;font-size:16px;color:var(--ink);display:block}\n.node.here .g{display:block;margin-bottom:5px;font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--rust-ink)}\n.node.here .qt{font-family:var(--serif);font-size:19px;line-height:1.3;display:block}\n.node.here .why{font-size:13px;color:var(--slate);margin:7px 0 0;max-width:62ch}\n\n.derive{margin-top:11px;border-left:3px solid var(--rule);padding:2px 0 2px 11px}\n.derive div{font-size:12.5px;color:var(--ink-2);margin-bottom:2px}\n.derive .dk{font-family:var(--mono);font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;\n  color:var(--mute);font-weight:700;display:inline-block;min-width:96px}\n\n.branch{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}\n.branch button{border:1px solid var(--rule);background:var(--paper);color:var(--ink);border-radius:4px;\n  padding:8px 15px;font-size:13.5px;font-weight:600}\n.branch button:hover{background:var(--surface);border-color:var(--slate)}\n.branch button:focus-visible{outline:2px solid var(--rust);outline-offset:2px}\n.branch button.cur{border-color:var(--rust);background:var(--rust-soft);color:var(--rust-ink)}\n.branch button.cur:after{content:\" \\2713\"}\n.branch button.opb{border-style:dashed;color:var(--slate)}\n.branch button.opb.cur{border-style:solid;border-color:var(--amber);background:var(--amber-soft);color:var(--amber)}\n.openbox{margin-top:12px;background:var(--amber-soft);border:1px solid #E4D3AF;border-radius:5px;padding:11px 13px}\n.openbox p{margin:0 0 9px;font-size:12.5px;color:var(--ink-2)}\n.nav{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-top:11px}\n.lnk{border:0;background:none;padding:2px 0;font-size:13px;font-weight:600;color:var(--slate);\n  text-decoration:underline;text-underline-offset:3px}\n.lnk:hover{color:var(--rust)}\n.lnk:focus-visible{outline:2px solid var(--rust);outline-offset:2px;border-radius:3px}\n\n.leaf{margin-top:10px;position:relative}\n.leaf:after{content:\"\";position:absolute;left:-30px;top:8px;width:11px;height:11px;border-radius:50%;\n  background:var(--paper);border:2px solid var(--rule)}\n.leaf.on:after{background:var(--rust);border-color:var(--rust)}\n.leaf.on.hold:after{background:var(--amber);border-color:var(--amber)}\n.leaf:before{content:\"\";position:absolute;left:-26px;top:13px;width:14px;height:2px;background:var(--rule)}\n.leaf .box{border:1px solid var(--rule);border-radius:6px;background:var(--paper);padding:16px 18px}\n.leaf.on .box{border-left:3px solid var(--rust);margin-left:-3px}\n.leaf.on.hold .box{border-left-color:var(--amber)}\n.leaf h2{font-family:var(--serif);font-size:21px;font-weight:400;margin:0 0 5px}\n.leaf p{margin:0;font-size:13.5px;color:var(--slate);max-width:66ch}\n.leaf p+p{margin-top:8px}\n.leaf h3{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;\n  color:var(--slate);font-weight:700;margin:18px 0 6px}\n.leaf ul{margin:0;padding-left:18px}\n.leaf li{font-size:13px;color:var(--ink-2);margin-bottom:5px;max-width:66ch}\ntable.ref{border-collapse:collapse;width:100%;font-size:13.5px}\ntable.ref td{padding:7px 10px;border-top:1px solid var(--rule);color:var(--ink-2);vertical-align:top}\ntable.ref td.k{font-family:var(--mono);font-size:12px;color:var(--rust-ink);font-weight:700;width:38px}\ntable.ref td.o{font-size:12.5px;color:var(--slate);width:34%}\n.warn{background:var(--amber-soft);border:1px solid #E4D3AF;border-radius:5px;padding:11px 13px;margin-top:14px;font-size:13px;color:var(--ink-2)}\n.warn.sfty{background:var(--alert-soft);border-color:#E0BFBF}\n.warn.sfty b{color:var(--alert)}\n.warn b{color:var(--ink)}\n.btnrow{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:16px}\n.btn{border:1px solid var(--rule);background:var(--paper);color:var(--ink);border-radius:4px;padding:9px 16px;font-size:13.5px;font-weight:600}\n.btn:hover{background:var(--surface)}\n.btn:focus-visible{outline:2px solid var(--rust);outline-offset:2px}\n.btn.pri{background:var(--rust);border-color:var(--rust);color:#fff}\n.btn.pri:hover{background:var(--rust-ink)}\n.btn.pri[disabled]{background:var(--mute);border-color:var(--mute);cursor:not-allowed}\n.btn.gh{background:transparent;color:var(--slate)}\n\nh2.sect{font-family:var(--serif);font-size:19px;font-weight:400;margin:30px 0 10px}\nh2.sect.gn{margin:16px 0 10px}\nhr.bar{border:0;border-top:2px solid var(--ink-2);margin:34px 0 0}\n.small{font-size:12.5px;color:var(--slate);max-width:72ch}\n.pull{font-family:var(--serif);font-size:15px;font-style:italic;color:var(--ink-2);border-left:3px solid var(--rust);padding-left:12px;margin:14px 0;max-width:62ch}\n.foot{font-size:12.5px;color:var(--slate);border-top:1px solid var(--rule);padding-top:14px;margin-top:26px}\n.foot p{margin:0 0 7px}\n.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}\n\n.disp{margin-top:20px;border-top:1px solid var(--rule);padding-top:16px}\n.disp .opts{display:flex;gap:16px;flex-wrap:wrap;margin:4px 0 10px}\n.disp label.ck{display:flex;gap:7px;align-items:center;font-size:13.5px;color:var(--ink-2);cursor:pointer}\n.disp label.ck input{margin:0;flex:none;accent-color:var(--rust)}\n.disp .sub{margin-left:2px;padding-left:13px;border-left:2px solid var(--rule)}\n.disp textarea{width:100%;padding:7px 9px;border:1px solid var(--rule);border-radius:4px;\n  background:var(--paper);font-family:inherit;font-size:14px;color:inherit;line-height:1.5}\n.disp textarea:focus{outline:2px solid var(--rust);outline-offset:1px}\n.sigs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}\n.sigs .fld input{background:var(--surface)}\n.sigs .fld input:focus{background:var(--paper)}\n.req{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;\n  color:var(--alert);background:var(--alert-soft);border:1px solid #E0BFBF;border-radius:3px;padding:1px 5px;margin-left:6px}\n#acts{margin-top:18px}\n#msg{font-size:12.5px;color:var(--slate)}\n@media(max-width:680px){.sigs{grid-template-columns:1fr}}\n@media print{#acts{display:none}.disp textarea{border:0;padding:0}}\n@media(max-width:680px){\n  .grid{grid-template-columns:1fr}\n  .node .ans{margin-left:0}\n  .node .row{flex-wrap:wrap}\n  .derive .dk{display:block;min-width:0}\n}\n@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}\n@media print{\n  .top,.branch,.nav,.btnrow,.lnk{display:none}\n  body{background:#fff;font-size:11pt}\n  .node.pending{display:none}\n  .node.here{border-left-color:var(--slate)}\n  .leaf .box,.card{break-inside:avoid}\n}\n\n/* shared additions for generated tools */\n.pull{font-family:var(--serif);font-size:15px;font-style:italic;color:var(--ink-2);border-left:3px solid var(--rust);padding-left:12px;margin:14px 0;max-width:62ch}\n#app{display:contents}\n","runtime":"/* ================= shared runtime: included in every generated tool ================= */\nvar DEF=JSON.parse(document.getElementById('tool-def').textContent);\nvar PREVIEW=!!window.TOOL_PREVIEW;\n\n/* ---- offline .docx writer: a docx is a ZIP of XML parts, stored uncompressed ---- */\nvar CRC=(function(){var t=new Uint32Array(256),c,n,k;for(n=0;n<256;n++){c=n;for(k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);t[n]=c>>>0;}return t;})();\nfunction crc32(b){var c=0xFFFFFFFF;for(var i=0;i<b.length;i++)c=CRC[(c^b[i])&0xFF]^(c>>>8);return (c^0xFFFFFFFF)>>>0;}\nfunction utf8(s){return new TextEncoder().encode(s);}\nfunction makeZip(files){\n  var parts=[],cen=[],off=0;\n  function u16(v){return [v&255,(v>>8)&255];} function u32(v){return [v&255,(v>>8)&255,(v>>16)&255,(v>>>24)&255];}\n  files.forEach(function(f){\n    var nm=utf8(f.name),dt=utf8(f.data),c=crc32(dt);\n    var lo=[].concat(u32(0x04034b50),u16(20),u16(0x0800),u16(0),u16(0),u16(0),u32(c),u32(dt.length),u32(dt.length),u16(nm.length),u16(0));\n    parts.push(new Uint8Array(lo),nm,dt);\n    var ce=[].concat(u32(0x02014b50),u16(20),u16(20),u16(0x0800),u16(0),u16(0),u16(0),u32(c),u32(dt.length),u32(dt.length),u16(nm.length),u16(0),u16(0),u16(0),u16(0),u32(0),u32(off));\n    ce.name=nm; cen.push(ce); off+=lo.length+nm.length+dt.length;\n  });\n  var cd=[],cl=0; cen.forEach(function(c){cd.push(new Uint8Array(c),c.name);cl+=c.length+c.name.length;});\n  var end=new Uint8Array([].concat(u32(0x06054b50),u16(0),u16(0),u16(files.length),u16(files.length),u32(cl),u32(off),u16(0)));\n  var all=parts.concat(cd,[end]),tot=all.reduce(function(n,a){return n+a.length;},0),out=new Uint8Array(tot),p=0;\n  all.forEach(function(a){out.set(a,p);p+=a.length;});\n  return out;\n}\nfunction xe(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/<\/g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;').replace(/'/g,'&apos;').replace(/[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F]/g,'');}\nfunction rt(s){return String(s==null?'':s).split(/\\r?\\n/).map(function(l,i){return (i?'<w:br/>':'')+'<w:t xml:space=\"preserve\">'+xe(l)+'<\/w:t>';}).join('');}\nfunction P(t,o){o=o||{};return '<w:p><w:pPr>'+(o.after!==undefined?'<w:spacing w:after=\"'+o.after+'\"/>':'')+(o.keep?'<w:keepNext/>':'')+'<\/w:pPr><w:r><w:rPr>'+(o.b?'<w:b/>':'')+(o.i?'<w:i/>':'')+(o.sz?'<w:sz w:val=\"'+o.sz+'\"/><w:szCs w:val=\"'+o.sz+'\"/>':'')+(o.color?'<w:color w:val=\"'+o.color+'\"/>':'')+'<\/w:rPr>'+rt(t)+'<\/w:r><\/w:p>';}\nfunction TC(x,w,o){o=o||{};return '<w:tc><w:tcPr><w:tcW w:w=\"'+w+'\" w:type=\"dxa\"/>'+(o.shade?'<w:shd w:val=\"clear\" w:fill=\"'+o.shade+'\"/>':'')+'<w:vAlign w:val=\"center\"/><\/w:tcPr>'+x+'<\/w:tc>';}\nfunction TB(rows,w){\n  var b=['top','left','bottom','right','insideH','insideV'].map(function(s){return '<w:'+s+' w:val=\"single\" w:sz=\"4\" w:space=\"0\" w:color=\"D6DCDF\"/>';}).join('');\n  var grid='<w:tblGrid>'+w.map(function(n){return '<w:gridCol w:w=\"'+n+'\"/>';}).join('')+'<\/w:tblGrid>';\n  return '<w:tbl><w:tblPr><w:tblW w:w=\"9360\" w:type=\"dxa\"/><w:tblBorders>'+b+'<\/w:tblBorders><w:tblCellMar><w:top w:w=\"60\" w:type=\"dxa\"/><w:left w:w=\"90\" w:type=\"dxa\"/><w:bottom w:w=\"60\" w:type=\"dxa\"/><w:right w:w=\"90\" w:type=\"dxa\"/><\/w:tblCellMar><\/w:tblPr>'+grid+\n    rows.map(function(r){return '<w:tr>'+r.map(function(c,i){return TC(c.xml,w[i],c);}).join('')+'<\/w:tr>';}).join('')+'<\/w:tbl>';\n}\nfunction MK(on){return P(on?'X':'',{b:true});}\nfunction packDocx(body,title,author){\n  var doc='<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><w:document xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\"><w:body>'+body+'<w:sectPr><w:pgSz w:w=\"12240\" w:h=\"15840\"/><w:pgMar w:top=\"1080\" w:right=\"1080\" w:bottom=\"1080\" w:left=\"1080\" w:header=\"720\" w:footer=\"720\" w:gutter=\"0\"/><\/w:sectPr><\/w:body><\/w:document>';\n  return makeZip([\n   {name:'[Content_Types].xml',data:'<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\"><Default Extension=\"rels\" ContentType=\"application/vnd.openxmlformats-package.relationships+xml\"/><Default Extension=\"xml\" ContentType=\"application/xml\"/><Override PartName=\"/word/document.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml\"/><Override PartName=\"/word/styles.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml\"/><Override PartName=\"/docProps/core.xml\" ContentType=\"application/vnd.openxmlformats-package.core-properties+xml\"/><\/Types>'},\n   {name:'_rels/.rels',data:'<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"><Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument\" Target=\"word/document.xml\"/><Relationship Id=\"rId2\" Type=\"http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties\" Target=\"docProps/core.xml\"/><\/Relationships>'},\n   {name:'docProps/core.xml',data:'<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><cp:coreProperties xmlns:cp=\"http://schemas.openxmlformats.org/package/2006/metadata/core-properties\" xmlns:dc=\"http://purl.org/dc/elements/1.1/\"><dc:title>'+xe(title)+'<\/dc:title><dc:creator>'+xe(author)+'<\/dc:creator><\/cp:coreProperties>'},\n   {name:'word/_rels/document.xml.rels',data:'<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"><Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles\" Target=\"styles.xml\"/><\/Relationships>'},\n   {name:'word/styles.xml',data:'<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii=\"Calibri\" w:hAnsi=\"Calibri\"/><w:sz w:val=\"20\"/><\/w:rPr><\/w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after=\"80\" w:line=\"240\" w:lineRule=\"auto\"/><\/w:pPr><\/w:pPrDefault><\/w:docDefaults><w:style w:type=\"paragraph\" w:default=\"1\" w:styleId=\"Normal\"><w:name w:val=\"Normal\"/><\/w:style><\/w:styles>'},\n   {name:'word/document.xml',data:doc}\n  ]);\n}\nfunction dlBytes(bytes,name,mime){\n  var u=URL.createObjectURL(new Blob([bytes],{type:mime||'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}));\n  var a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();document.body.removeChild(a);\n  setTimeout(function(){URL.revokeObjectURL(u);},4000);\n}\nvar DOCX_MIME='application/vnd.openxmlformats-officedocument.wordprocessingml.document';\n\n/* ---- small helpers ---- */\nvar $=function(id){return document.getElementById(id);};\nfunction esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/<\/g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');}\nfunction today(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}\nfunction slugN(s,n,dflt){return String(s||dflt||'item').replace(/[^A-Za-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,n||50);}\nfunction per(t){t=String(t||'').trim();return /[.!?]$/.test(t)?t:t+'.';}\nfunction arr(x){return Array.isArray(x)?x:[];}\nfunction lines(x){\n  if(Array.isArray(x)) return x.filter(function(s){return String(s).trim();});\n  return String(x||'').split(/\\r?\\n/).map(function(s){return s.trim();}).filter(Boolean);\n}\n/* Light markup for prose fields. **bold**, *italic*, `mono`, a new line is a line break. */\nfunction MD(s){\n  return esc(s).replace(/\\*\\*([^*]+)\\*\\*/g,'<b>$1<\/b>')\n    .replace(/(^|[^*])\\*([^*\\s][^*]*)\\*/g,'$1<i>$2<\/i>')\n    .replace(/`([^`]+)`/g,'<span style=\"font-family:var(--mono)\">$1<\/span>')\n    .replace(/\\r?\\n/g,'<br>');\n}\n/* Plain text of the same markup, for Word and Copy. */\nfunction PLAIN(s){return String(s==null?'':s).replace(/\\*\\*([^*]+)\\*\\*/g,'$1').replace(/`([^`]+)`/g,'$1');}\n/* Fill {tokens} from a map. Unknown tokens stay as typed, so a mistake is visible. */\nfunction fill(s,map){\n  return String(s==null?'':s).replace(/\\{([A-Za-z0-9_:\\-]+)\\}/g,function(m,k){\n    if(map&&Object.prototype.hasOwnProperty.call(map,k)) return map[k];\n    if(map&&map.__fn){var r=map.__fn(k); if(r!==undefined) return r;}\n    return m;\n  });\n}\n/* A template line that is only a list token expands to the list. Empty lines drop out. */\nfunction expand(tpl,lists,map){\n  var out=[];\n  String(tpl||'').split(/\\r?\\n/).forEach(function(l){\n    var t=l.trim(), m=/^\\{([A-Za-z0-9_:\\-]+)\\}$/.exec(t);\n    if(m&&lists&&Object.prototype.hasOwnProperty.call(lists,m[1])){ out=out.concat(lists[m[1]]); return; }\n    if(m&&lists&&lists.__fn){var r=lists.__fn(m[1]); if(Array.isArray(r)){ out=out.concat(r); return; }}\n    var f=fill(t,map).trim(); if(f) out.push(f);\n  });\n  return out.join('\\n');\n}\n/* Conditions. A condition is a list of groups. Any group may match.\n   Every row in a group must hold. An empty condition always holds. */\nfunction COND(c,get){\n  if(!c||!c.length) return true;\n  return c.some(function(g){\n    return arr(g).every(function(r){\n      var x=get(r.s); if(x==null) x='';\n      switch(r.o){\n        case 'is': return String(x)===String(r.v);\n        case 'not': return String(x)!==String(r.v);\n        case 'set': return String(x)!=='';\n        case 'unset': return String(x)==='';\n        case 'gte': return (+x||0)>=(+r.v||0);\n        case 'lte': return (+x||0)<=(+r.v||0);\n        case 'eq': return (+x||0)===(+r.v||0);\n      }\n      return false;\n    });\n  });\n}\nfunction copyText(t,btn,msgEl){\n  function ok(){btn.textContent='Copied';setTimeout(function(){btn.textContent='Copy';},2000);}\n  function fb(){var ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity=0;\n    document.body.appendChild(ta);ta.select();try{document.execCommand('copy');ok();}catch(e){if(msgEl)msgEl.textContent='Copy failed.';}\n    document.body.removeChild(ta);}\n  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(ok,fb);}else fb();\n}\nfunction guardUnload(test){\n  if(PREVIEW) return;\n  window.addEventListener('beforeunload',function(e){ if(test()){e.preventDefault();e.returnValue='';} });\n}\n","engine":"/* ================= audit designation engine. Everything on the page comes from DEF. ================= */\nvar TL=DEF.tool||{}, MT=DEF.meta||{}, LB=DEF.labels||{}, SC=DEF.scope||{}, OV=DEF.openVerdict||{};\nfunction L(k,d){return LB[k]!=null&&LB[k]!==''?LB[k]:d;}\nvar FIELDS=arr(MT.fields);\nvar Q=arr(DEF.questions);\nvar PARTL=arr(DEF.parts), PART={};\nPARTL.forEach(function(p){PART[p.id]=p;});\nvar ANS=DEF.answers||{yes:'Yes',no:'No',open:'Open, not established'};\nvar TAGS=['fca','pca','delta','both'];\nvar TAGPOINT={fca:'Points to FCA',pca:'Points to PCA',delta:'Points to both, or to a delta audit',both:'Points to both'};\n\n/* ---- page skeleton ---- */\n(function build(){\n  var h='<div class=\"top\"><b>'+esc(TL.barTitle)+'<\/b><span>'+esc(TL.barSub)+'<\/span><\/div><div class=\"wrap\">'+\n    '<h1>'+esc(TL.h1)+'<\/h1><p class=\"lede\">'+MD(TL.lede)+'<\/p>';\n  h+='<div class=\"card\"><div class=\"lab\">'+esc(MT.label)+'<\/div><div class=\"grid\">'+\n    FIELDS.map(function(f){return '<div class=\"fld\"><label for=\"f-'+esc(f.id)+'\">'+esc(f.label)+'<\/label><input id=\"f-'+esc(f.id)+'\"><\/div>';}).join('')+\n    '<\/div><\/div>';\n  arr(DEF.cards).forEach(function(c){\n    h+='<div class=\"card\"><div class=\"lab\">'+esc(c.label)+'<\/div>'+lines(c.paras).map(function(p){return '<p>'+MD(p)+'<\/p>';}).join('')+'<\/div>';\n  });\n  h+='<div class=\"tally\" id=\"tally\"><\/div><div class=\"sr\" id=\"live\" role=\"status\" aria-live=\"polite\"><\/div><div id=\"tree\"><\/div>'+\n    '<div class=\"btnrow\" id=\"acts\"><\/div><input type=\"file\" id=\"file\" accept=\"application/json,.json\" style=\"display:none\">'+\n    (L('actNote','')?'<p class=\"small\" id=\"actnote\" style=\"margin:8px 0 0\">'+MD(L('actNote',''))+'<\/p>':'');\n  var N=DEF.notes||{};\n  h+='<hr class=\"bar\"><h2 class=\"sect gn\">'+esc(N.heading||'General Notes')+'<\/h2>';\n  arr(N.paras).forEach(function(p){ h+=p.style==='pull'?'<p class=\"pull\">'+MD(p.text)+'<\/p>':'<p class=\"small\">'+MD(p.text)+'<\/p>'; });\n  var F=arr((DEF.footer||{}).paras);\n  if(F.length) h+='<div class=\"foot\">'+F.map(function(p){return '<p>'+MD(p.text)+'<\/p>';}).join('')+'<\/div>';\n  h+='<\/div>';\n  document.getElementById('app').innerHTML=h;\n  document.title=TL.pageTitle||TL.barTitle||'Tool';\n})();\n\nvar IDX={}; Q.forEach(function(q,i){IDX[q.id]=i;});\nfunction freshState(){return { ans:{}, opens:{}, ev:{}, here:Q.length?Q[0].id:null, scroll:false,\n  disp:{ des:'', type:'', delta:false, internal:false, rat:'', ratAuto:true, ratSig:'', cm:'', cmd:'' } };}\nvar S=freshState();\n\nfunction yesIn(p){return Q.filter(function(q){return q.part===p&&S.ans[q.id]==='yes';});}\nfunction totalIn(p){return Q.filter(function(q){return q.part===p;}).length;}\nfunction openList(){return Q.filter(function(q){return S.ans[q.id]==='open';});}\nfunction answeredCount(){return Q.filter(function(q){return S.ans[q.id];}).length;}\nfunction firstUnanswered(){for(var i=0;i<Q.length;i++) if(!S.ans[Q[i].id]) return Q[i].id; return null;}\nfunction plural(n){return {n:String(n),s:n>1?'s':'',were:n>1?'were':'was'};}\n/* tokens: {yes:a} {total:c} {s:b} {were:b} */\nfunction tok(extra){\n  return {__fn:function(k){\n    var m=/^(yes|total|s|were):(.+)$/.exec(k);\n    if(m){var n=yesIn(m[2]).length;\n      if(m[1]==='yes') return String(n);\n      if(m[1]==='total') return String(totalIn(m[2]));\n      if(m[1]==='s') return n>1?'s':'';\n      if(m[1]==='were') return n>1?'were':'was';}\n    if(extra&&Object.prototype.hasOwnProperty.call(extra,k)) return extra[k];\n    return undefined;\n  }};\n}\nfunction txt(s,extra){return fill(s,tok(extra));}\nfunction get0(k){\n  if(k.indexOf('a:')===0) return S.ans[k.slice(2)]||'';\n  if(k.indexOf('yes:')===0) return yesIn(k.slice(4)).length;\n  if(k.indexOf('tag:')===0){var t=k.slice(4);return Q.filter(function(q){return q.scopeTag===t&&S.ans[q.id]==='yes';}).length;}\n  if(k==='cnt:open') return openList().length;\n  return '';\n}\nfunction lockParts(kind){return PARTL.filter(function(p){return p.lock===kind&&yesIn(p.id).length;});}\nfunction safetyYes(){var n=0;PARTL.forEach(function(p){if(p.safety) n+=yesIn(p.id).length;});return n;}\n\nfunction tally(){\n  var h='';\n  PARTL.forEach(function(p){\n    var n=yesIn(p.id).length, th=+p.threshold||1;\n    var cls = th>1 ? (n>=th?' on':(n?' hold':'')) : (n?' on':'');\n    h+='<span class=\"chip'+cls+'\">'+esc(fill(p.chip||(p.id+': {yes} yes'),{yes:String(n),total:String(totalIn(p.id)),th:String(th)}))+'<\/span>';\n  });\n  var o=openList().length,n2=answeredCount();\n  $('tally').innerHTML=h+(o?'<span class=\"chip hold\">'+o+' open<\/span>':'')+\n    '<span class=\"chip count\">'+n2+' of '+Q.length+' answered<\/span>';\n}\nfunction nodeCollapsed(q){\n  var a=S.ans[q.id];\n  var cls = a==='yes'?'fired' : a==='open'?'opn' : 'done';\n  var extra='';\n  if(a==='open'){\n    var o=S.opens[q.id]||{};\n    extra='<span class=\"owner\">Open. Owner: '+esc(o.owner||q.own)+'. Due: '+esc(o.due||'not set')+'<\/span>';\n  } else if((S.ev[q.id]||'').trim()){\n    extra='<span class=\"owner\" style=\"color:var(--slate)\">Source: '+esc(S.ev[q.id])+'<\/span>';\n  }\n  return '<div class=\"node '+cls+'\" id=\"n-'+esc(q.id)+'\"><div class=\"row\">'+\n    '<span class=\"g\">'+esc(q.id)+'<\/span><span class=\"t\">'+esc(q.short)+extra+'<\/span>'+\n    '<button class=\"ans\" data-open=\"'+esc(q.id)+'\" title=\"Revise this answer\">'+esc(a)+'<\/button><\/div><\/div>';\n}\nfunction nodePending(q){\n  return '<div class=\"node pending\" id=\"n-'+esc(q.id)+'\"><div class=\"row\">'+\n    '<span class=\"g\">'+esc(q.id)+'<\/span><span class=\"t\">'+esc(q.short)+'<\/span><\/div><\/div>';\n}\nfunction nodeHere(q){\n  var i=IDX[q.id], a=S.ans[q.id], o=S.opens[q.id]||{};\n  var box = a==='open'\n    ? '<div class=\"openbox\"><p>'+esc(L('openBox','This answer is not established. Name the owner and a date. The assessment is not signed until it resolves.'))+'<\/p>'+\n      '<div class=\"grid\">'+\n      '<div class=\"fld\"><label for=\"ow-'+esc(q.id)+'\">Owner<\/label><input id=\"ow-'+esc(q.id)+'\" data-ow=\"'+esc(q.id)+'\" value=\"'+esc(o.owner||q.own)+'\"><\/div>'+\n      '<div class=\"fld\"><label for=\"du-'+esc(q.id)+'\">Date<\/label><input id=\"du-'+esc(q.id)+'\" data-du=\"'+esc(q.id)+'\" value=\"'+esc(o.due||'')+'\" placeholder=\"YYYY-MM-DD\"><\/div>'+\n      '<\/div><\/div>'\n    : '';\n  var back = i>0 ? '<button class=\"lnk\" data-open=\"'+esc(Q[i-1].id)+'\">Back to '+esc(Q[i-1].id)+'<\/button>' : '';\n  var fwd  = a ? '<button class=\"lnk\" data-next=\"1\">Continue<\/button>' : '';\n  return '<div class=\"node here\" id=\"n-'+esc(q.id)+'\"><div class=\"row\">'+\n    '<span class=\"g\">'+esc(q.tag)+'<\/span>'+\n    '<span class=\"qt\">'+esc(q.text)+'<\/span>'+\n    '<p class=\"why\">'+esc(q.why)+'<\/p>'+\n    '<div class=\"derive\">'+\n      '<div><span class=\"dk\">'+esc(L('deriveFrom','Derive from'))+'<\/span>'+esc(q.doc)+'<\/div>'+\n      '<div><span class=\"dk\">'+esc(L('ifUnclear','If unclear, ask'))+'<\/span>'+esc(q.own)+'<\/div>'+\n    '<\/div><\/div>'+\n    '<div class=\"fld\" style=\"margin-top:11px\"><label for=\"ev-'+esc(q.id)+'\">'+esc(L('sourceLabel','Source relied on'))+'<\/label>'+\n      '<input id=\"ev-'+esc(q.id)+'\" data-ev=\"'+esc(q.id)+'\" value=\"'+esc(S.ev[q.id]||'')+'\" '+\n      'placeholder=\"'+esc(L('sourcePh','Name the document, revision, or record that established this answer'))+'\"><\/div>'+\n    '<div class=\"branch\">'+\n      '<button data-ans=\"yes\" class=\"'+(a==='yes'?'cur':'')+'\">'+esc(ANS.yes)+'<\/button>'+\n      '<button data-ans=\"no\" class=\"'+(a==='no'?'cur':'')+'\">'+esc(ANS.no)+'<\/button>'+\n      '<button data-ans=\"open\" class=\"opb '+(a==='open'?'cur':'')+'\">'+esc(ANS.open)+'<\/button>'+\n    '<\/div>'+box+\n    '<div class=\"nav\">'+back+fwd+'<\/div><\/div>';\n}\nfunction render(){\n  coerceDisp();\n  tally();\n  var h='',part=null;\n  Q.forEach(function(q){\n    if(q.part!==part){ part=q.part; var pp=PART[part]||{name:part,note:''};\n      h+='<div class=\"phead\">'+esc(pp.name)+'<\/div>'+(pp.note?'<p class=\"pnote\">'+MD(pp.note)+'<\/p>':''); }\n    if(q.id===S.here) h+=nodeHere(q);\n    else if(S.ans[q.id]) h+=nodeCollapsed(q);\n    else h+=nodePending(q);\n  });\n  if(S.here===null) h+=resultHTML();\n  $('tree').innerHTML=h;\n  $('live').textContent = S.here ? ('Question '+S.here) : 'Assessment complete.';\n  if(S.scroll&&!PREVIEW){\n    var el=S.here?$('n-'+S.here):document.querySelector('.leaf');\n    if(el&&el.scrollIntoView) el.scrollIntoView({block:'center',behavior:'smooth'});\n  }\n  actions();\n  S.scroll=false;\n}\n\n/* ---- audit scope. Designation says whether the CI is audited. Scope says which audit. ---- */\nfunction tagRows(t){ return Q.filter(function(q){return q.scopeTag===t&&S.ans[q.id]==='yes';}); }\nfunction scope(){\n  var r={type:'',locked:false,why:''};\n  var rules=arr(SC.rules);\n  for(var i=0;i<rules.length;i++){\n    if(COND(rules[i].when,get0)){ r.type=rules[i].type||''; r.locked=!!rules[i].locked; r.why=txt(rules[i].why); break; }\n  }\n  return r;\n}\nfunction scopeLabel(t){ var l=SC.labels||{}; return t==='both'?(l.both||'FCA and PCA') : t==='fca'?(l.fca||'FCA only') : t==='pca'?(l.pca||'PCA only') : (l.none||'Set by contract scope'); }\nfunction designating(k){ var v=VERD()[k]; return !!(v&&v.designating); }\nfunction scopeHTML(k){\n  var sc=scope();\n  if(!sc.why||!designating(k)) return '';\n  var rows='';\n  TAGS.forEach(function(t){\n    tagRows(t).forEach(function(q){\n      rows+='<tr><td class=\"k\">'+esc(q.id)+'<\/td><td>'+esc(q.scopeText||q.short)+'<\/td><td class=\"o\">'+esc(q.scopePoint||TAGPOINT[t])+'<\/td><\/tr>';\n    });\n  });\n  return '<h3>'+esc(fill(L('scopeHeading','Recommended scope: {label}'),{label:scopeLabel(sc.type)}))+'<\/h3>'+\n    '<p style=\"margin:0 0 9px\">'+esc(sc.why)+'<\/p>'+\n    (rows?'<table class=\"ref\"><tbody>'+rows+'<\/tbody><\/table>':'');\n}\nfunction coerceDisp(){\n  var sc=scope();\n  if((lockParts('designate').length||lockParts('both').length) && S.disp.des!=='yes') S.disp.des='yes';\n  if(sc.locked) S.disp.type='both';\n}\nfunction VERD(){var m={};arr(DEF.verdicts).forEach(function(v){m[v.key]=v;});return m;}\nvar NOMATCH={key:'',lab:'No rule matched',cls:'on hold',title:'No rule matched',desc:'Add a verdict rule in the builder that covers these answers.',tables:[],next:''};\nfunction verdict(){\n  var op=openList();\n  if(op.length){\n    var p=plural(op.length);\n    return {k:'open', cls:'on hold', lab:fill(OV.lab||'Not complete · {n} open',p), t:OV.title||'Open answers remain',\n      d:fill(OV.desc||'',p), opens:op, trig:[], next:lines(OV.next)};\n  }\n  var vs=arr(DEF.verdicts);\n  for(var i=0;i<vs.length;i++){\n    if(COND(vs[i].when,get0)){\n      var v=vs[i];\n      return {k:v.key, cls:v.cls||'', lab:txt(v.lab), t:txt(v.title), d:txt(v.desc), d2:v.desc2?txt(v.desc2):'',\n        trig:arr(v.tables).map(function(t){return [t.label,yesIn(t.part)];}), next:lines(v.next).map(function(x){return txt(x);}), def:v};\n    }\n  }\n  return {k:'', cls:NOMATCH.cls, lab:NOMATCH.lab, t:NOMATCH.title, d:NOMATCH.desc, trig:[], next:[]};\n}\nfunction trigTable(label,list){\n  if(!list.length) return '';\n  var rows='';\n  list.forEach(function(q){ rows+='<tr><td class=\"k\">'+esc(q.id)+'<\/td><td>'+esc(q.short)+'<\/td><td class=\"o\">'+esc(q.doc)+'<\/td><\/tr>'; });\n  return '<h3>'+esc(label)+'<\/h3><table class=\"ref\"><tbody>'+rows+'<\/tbody><\/table>';\n}\nfunction openTable(list){\n  var rows='', od=overdue();\n  list.forEach(function(q){\n    var o=S.opens[q.id]||{};\n    var late=od.indexOf(q)>=0;\n    rows+='<tr><td class=\"k\">'+esc(q.id)+'<\/td><td>'+esc(q.short)+'<\/td><td class=\"o\">'+esc(o.owner||q.own)+\n      '. Due '+esc(o.due||'not set')+(late?' <b style=\"color:var(--alert)\">overdue<\/b>':'')+'<\/td><\/tr>';\n  });\n  return '<h3>'+esc(OV.tableTitle||'Open answers, escalate each one')+'<\/h3><table class=\"ref\"><tbody>'+rows+'<\/tbody><\/table>';\n}\nfunction lastAnswered(){for(var i=Q.length-1;i>=0;i--) if(S.ans[Q[i].id]) return Q[i].id; return null;}\nvar BUILD=TL.build||'';\nfunction complete(){ return !firstUnanswered() && !openList().length; }\nfunction resumePoint(){ var op=openList(); return op.length?op[0].id:firstUnanswered(); }\nfunction overdue(){\n  var t=today();\n  return openList().filter(function(q){ var d=(S.opens[q.id]||{}).due; return d && /^\\d{4}-\\d{2}-\\d{2}$/.test(d) && d<t; });\n}\nfunction resultHTML(){\n  var v=verdict(), sy=safetyYes();\n  var body='';\n  if(v.k==='open') body+=openTable(v.opens);\n  (v.trig||[]).forEach(function(t){ body+=trigTable(t[0],t[1]); });\n  var steps=''; v.next.forEach(function(s){ steps+='<li>'+esc(s)+'<\/li>'; });\n  var SB=DEF.safetyBanner||{};\n  var sfty = (sy && v.k!=='open' && (SB.title||SB.text))\n    ? '<div class=\"warn sfty\"><b>'+esc(SB.title)+'<\/b> '+esc(fill(SB.text,plural(sy)))+'<\/div>'\n    : '';\n  var last=lastAnswered();\n  return '<div class=\"leaf '+v.cls+'\"><div class=\"box\">'+\n    '<div class=\"lab\">'+esc(v.lab)+'<\/div>'+\n    '<h2>'+esc(v.t)+'<\/h2>'+\n    '<p>'+esc(v.d)+'<\/p>'+\n    (v.d2?'<p>'+esc(v.d2)+'<\/p>':'')+\n    sfty+body+scopeHTML(v.k)+\n    '<h3>'+esc(L('nextHeading','Recommended next steps'))+'<\/h3><ul>'+steps+'<\/ul>'+\n    (v.k==='open' ? '' : dispHTML(v))+\n    (last?'<div class=\"nav\"><button class=\"lnk\" data-open=\"'+esc(last)+'\">Revise '+esc(last)+'<\/button><\/div>':'')+\n    '<\/div><\/div>';\n}\n\n/* ---- Disposition block ---- */\nfunction dispSet(k,val){\n  if(k==='rat'){ S.disp.rat=val; S.disp.ratAuto=false; S.disp.ratSig=sig(); actions(); return; }\n  S.disp[k]=val;\n  if(k==='des'||k==='type'||k==='delta'||k==='internal'){ render(); } else { actions(); }\n}\nfunction ck(k,val,label,type,off){\n  var d=S.disp, on = type==='chk' ? !!d[k] : d[k]===val;\n  return '<label class=\"ck\"'+(off?' style=\"opacity:.45;cursor:not-allowed\"':'')+'>'+\n    '<input type=\"'+(type==='chk'?'checkbox':'radio')+'\"'+\n    (type==='chk'?'':' name=\"d-'+k+'\"')+' data-d=\"'+k+'\"'+(type==='chk'?'':' value=\"'+val+'\"')+\n    (on?' checked':'')+(off?' disabled':'')+'>'+esc(label)+'<\/label>';\n}\nfunction lockNoteHTML(){\n  var b=lockParts('both')[0], a=lockParts('designate')[0], p=b||a;\n  if(!p||!p.lockNote) return '';\n  var t=String(p.lockNote), m=/^\\*\\*(.+?)\\*\\*\\s*([\\s\\S]*)$/.exec(t);\n  return '<div class=\"warn'+(p.safety?' sfty':'')+'\">'+(m?'<b>'+esc(m[1])+'<\/b> '+esc(m[2]):esc(t))+'<\/div>';\n}\nfunction dispHTML(v){\n  var d=S.disp, sy=safetyYes(), sc=scope();\n  if(d.ratAuto){ d.rat=suggestRat(v); d.ratSig=sig(); }\n  var lockDes = !!(lockParts('designate').length||lockParts('both').length), lockType = !!sc.locked;\n  var stale = (!d.ratAuto && d.ratSig && d.ratSig!==sig())\n    ? '<div class=\"warn\"><b>The rationale is stale.<\/b> The answers have changed since this rationale was written by hand. Update it, or <button type=\"button\" class=\"lnk\" data-regen=\"1\">regenerate it<\/button> from the current answers.<\/div>' : '';\n  var sub = d.des==='yes'\n    ? '<div class=\"sub\">'+\n        '<div class=\"lab\" style=\"margin:8px 0 4px\">'+esc(L('typeLabel','Audit type'))+(sc.type?' · recommended: '+esc(scopeLabel(sc.type)):'')+'<\/div>'+\n        '<div class=\"opts\">'+ck('type','fca',L('fca','FCA'),'r',lockType)+ck('type','pca',L('pca','PCA'),'r',lockType)+ck('type','both',L('both','Both'),'r',lockType)+'<\/div>'+\n        (sc.type==='pca'&&!lockType&&L('pcaOnlyNote','')?'<p class=\"small\" style=\"margin:0 0 8px\">'+esc(L('pcaOnlyNote',''))+'<\/p>':'')+\n        '<div class=\"opts\">'+ck('delta',null,L('delta','Delta audit of open scope'),'chk')+\n          ck('internal',null,L('internal','Internally initiated'),'chk')+'<\/div>'+\n        (d.internal&&L('internalNote','')?'<p class=\"small\" style=\"margin:0 0 8px\">'+esc(L('internalNote',''))+'<\/p>':'')+\n      '<\/div>' : '';\n  return '<div class=\"disp\">'+\n    '<div class=\"lab\">'+esc(L('dispLabel','Disposition'))+'<\/div>'+\n    '<div class=\"opts\">'+ck('des','yes',L('desYes','DESIGNATE'),'r')+ck('des','no',L('desNo','DO NOT DESIGNATE'),'r',lockDes)+'<\/div>'+\n    lockNoteHTML()+\n    sub+\n    '<div class=\"fld\" style=\"margin-top:10px\"><label for=\"d-rat\">Rationale<\/label>'+\n      '<textarea id=\"d-rat\" data-d=\"rat\" rows=\"4\">'+esc(d.rat)+'<\/textarea><\/div>'+\n    stale+\n    '<div class=\"lab\" style=\"margin:14px 0 4px\">'+esc(L('cmDetLabel','CM determination'))+'<\/div>'+\n    '<div class=\"sigs\">'+\n      '<div class=\"fld\"><label for=\"d-cm\">'+esc(L('cmLabel','CM'))+'<\/label><input id=\"d-cm\" data-d=\"cm\" value=\"'+esc(d.cm)+'\"><\/div>'+\n      '<div class=\"fld\"><label for=\"d-cmd\">Date<\/label><input id=\"d-cmd\" data-d=\"cmd\" value=\"'+esc(d.cmd)+'\"><\/div>'+\n    '<\/div>'+\n    '<p class=\"small\" style=\"margin:9px 0 0\">'+esc(L('dispSigLead',''))+' '+\n      (sy?MD(fill(L('dispSigYes',''),plural(sy))):esc(L('dispSigNo','')))+\n      ' '+esc(L('dispSigTail',''))+'<\/p>'+\n    '<\/div>';\n}\nfunction sig(){ return Q.map(function(q){return (S.ans[q.id]||'')+'~'+(S.ev[q.id]||'');}).join('|'); }\nfunction evOf(q){ var e=(S.ev[q.id]||'').trim(); return e?fill(L('sourceIn',' Source: {x}'),{x:per(e)}):''; }\nfunction metLine(q){ return fill(L('metLine','Meets {id}: {text}'),{id:q.id,text:per(q.short)})+evOf(q); }\nfunction suggestRat(v){\n  var sc=scope();\n  return expand(v.def?v.def.rat:'',{__fn:function(k){\n    var m=/^met:(.+)$/.exec(k); if(m) return yesIn(m[1]).map(metLine);\n    if(k==='scope') return (sc.why&&designating(v.k))?['Scope: '+scopeLabel(sc.type)+'. '+sc.why]:[];\n    return undefined;\n  }},tok());\n}\n\n/* ---- validation and the persistent action row ---- */\nfunction meta(){var m={};FIELDS.forEach(function(f){var e=$('f-'+f.id);m[f.id]=e?e.value:'';});return m;}\nfunction blocker(){\n  var nf=MT.nameField;\n  if(nf && !String(meta()[nf]||'').trim()) return MT.nameMsg||'Name the item first.';\n  if(!complete()) return answeredCount()?'':'Answer at least one question first.';\n  if(!S.disp.des) return 'Mark the Disposition block.';\n  var lb=lockParts('both'), ld=lockParts('designate');\n  if(S.disp.des==='no' && lb.length) return lb[0].blockNo||'Designation is required here.';\n  if(S.disp.des==='no' && ld.length) return ld[0].blockNo||'Designation is required here.';\n  if(S.disp.des==='yes' && !S.disp.type) return L('typeMsg','Select the audit type: FCA, PCA, or both.');\n  if(S.disp.des==='yes' && lb.length && S.disp.type!=='both') return lb[0].blockType||'The audit type is both.';\n  if(!String(S.disp.rat||'').trim()) return 'Write the rationale.';\n  return '';\n}\nfunction status(){\n  if(complete()) return '';\n  var o=openList().length, u=Q.length-answeredCount(), od=overdue().length, p=[];\n  if(u) p.push(u+' unanswered');\n  if(o) p.push(o+' open');\n  if(od) p.push(od+' overdue');\n  return p.length? p.join(', ')+'. The interim record is not a disposition.' : '';\n}\nfunction actions(){\n  var b=blocker(), fin=complete();\n  $('acts').innerHTML =\n    '<button class=\"btn pri\" id=\"dl\"'+(b?' disabled':'')+'>'+\n      esc(fin?L('dlButton','Download the assessment as Word'):L('dlInterim','Download the interim record'))+'<\/button>'+\n    '<button class=\"btn\" id=\"copy\">Copy<\/button>'+\n    '<button class=\"btn\" id=\"save\">Save assessment<\/button>'+\n    '<button class=\"btn\" id=\"load\">Open saved assessment<\/button>'+\n    '<button class=\"btn gh\" id=\"reset\">Clear<\/button>'+\n    '<span id=\"msg\">'+esc(b||status())+'<\/span>';\n}\n\n/* ---- Word and text records ---- */\nfunction partRows(part,title){\n  var rows=[[{xml:P('Ref',{b:true,sz:17}),shade:'EDF0F1'},{xml:P('Question',{b:true,sz:17}),shade:'EDF0F1'},\n    {xml:P('Yes',{b:true,sz:17}),shade:'EDF0F1'},{xml:P('No',{b:true,sz:17}),shade:'EDF0F1'},\n    {xml:P('Open',{b:true,sz:17}),shade:'EDF0F1'},{xml:P(L('sourceLabel','Source relied on'),{b:true,sz:17}),shade:'EDF0F1'}]];\n  Q.filter(function(q){return q.part===part;}).forEach(function(q){\n    var a=S.ans[q.id], src=(S.ev[q.id]||'').trim(), o=S.opens[q.id]||{}, cell='';\n    if(src) cell+=P(src,{sz:17});\n    if(a==='open') cell+=P('Open. Owner: '+(o.owner||q.own)+'. Due: '+(o.due||'not set'),{sz:16,color:'9A6508'});\n    if(!cell) cell=P(L('deriveFrom','Derive from')+': '+q.doc,{sz:16,color:'8998A2',i:true});\n    rows.push([{xml:P(q.id,{b:true,sz:18})},{xml:P(q.text,{sz:18})},\n      {xml:MK(a==='yes')},{xml:MK(a==='no')},{xml:MK(a==='open')},{xml:cell}]);\n  });\n  return P(title,{b:true,sz:24,keep:true})+TB(rows,[520,3560,560,560,620,3540])+P('',{after:160});\n}\nfunction sigRowsDoc(sy){\n  return arr(DEF.sigs).map(function(x){\n    var d=S.disp, note=sy?(x.noteSafety||x.note):x.note, red=sy&&x.noteSafety;\n    return [{xml:P(x.name,{b:true,sz:18})+(note?P(note,{sz:15,color:red?'8E2F2F':'5C6D78'}):''),shade:'F4F6F7'},\n      {xml:P(x.filled?d.cm:'',{sz:20})},{xml:P('Date',{b:true,sz:18}),shade:'F4F6F7'},{xml:P(x.filled?d.cmd:'',{sz:20})}];\n  });\n}\nfunction docBody(interim){\n  var m=meta(), v=verdict(), d=S.disp, sy=safetyYes(), b=[];\n  b.push(P(TL.docTitle||'',{b:true,sz:32,after:40}));\n  if(interim){\n    b.push(P(L('interimTitle','INTERIM ASSESSMENT. NOT A DISPOSITION.'),{b:true,sz:22,color:'8E2F2F',after:40}));\n    b.push(P(L('interimSub',''),{sz:17,color:'8E2F2F',after:160}));\n  } else if(TL.docSub) {\n    b.push(P(TL.docSub,{sz:18,color:'5C6D78',after:160}));\n  }\n  var mr=[];\n  for(var i=0;i<FIELDS.length;i+=2){\n    var a=FIELDS[i], c=FIELDS[i+1];\n    mr.push([{xml:P(a.label,{b:true,sz:18}),shade:'F4F6F7'},{xml:P(m[a.id],{sz:20})},\n      {xml:P(c?c.label:'',{b:true,sz:18}),shade:'F4F6F7'},{xml:P(c?m[c.id]:'',{sz:20})}]);\n  }\n  if(mr.length) b.push(TB(mr,[1700,3000,1700,2960]));\n  b.push(P('',{after:160}));\n  if(L('docIntro','')) b.push(P(L('docIntro',''),{sz:17,color:'5C6D78',after:160}));\n  if(interim){\n    var op=openList(), od=overdue(), un=Q.filter(function(q){return !S.ans[q.id];});\n    if(op.length){\n      b.push(P(L('openDocHeading','Open answers. Escalate each one.'),{b:true,sz:24,keep:true}));\n      b.push(TB([[{xml:P('Ref',{b:true,sz:17}),shade:'EDF0F1'},{xml:P('Question',{b:true,sz:17}),shade:'EDF0F1'},\n                  {xml:P('Documentation it turns on',{b:true,sz:17}),shade:'EDF0F1'},\n                  {xml:P('Owner',{b:true,sz:17}),shade:'EDF0F1'},{xml:P('Due',{b:true,sz:17}),shade:'EDF0F1'}]].concat(\n        op.map(function(q){ var o=S.opens[q.id]||{}, late=od.indexOf(q)>=0;\n          return [{xml:P(q.id,{b:true,sz:18})},{xml:P(q.text,{sz:17})},{xml:P(q.doc,{sz:16})},\n                  {xml:P(o.owner||q.own,{sz:17})},\n                  {xml:P((o.due||'not set')+(late?' (overdue)':''),{sz:17,color:late?'8E2F2F':null,b:late})}];\n        })),[520,3100,2700,1700,1340]));\n      b.push(P('',{after:160}));\n    }\n    if(un.length){\n      b.push(P('Not yet answered',{b:true,sz:24,keep:true}));\n      b.push(P(un.map(function(q){return q.id;}).join(', '),{sz:18,after:160}));\n    }\n  }\n  PARTL.forEach(function(p){ b.push(partRows(p.id,p.docName||p.name)); });\n  if(L('reassessHeading','')){\n    b.push(P(L('reassessHeading',''),{b:true,sz:24,keep:true}));\n    b.push(P(L('reassessText',''),{sz:18,after:160}));\n  }\n  if(interim){\n    b.push(P(L('interimEnd','No disposition is recorded. The assessment is not complete and is not signed.'),{b:true,sz:18,color:'8E2F2F',after:120}));\n    if(L('interimTail','')) b.push(P(L('interimTail',''),{sz:16,color:'8998A2'}));\n    return b.join('');\n  }\n  b.push(P('Tool result: '+v.t,{b:true,sz:20,after:120}));\n  var sc=scope();\n  if(sc.why && designating(v.k)){\n    b.push(P(L('scopeBasis','Audit scope basis'),{b:true,sz:24,keep:true}));\n    b.push(P('Recommended scope: '+scopeLabel(sc.type)+'. '+sc.why,{sz:18,after:120}));\n  }\n  b.push(P(L('dispLabel','Disposition'),{b:true,sz:24,keep:true}));\n  b.push(TB([[\n    {xml:P(L('desYes','DESIGNATE'),{b:true,sz:18}),shade:'F4F6F7'},{xml:MK(d.des==='yes')},\n    {xml:P(L('desNo','DO NOT DESIGNATE'),{b:true,sz:18}),shade:'F4F6F7'},{xml:MK(d.des==='no')}\n  ]],[2200,600,2400,600]));\n  b.push(TB([[\n    {xml:P(L('fca','FCA'),{b:true,sz:18}),shade:'F4F6F7'},{xml:MK(d.des==='yes'&&d.type==='fca')},\n    {xml:P(L('pca','PCA'),{b:true,sz:18}),shade:'F4F6F7'},{xml:MK(d.des==='yes'&&d.type==='pca')},\n    {xml:P(L('both','Both'),{b:true,sz:18}),shade:'F4F6F7'},{xml:MK(d.des==='yes'&&d.type==='both')},\n    {xml:P(L('delta','Delta audit of open scope'),{b:true,sz:18}),shade:'F4F6F7'},{xml:MK(d.des==='yes'&&d.delta)}\n  ]],[700,500,700,500,700,500,2800,500]));\n  b.push(P('',{after:80}));\n  b.push(TB([[\n    {xml:P(L('internal','Internally initiated'),{b:true,sz:18}),shade:'F4F6F7'},{xml:MK(d.internal)}\n  ]],[5000,600]));\n  if(d.internal&&L('internalNote','')) b.push(P(L('internalNote',''),{sz:16,color:'5C6D78'}));\n  b.push(P('',{after:120}));\n  b.push(P('Rationale',{b:true,sz:20}));\n  b.push(TB([[{xml:P(d.rat,{sz:20})}]],[9360]));\n  b.push(P('',{after:160}));\n  if(sy&&L('docSafetyPara','')) b.push(P(L('docSafetyPara',''),{sz:18,color:'8E2F2F',after:160}));\n  b.push(P(L('sigHeading','Signatures'),{b:true,sz:24,keep:true}));\n  if(L('sigIntro','')) b.push(P(L('sigIntro',''),{sz:16,color:'5C6D78',after:120}));\n  b.push(TB(sigRowsDoc(sy),[2600,3360,900,2500]));\n  b.push(P('',{after:120}));\n  if(L('docClosing','')) b.push(P(L('docClosing',''),{sz:15,color:'8998A2'}));\n  return b.join('');\n}\nfunction textOut(){\n  var m=meta(), v=verdict(), d=S.disp, Ls=[], interim=!complete(), sy=safetyYes();\n  Ls.push(TL.textTitle||'', interim?L('interimTitle','INTERIM ASSESSMENT. NOT A DISPOSITION.'):'','');\n  FIELDS.forEach(function(f){Ls.push(f.label+': '+m[f.id]);});\n  Ls.push('');\n  PARTL.forEach(function(pt){\n    Ls.push(String(pt.name).replace(/·/g,'.'));\n    Q.filter(function(q){return q.part===pt.id;}).forEach(function(q){\n      var o=S.opens[q.id]||{};\n      Ls.push('  ('+q.id+') '+q.text+'  ['+String(S.ans[q.id]||'-').toUpperCase()+']');\n      if((S.ev[q.id]||'').trim()) Ls.push('      '+L('sourceLabel','Source relied on')+': '+S.ev[q.id]);\n      else Ls.push('      '+L('deriveFrom','Derive from')+': '+q.doc);\n      if(S.ans[q.id]==='open') Ls.push('      OPEN. Owner: '+(o.owner||q.own)+'. Due: '+(o.due||'not set'));\n    });\n    Ls.push('');\n  });\n  if(interim){\n    var op=openList();\n    if(op.length){\n      Ls.push(L('openDocHeading','Open answers. Escalate each one.').toUpperCase());\n      op.forEach(function(q){ var o=S.opens[q.id]||{};\n        Ls.push('  ('+q.id+') '+q.short,'      Turns on: '+q.doc,\n               '      Owner: '+(o.owner||q.own)+'. Due: '+(o.due||'not set')+(overdue().indexOf(q)>=0?' (OVERDUE)':''));\n      });\n      Ls.push('');\n    }\n    var un=Q.filter(function(q){return !S.ans[q.id];});\n    if(un.length) Ls.push('Not yet answered: '+un.map(function(q){return q.id;}).join(', '),'');\n    Ls.push(L('interimEnd','No disposition is recorded. The assessment is not complete and is not signed.'));\n    return Ls.join('\\n');\n  }\n  var sc=scope();\n  Ls.push('Tool result: '+v.t,'');\n  if(sc.why && designating(v.k)) Ls.push(L('scopeBasis','Audit scope basis')+': '+scopeLabel(sc.type)+'. '+sc.why,'');\n  Ls.push(L('dispLabel','Disposition')+': '+(d.des==='yes'?L('desYes','DESIGNATE'):d.des==='no'?L('desNo','DO NOT DESIGNATE'):'not marked'));\n  if(d.des==='yes') Ls.push('  '+L('typeLabel','Audit type')+': '+(d.type?d.type.toUpperCase():'not selected')+\n    (d.delta?'; '+L('delta','delta audit').charAt(0).toLowerCase()+L('delta','delta audit').slice(1):'')+\n    (d.internal?'; '+L('internalText','internally initiated'):''));\n  Ls.push('','Rationale:',d.rat,'',L('sigHeading','Signatures'));\n  arr(DEF.sigs).forEach(function(x){\n    var tn=sy?(x.textNoteSafety||x.textNote):x.textNote;\n    Ls.push('  '+x.name+(tn?' ('+tn+')':'')+': '+(x.filled?(d.cm||'________'):'________')+'   Date: '+(x.filled?(d.cmd||'________'):'________'));\n  });\n  if(L('textClosing','')) Ls.push('',L('textClosing',''));\n  return Ls.join('\\n');\n}\nfunction stateBlob(){\n  var m=meta();\n  return { tool:TL.id, rev:TL.rev, build:BUILD, saved:today(), fields:m,\n           ci:m.ci, ciId:m.id, program:m.prog, assessor:m.assessor,\n           answers:S.ans, opens:S.opens, evidence:S.ev, disposition:S.disp };\n}\nfunction nameVal(){return MT.nameField?meta()[MT.nameField]:'';}\nfunction doSave(){\n  var o=openList().length;\n  dlBytes(utf8(JSON.stringify(stateBlob(),null,1)),\n    (TL.fileStem||'Assessment')+'_'+slugN(nameVal()||'draft',50)+'_'+today()+(o?'_'+o+'-OPEN':'')+'.json','application/json');\n  $('msg').textContent='Assessment saved. Reopen it with Open saved assessment.';\n}\nfunction applyBlob(o){\n  var ans={},opens={},evs={};\n  Q.forEach(function(q){\n    var a=o.answers&&o.answers[q.id];\n    if(a==='yes'||a==='no'||a==='open') ans[q.id]=a;\n    var e=o.evidence&&o.evidence[q.id];\n    if(typeof e==='string') evs[q.id]=e;\n    var op=o.opens&&o.opens[q.id];\n    if(op&&typeof op==='object') opens[q.id]={owner:String(op.owner||q.own),due:String(op.due||'')};\n  });\n  var d=o.disposition||{};\n  S.ans=ans; S.opens=opens; S.ev=evs;\n  S.disp={ des:(d.des==='yes'||d.des==='no')?d.des:'',\n           type:['fca','pca','both'].indexOf(d.type)>=0?d.type:'',\n           delta:!!d.delta, internal:!!d.internal,\n           rat:typeof d.rat==='string'?d.rat:'', ratAuto:d.ratAuto!==false,\n           ratSig:typeof d.ratSig==='string'?d.ratSig:'',\n           cm:typeof d.cm==='string'?d.cm:'', cmd:typeof d.cmd==='string'?d.cmd:'' };\n  var f=o.fields||{ci:o.ci,id:o.ciId,prog:o.program,assessor:o.assessor};\n  FIELDS.forEach(function(x){ var e=$('f-'+x.id); if(e) e.value=typeof f[x.id]==='string'?f[x.id]:''; });\n}\nfunction doLoad(ev){\n  var f=ev.target.files&&ev.target.files[0]; if(!f){ return; }\n  var r=new FileReader();\n  r.onload=function(){\n    try{\n      var o=JSON.parse(r.result);\n      if(o.tool!==TL.id) throw new Error('not an assessment file for this tool');\n      applyBlob(o);\n      S.here=resumePoint(); S.scroll=true; render();\n      var od=overdue(), parts=['Assessment loaded'];\n      if(o.saved) parts.push('Saved '+o.saved);\n      if(o.rev&&o.rev!==TL.rev&&L('oldRevMsg','')) parts.push(fill(L('oldRevMsg',''),{rev:o.rev}));\n      if(od.length) parts.push(od.length+' open answer'+(od.length>1?'s are':' is')+' past due: '+\n        od.map(function(q){return q.id;}).join(', '));\n      $('msg').textContent=parts.join('. ')+'.';\n    }catch(e){ $('msg').textContent='Could not read that file: '+e.message; }\n  };\n  r.readAsText(f);\n  ev.target.value='';\n}\ndocument.addEventListener('click',function(e){\n  var t=e.target.closest?e.target.closest('button'):null;\n  if(!t) return;\n  if(t.dataset.ans){\n    var id=S.here;\n    S.ans[id]=t.dataset.ans;\n    if(t.dataset.ans==='open'){\n      if(!S.opens[id]) S.opens[id]={owner:Q[IDX[id]].own,due:''};\n      S.scroll=false; render(); return;\n    }\n    delete S.opens[id];\n    S.here=firstUnanswered(); S.scroll=true; render(); return;\n  }\n  if(t.dataset.next){ S.here=firstUnanswered(); S.scroll=true; render(); return; }\n  if(t.dataset.open){ S.here=t.dataset.open; S.scroll=true; render(); return; }\n  if(t.dataset.regen){ S.disp.ratAuto=true; render(); return; }\n  if(t.id==='dl'){ doDownload(); return; }\n  if(t.id==='copy'){ copyText(textOut(),t,$('msg')); return; }\n  if(t.id==='save'){ doSave(); return; }\n  if(t.id==='load'){ $('file').click(); return; }\n  if(t.id==='reset'){\n    if(!confirm('Clear the assessment?')) return;\n    S=freshState(); S.scroll=true;\n    FIELDS.forEach(function(f){ if($('f-'+f.id)) $('f-'+f.id).value=''; });\n    render(); return;\n  }\n});\nfunction doDownload(){\n  var b=blocker();\n  if(b){ $('msg').textContent=b; return; }\n  var m=meta(), interim=!complete();\n  try{\n    var bytes=packDocx(docBody(interim),(interim?'INTERIM. ':'')+(TL.docTitle||'Assessment')+': '+nameVal(), MT.authorField?m[MT.authorField]:'');\n    dlBytes(bytes,(TL.fileStem||'Assessment')+'_'+slugN(nameVal(),50,'CI')+'_'+today()+(interim?'_INTERIM':'')+'.docx',DOCX_MIME);\n    $('msg').textContent=interim\n      ? 'Interim record downloaded. It carries no disposition. Save the assessment too, so you can finish it.'\n      : 'Downloaded.';\n  }catch(e){ $('msg').textContent='Build failed: '+e.message; }\n}\ndocument.addEventListener('input',function(e){\n  var el=e.target, id;\n  if(!el.dataset) return;\n  if((id=el.dataset.ow)){ (S.opens[id]=S.opens[id]||{}).owner=el.value; }\n  else if((id=el.dataset.du)){ (S.opens[id]=S.opens[id]||{}).due=el.value; }\n  else if((id=el.dataset.ev)){ S.ev[id]=el.value; }\n  else if(el.dataset.d){ dispSet(el.dataset.d, el.type==='checkbox'?el.checked:el.value); }\n});\nFIELDS.forEach(function(f){ var el=$('f-'+f.id); if(el) el.addEventListener('input',actions); });\nif($('file')) $('file').addEventListener('change',doLoad);\nguardUnload(function(){ return answeredCount()||(MT.nameField&&nameVal()); });\n\n/* ---- the builder keeps answers across a preview refresh ---- */\nwindow.__getState=function(){var o=stateBlob();o.here=S.here;return o;};\nwindow.__setState=function(o){ if(!o) return; applyBlob(o); S.here=(o.here===null||IDX[o.here]!==undefined)?o.here:resumePoint(); S.scroll=false; render(); };\nwindow.__recordText=function(){return {text:textOut(),note:complete()?'This is the Copy text. The Word record carries the same content.':'Interim. Unanswered or open questions remain.'};};\nwindow.textOut=textOut; window.verdict=verdict;\nrender();\n"};
+var STARTER={"builder":"audit","version":1,"tool":{"id":"fca-pca-ci-selection","rev":"D","build":"2026-09-14","exportName":"fca-pca-ci-selection-tool_RevD_DRAFT","pageTitle":"FCA/PCA CI Selection","barTitle":"FCA/PCA CI Selection","barSub":"Configuration Management · Rev D draft","h1":"Designate this CI for audit?","lede":"CM answers every question here. CM answers from documentation. Where the documentation is unclear, the answer is open and CM escalates to the function that owns it.","docTitle":"FCA/PCA CI Selection Checklist","docSub":"Audit designation assessment. Complete one checklist per CI.","textTitle":"FCA/PCA CI SELECTION CHECKLIST","fileStem":"FCA-PCA-CI-Selection"},"meta":{"label":"Candidate CI","fields":[{"id":"ci","label":"CI"},{"id":"id","label":"CI identifier"},{"id":"prog","label":"Program"},{"id":"assessor","label":"Assessor and date"}],"nameField":"ci","authorField":"assessor","nameMsg":"Name the CI first."},"cards":[{"label":"How to answer","paras":"Read the documentation first. Each question names the documentation set the answer is derived from, and the function that owns it. The owning function supplies the documentation. It does not supply the answer.\nAn answer that has not been established from its source is not a NO. Mark it open, name the owner, set a date, and escalate. The assessment is not signed until every open answer resolves."},{"label":"When to run this assessment","paras":"Complete one assessment per CI at initial audit planning, at each CM-plan revision, and on any reassessment trigger. The reassessment triggers are a substantive design, process, facility, tooling, or supplier change, which is a safety management system management-of-change trigger; a new quality escape or safety event traceable to the CI; a CSA reconciliation anomaly; a hazard log revision adding a risk control to the CI; and a sub-supplier effectiveness determination of less than effective for a supplier building the CI. Record the result and rationale for every CI evaluated, designated for audit or not. Attach it to the Audit Designation Assessment Record."}],"answers":{"yes":"Yes","no":"No","open":"Open, not established"},"parts":[{"id":"a","name":"Part A · Mandatory designation","docName":"Part A. Mandatory designation","chip":"Part A: {yes} yes","threshold":1,"note":"Any yes designates the CI. Part B and Part C still run. They tell you whether the scope should grow.","lock":"designate","safety":false,"lockNote":"**Designation is mandatory here.** A Part A criterion was answered yes, so the contract, SOW, or CMP requires the audit. DO NOT DESIGNATE is not available. Revise the Part A answer if it was recorded in error.","blockNo":"A Part A criterion is yes. Designation is mandatory and cannot be dispositioned otherwise here.","blockType":""},{"id":"b","name":"Part B · Safety criticality","docName":"Part B. Safety criticality","chip":"Part B: {yes} yes","threshold":1,"note":"Any yes designates the CI for audit, for both an FCA and a PCA. There is no concurrence route around it.","lock":"both","safety":true,"lockNote":"**This disposition is set by the answers.** A Part B safety criterion was answered yes, so the CI is designated for both audits. DO NOT DESIGNATE is not available here and neither is a narrower scope. A proposal not to conduct one of these audits is dispositioned through the safety disposition gate, outside this assessment. Revise the Part B answer if it was recorded in error.","blockNo":"A Part B safety criterion is yes. The CI is designated for both audits and cannot be dispositioned otherwise here.","blockType":"A Part B safety criterion is yes. The audit type is both."},{"id":"c","name":"Part C · Risk factors","docName":"Part C. Risk factors","chip":"Part C: {yes} of {total} yes, {th} designate","threshold":2,"note":"Two yes answers designate the CI. One yes is recorded and monitored.","lock":"none","safety":false,"lockNote":"","blockNo":"","blockType":""}],"questions":[{"id":"A1","part":"a","tag":"A1 · Contract","text":"Is the CI identified in the contract, SOW, or CMP as requiring an FCA, a PCA, or both?","why":"Contract designation is the first source of audit designation. If the CI is contractually called out, designation for audit is mandatory. The remaining parts still run. They determine whether risk factors expand the audit scope.","doc":"The contract file, the SOW, and the program CMP","own":"Contracts","short":"Called out in the contract, SOW, or CMP as requiring an FCA, a PCA, or both","scopeTag":"","scopeText":"","scopePoint":""},{"id":"A2","part":"a","tag":"A2 · Baseline","text":"Is the CI an Acquirer-controlled CI whose product baseline the Acquirer will formalize at PCA completion?","why":"PCA completion is the event that formalizes the Product Baseline. For this CI the audit is the formalizing event, and no other event reaches it. Designation here is not a risk judgment.","doc":"The item index and its control designations","own":"CM, with Contracts","short":"Acquirer-controlled CI whose product baseline is formalized at PCA completion","scopeTag":"pca","scopeText":"Acquirer formalizes the product baseline at PCA completion","scopePoint":""},{"id":"B1","part":"b","tag":"B1 · Hazard controls","text":"Does the CI implement or host one or more hazard risk controls recorded in the safety management system hazard log?","why":"A CI carrying a hazard risk control is designated for audit, for both audits. Read the hazard log for controls allocated to this CI or to functions it hosts.","doc":"The safety management system hazard log, and the analyses behind it","own":"System Safety","short":"Implements or hosts hazard risk controls recorded in the hazard log","scopeTag":"both","scopeText":"","scopePoint":""},{"id":"B2","part":"b","tag":"B2 · Criterion (b)","text":"Is the CI a criterion-(b) CI, where failure might result in serious injury, loss of life, or loss of primary system capability?","why":"Criterion (b) of the CI identification process selection criteria. The answer is already recorded on the screen that made the item a CI. Consider both direct failure modes and cascading effects.","doc":"The CI selection record, criterion (b) of the CI Selection Criteria Checklist","own":"CM, with System Safety","short":"Criterion-(b) CI. Failure might cause serious injury, loss of life, or loss of primary capability","scopeTag":"both","scopeText":"","scopePoint":""},{"id":"B3","part":"b","tag":"B3 · Severity","text":"Is the severity of the CI’s credible failure consequence in the highest two severity categories of the program safety risk matrix?","why":"For example, catastrophic or hazardous, at matrix levels 4 and 5. Use the pre-anchored severity where the register of safety-mandatory CM requirements records one.","doc":"The program safety risk matrix, and the pre-anchored severity in the register of safety-mandatory CM requirements","own":"System Safety","short":"Credible failure consequence in the highest two severity categories, levels 4 and 5","scopeTag":"both","scopeText":"","scopePoint":""},{"id":"B4","part":"b","tag":"B4 · Software and firmware","text":"Is the CI safety-critical software, or firmware embedded in a safety-critical device?","why":"Includes CSCIs performing safety functions. Includes firmware whose host device is safety-critical, regardless of the firmware’s own function.","doc":"The software criticality assessment","own":"Software Engineering, with System Safety","short":"Safety-critical software, or firmware in a safety-critical device","scopeTag":"both","scopeText":"","scopePoint":""},{"id":"B5","part":"b","tag":"B5 · Single point of failure","text":"Is the CI a single-point-of-failure item for a safety-related function?","why":"No redundancy or alternate means exists. Failure of this one item defeats the safety-related function. Read the FMECA to see whether the item is associated with a safety-related function. If the FMECA is unclear, ask RM&SH.","doc":"The FMECA and the single point failure identification","own":"RM&SH","short":"Single point of failure for a safety-related function","scopeTag":"both","scopeText":"","scopePoint":""},{"id":"C1","part":"c","tag":"C1 · Design maturity","text":"Is the design new or novel rather than proven heritage?","why":"First-of-type, new technology, or unproven margins. Proven heritage is a claim about evidence, and the evidence is the fielded history of that design in that application. A design that is unchanged but has never flown in this environment is not heritage. It is a new application of an old drawing. Where the program has a certification basis, test the heritage claim against certification credit as well as against service history.","doc":"Design history, the released design definition, and the fielded evidence the heritage claim rests on. Where the program has a certification basis, also the certification basis, the previously approved data, and the certification credit position","own":"Systems Engineering and Design Engineering. Airworthiness and Certification where the program has a certification basis","short":"New or novel design rather than proven heritage","scopeTag":"fca","scopeText":"New or novel design rather than proven heritage","scopePoint":""},{"id":"C2","part":"c","tag":"C2 · Design change","text":"Has the CI undergone substantive design change since its last audit?","why":"A substantive design change is a safety management system management-of-change trigger. It is a reassessment trigger in its own right. Where the program has a certification basis, the change classification is the sharper test of substantive than the change count is.","doc":"The change records CM holds against the CI since the last audit date. Where the program has a certification basis, also the change classification","own":"CM holds the change records. Systems Engineering and Design Engineering for the technical content of each change. Airworthiness and Certification where the program has a certification basis","short":"Substantive design change since the last audit","scopeTag":"fca","scopeText":"Substantive design change since the last audit","scopePoint":""},{"id":"C3","part":"c","tag":"C3 · Manufacturing change","text":"Is there a new or changed manufacturing source, process, facility, or tooling for the CI?","why":"Transferred lines, new facilities, altered processes, and replacement tooling can break the as-designed to as-built correspondence that audits exist to verify.","doc":"Process and tooling change records, and the procurement record where the source moved","own":"Manufacturing, with Supplier Requirements Engineering","short":"New or changed manufacturing source, process, facility, or tooling","scopeTag":"pca","scopeText":"New or changed manufacturing source, process, facility, or tooling","scopePoint":""},{"id":"C4","part":"c","tag":"C4 · Sub-tier supplier","text":"Is there a new or changed sub-tier supplier for the CI or its critical components?","why":"Includes second-source qualification. Includes supplier substitutions at any tier feeding critical components.","doc":"Procurement records and the supplier classification log","own":"Supplier Requirements Engineering","short":"New or changed sub-tier supplier for the CI or its critical components","scopeTag":"pca","scopeText":"New or changed sub-tier supplier","scopePoint":""},{"id":"C5","part":"c","tag":"C5 · Quality history","text":"Does the CI or its production line have a history of quality escapes, nonconformances, FOD findings, or subcontractor disclosures?","why":"These are safety management system safety data sources. Read the data for the production line as well as for the CI. Findings against the line count even where they are not attributed to this specific CI.","doc":"Quality and safety data for the CI and for its production line","own":"Quality Assurance","short":"History of quality escapes, nonconformances, FOD findings, or subcontractor disclosures","scopeTag":"pca","scopeText":"Escape, nonconformance, FOD, or subcontractor disclosure history","scopePoint":""},{"id":"C6","part":"c","tag":"C6 · Work and data findings","text":"Have findings of work performed not in accordance with approved data, or of inaccurate, incomplete, or ambiguous manufacturing data, been recorded against the CI?","why":"These are safety management system safety data. The findings indicate that the released data, or its execution, cannot be relied on without audit verification.","doc":"Quality findings against the CI or its production line","own":"Quality Assurance","short":"Findings of work not per approved data, or of inaccurate, incomplete, or ambiguous manufacturing data","scopeTag":"pca","scopeText":"Findings of work not per approved data, or of defective manufacturing data","scopePoint":""},{"id":"C7","part":"c","tag":"C7 · CSA health","text":"Do CSA reconciliation health indicators show anomalies for the CI?","why":"As-designed to as-built delta aging, unincorporated-change backlog, or serial and effectivity discrepancies. These indicate that at-scale reconciliation may not be functioning for this CI. That is the condition audits exist to detect.","doc":"CSA reconciliation health indicators","own":"CM","short":"CSA reconciliation anomalies: delta aging, change backlog, or serial and effectivity discrepancies","scopeTag":"pca","scopeText":"CSA reconciliation health anomalies","scopePoint":""},{"id":"C8","part":"c","tag":"C8 · Audit history","text":"Has the CI never received an FCA or PCA, or does a prior audit have an open delta or unresolved action items?","why":"A never-audited CI has no verified baseline correspondence. An open delta or an unresolved RFA means the prior audit scope was never closed.","doc":"Audit records and the prior audit minutes","own":"CM","short":"Never audited, or a prior audit has an open delta or unresolved action items","scopeTag":"delta","scopeText":"Never audited, or a prior audit left an open delta","scopePoint":""},{"id":"C9","part":"c","tag":"C9 · Sub-supplier effectiveness","text":"Has a sub-supplier building this CI, or a critical component of it, been determined less than effective under the sub-supplier CM flowdown process?","why":"A determination of less than effective means the supplier CM process is not meeting the requirements imposed on it.","doc":"The supplier evaluation record maintained under the sub-supplier CM flowdown process","own":"CM","short":"Sub-supplier determined less than effective under the CM flowdown process","scopeTag":"pca","scopeText":"Sub-supplier determined less than effective","scopePoint":""}],"openVerdict":{"lab":"Not complete · {n} open","title":"Open answers remain","desc":"This assessment has {n} answer{s} that have not been established from a source. An answer that has not been established is not a NO. Escalate each one to the function that owns the documentation. The assessment is not signed until every open answer resolves.","tableTitle":"Open answers, escalate each one","next":"Escalate each open answer to the named owner\nRecord the source relied on once the answer is established\nDo not sign the assessment while any answer is open"},"verdicts":[{"key":"mandatory-safety","when":[[{"s":"yes:a","o":"gte","v":"1"},{"s":"yes:b","o":"gte","v":"1"}]],"lab":"Designate · Contract and safety","cls":"on","designating":true,"title":"Mandatory designation","desc":"Part A criteria are met. Designate this CI per the contract scope. A Part B safety criterion is also met, and that designates the CI for both an FCA and a PCA regardless of what the contract names. Contract scope is a minimum, not a ceiling, and the expansion is recorded with its rationale.","desc2":"","tables":[{"part":"a","label":"Part A, mandatory criteria met"},{"part":"b","label":"Part B, safety factors triggered"},{"part":"c","label":"Part C, risk factors triggered"}],"next":"Record the assessment and the source relied on for every answer, and attach it to the Audit Designation Assessment Record\nMark the Disposition block per contract scope. A Part B yes designates both audits, so the scope cannot be less than both\nIf the Acquirer will formalize the product baseline under A2, schedule the PCA as the formalizing event\nEnter the CI in the audit plan and data package. Carry the nomenclature, the specification numbers, and the CI identifiers\nObtain CM and Systems Engineering signature\nRe-run this checklist on any reassessment trigger and at each CM-plan revision","rat":"Designated. Part A applies.\n{met:a}\nA Part B safety criterion also applies, which designates both an FCA and a PCA regardless of contract scope.\n{met:b}\n{met:c}\n{scope}"},{"key":"mandatory-risk","when":[[{"s":"yes:a","o":"gte","v":"1"},{"s":"yes:c","o":"gte","v":"1"}]],"lab":"Designate · Contract scope","cls":"on","designating":true,"title":"Mandatory designation","desc":"Part A criteria are met. Designate this CI per the contract scope. Risk factors were also triggered. Assess whether they expand the audit scope, for example a delta audit of open scope or an earlier increment. Contract designation sets a minimum on scope, not a ceiling.","desc2":"","tables":[{"part":"a","label":"Part A, mandatory criteria met"},{"part":"b","label":"Part B, safety factors triggered"},{"part":"c","label":"Part C, risk factors triggered"}],"next":"Record the assessment and the source relied on for every answer, and attach it to the Audit Designation Assessment Record\nMark the Disposition block per contract scope, and evaluate scope expansion against the triggered risk factors\nIf the Acquirer will formalize the product baseline under A2, schedule the PCA as the formalizing event\nEnter the CI in the audit plan and data package. Carry the nomenclature, the specification numbers, and the CI identifiers\nObtain CM and Systems Engineering signature\nRe-run this checklist on any reassessment trigger and at each CM-plan revision","rat":"Designated. Part A applies.\n{met:a}\nRisk factors were also triggered. Assess scope expansion.\n{met:b}\n{met:c}\n{scope}"},{"key":"mandatory","when":[[{"s":"yes:a","o":"gte","v":"1"}]],"lab":"Designate · Contract scope","cls":"on","designating":true,"title":"Mandatory designation","desc":"Part A criteria are met. Designate this CI per the contract scope. No additional risk factors were triggered. The contractually defined audit scope applies.","desc2":"","tables":[{"part":"a","label":"Part A, mandatory criteria met"},{"part":"b","label":"Part B, safety factors triggered"},{"part":"c","label":"Part C, risk factors triggered"}],"next":"Record the assessment and the source relied on for every answer, and attach it to the Audit Designation Assessment Record\nMark the Disposition block per contract scope\nIf the Acquirer will formalize the product baseline under A2, schedule the PCA as the formalizing event\nEnter the CI in the audit plan and data package. Carry the nomenclature, the specification numbers, and the CI identifiers\nObtain CM and Systems Engineering signature\nRe-run this checklist on any reassessment trigger and at each CM-plan revision","rat":"Designated. Part A applies.\n{met:a}\n{met:b}\n{met:c}\n{scope}"},{"key":"safety","when":[[{"s":"yes:b","o":"gte","v":"1"}]],"lab":"Designate · Safety criticality","cls":"on","designating":true,"title":"Designate for both audits","desc":"One or more Part B safety-criticality criteria are met. The CI is designated for audit, for both an FCA and a PCA. There is no risk factor threshold to reach and no concurrence route by which that designation is set aside.","desc2":"Conducting the FCA and conducting the PCA are entries in the register of safety-mandatory CM requirements. A proposal not to conduct an audit this CI is designated for goes to the safety disposition gate: performed, replaced with an independently validated equivalent control, or formally risk-accepted at the authority matching the recorded severity. System Safety signs this assessment. System Safety does not concur in the omission.","tables":[{"part":"b","label":"Part B, safety factors triggered"},{"part":"c","label":"Part C, risk factors triggered"}],"next":"Record the assessment and the source relied on for every answer, and attach it to the Audit Designation Assessment Record\nMark the Disposition block. The audit type is both, and it is set for you\nIf the audit is internally initiated, tailor the ceremony and not the substance. Perform the safety-mandatory reconciliation, the traceability matrix, and the as-built examination in full\nRoute any findings affecting hazard risk controls per the safety management system standard\nObtain CM and Systems Engineering signature\nRe-run this checklist on any reassessment trigger and at each CM-plan revision","rat":"Designated for both an FCA and a PCA. Part B applies. A safety criticality criterion designates the CI for audit; the designation is not subject to concurrence.\n{met:b}\n{met:c}\n{scope}"},{"key":"risk","when":[[{"s":"yes:c","o":"gte","v":"2"}]],"lab":"Designate · Risk based","cls":"on","designating":true,"title":"Designate for FCA or PCA","desc":"Two or more Part C risk factors are met, {yes:c} of {total:c}. Designate the CI for audit, or document the rationale for not designating and have CM and Systems Engineering sign it.","desc2":"","tables":[{"part":"c","label":"Part C, risk factors triggered"}],"next":"Record the assessment and the source relied on for every answer, and attach it to the Audit Designation Assessment Record\nMark the Disposition block. Read the recommended scope above and select FCA, PCA, both, or a delta audit of open scope\nIf electing not to designate despite the triggered factors, document the rationale in the Disposition block and obtain CM and Systems Engineering signature\nIf the audit is internally initiated, tailor the ceremony and not the substance. Perform the safety-mandatory reconciliation, the traceability matrix, and the as-built examination in full\nRe-run this checklist on any reassessment trigger and at each CM-plan revision","rat":"Designated. {yes:c} Part C risk factors apply, and two or more designate the CI.\n{met:b}\n{met:c}\n{scope}"},{"key":"below","when":[[{"s":"yes:c","o":"gte","v":"1"}]],"lab":"Below threshold · Record and monitor","cls":"on hold","designating":false,"title":"Designation not required","desc":"Only one Part C risk factor is met. That is below the two-factor designation threshold, and no Part A or Part B criteria were triggered. Designation is not required.","desc2":"Record the triggered factor and monitor it. That is the point of recording it. A second factor at any reassessment trigger then lands on a documented first factor rather than in an empty file.","tables":[{"part":"c","label":"Part C, risk factor triggered"}],"next":"Record the assessment and the rationale on the checklist. This is required for every CI evaluated, designated or not\nMark the Disposition block: DO NOT DESIGNATE\nMonitor the triggered factor. Re-run this checklist on any reassessment trigger\nObtain CM and Systems Engineering signature","rat":"Not designated. One Part C risk factor applies, which is below the two-factor threshold. The factor is recorded and monitored.\n{met:b}\n{met:c}"},{"key":"none","when":[],"lab":"Do not designate","cls":"","designating":false,"title":"No audit designation","desc":"No Part A, Part B, or Part C criteria are met. The CI is not designated for FCA or PCA at this time. Record the assessment anyway. The process requires a documented rationale for every CI evaluated, designated or not.","desc2":"A CI not designated for audit is not an unverified CI. It retains its baselines, its change control, its status accounting, and its coverage by the as-designed to as-built reconciliation performed at scale. The audit is a periodic check on that machinery rather than a substitute for it.","tables":[],"next":"Record the assessment and the rationale on the checklist and attach it to the Audit Designation Assessment Record\nMark the Disposition block: DO NOT DESIGNATE\nRe-run this checklist on any reassessment trigger: a design, process, facility, tooling, or supplier change, a quality escape or safety event, a CSA anomaly, or a hazard log revision adding a risk control to the CI\nObtain CM and Systems Engineering signature","rat":"Not designated. No Part A, Part B, or Part C criterion applies.\n{met:b}\n{met:c}"}],"scope":{"labels":{"both":"FCA and PCA","fca":"FCA only","pca":"PCA only","none":"Set by contract scope"},"rules":[{"when":[[{"s":"yes:b","o":"gte","v":"1"}]],"type":"both","locked":true,"why":"Any Part B yes designates the CI for both audits. A hazard risk control is verified in the design by the FCA and confirmed in the article by the PCA. Both assurances are required, and neither substitutes for the other."},{"when":[[{"s":"a:A1","o":"is","v":"yes"},{"s":"a:A2","o":"is","v":"yes"}]],"type":"","locked":false,"why":"Part A sets the scope. Designate for the audits the contract, SOW, or CMP names. A2 is also yes, so the scope is a PCA at minimum: successful PCA completion is the event that formalizes the product baseline, and no other event reaches it. Contract scope is a minimum, not a ceiling: the risk factors below may expand it, and the expansion is recorded with its rationale."},{"when":[[{"s":"a:A1","o":"is","v":"yes"},{"s":"tag:fca","o":"gte","v":"1"}],[{"s":"a:A1","o":"is","v":"yes"},{"s":"tag:pca","o":"gte","v":"1"}],[{"s":"a:A1","o":"is","v":"yes"},{"s":"tag:delta","o":"gte","v":"1"}]],"type":"","locked":false,"why":"Part A sets the scope. Designate for the audits the contract, SOW, or CMP names. Contract scope is a minimum, not a ceiling: the risk factors below may expand it, and the expansion is recorded with its rationale."},{"when":[[{"s":"a:A1","o":"is","v":"yes"}]],"type":"","locked":false,"why":"Part A sets the scope. Designate for the audits the contract, SOW, or CMP names. Contract scope is a minimum, not a ceiling. No risk factor was triggered that would expand it."},{"when":[[{"s":"a:A2","o":"is","v":"yes"},{"s":"tag:fca","o":"gte","v":"1"}],[{"s":"a:A2","o":"is","v":"yes"},{"s":"tag:delta","o":"gte","v":"1"}]],"type":"pca","locked":false,"why":"A2 is yes. Successful PCA completion is the event that formalizes the product baseline, and no other event reaches it, so the scope is a PCA at minimum. Designation here is not a risk judgment. It follows from what the PCA does. Factors bearing on verification were also triggered, so assess whether an FCA belongs in the scope as well."},{"when":[[{"s":"a:A2","o":"is","v":"yes"}]],"type":"pca","locked":false,"why":"A2 is yes. Successful PCA completion is the event that formalizes the product baseline, and no other event reaches it, so the scope is a PCA at minimum. Designation here is not a risk judgment. It follows from what the PCA does."},{"when":[[{"s":"tag:delta","o":"gte","v":"1"}]],"type":"both","locked":false,"why":"C8 was answered yes. Where the CI has never been audited, neither question has been established for it and there is no evidence on which to narrow the scope, so designate both. Where the only C8 condition is an open delta or an unresolved action from a prior audit, the scope is a delta audit of that open scope, of the audit type that left it open."},{"when":[[{"s":"tag:fca","o":"gte","v":"1"},{"s":"tag:pca","o":"gte","v":"1"}]],"type":"both","locked":false,"why":"Factors sit on both questions. The design factors reopen verification and the production factors reopen the as-built comparison."},{"when":[[{"s":"tag:pca","o":"gte","v":"1"}]],"type":"pca","locked":false,"why":"Every factor triggered bears on how the article is produced or recorded. Nothing reopens the question of whether the design meets its requirements. Valid as a PCA on its own only where the CI is already validated by a completed FCA, by an earlier increment, or by an Acquirer-accepted equivalent. Where it is not, designate both."},{"when":[[{"s":"tag:fca","o":"gte","v":"1"},{"s":"a:C2","o":"is","v":"yes"}]],"type":"fca","locked":false,"why":"Every factor triggered bears on whether the design meets its requirements. Nothing points at manufacture, sources, or records. Where the design change is embodied in the article or the code, add a PCA, because an embodied change also reopens the as-built comparison."},{"when":[[{"s":"tag:fca","o":"gte","v":"1"}]],"type":"fca","locked":false,"why":"Every factor triggered bears on whether the design meets its requirements. Nothing points at manufacture, sources, or records."}]},"safetyBanner":{"title":"System Safety signature required.","text":"{n} safety question{s} {were} answered yes. System Safety signs this assessment. The designation itself is not open to concurrence: a Part B yes designates the CI for both audits, and a proposal not to conduct one of them goes to the safety disposition gate."},"sigs":[{"name":"CM","filled":true,"note":"","noteSafety":"","textNote":"","textNoteSafety":""},{"name":"Systems Engineering","filled":false,"note":"","noteSafety":"","textNote":"","textNoteSafety":""},{"name":"System Safety","filled":false,"note":"Required if any safety criticality criterion is yes.","noteSafety":"Required. A safety question was answered yes. Signature confirms the technical basis, not the designation.","textNote":"required if any safety criterion is yes","textNoteSafety":"required, a safety question was answered yes; signature confirms the technical basis, not the designation"}],"labels":{"actNote":"A saved file spares you retyping. It is not the record, and it is not a tracked action. An open answer is an assigned action with an owner and a date, and it belongs in whatever tracks those.","openBox":"This answer is not established. Name the owner and a date. The assessment is not signed until it resolves.","deriveFrom":"Derive from","ifUnclear":"If unclear, ask","sourceLabel":"Source relied on","sourcePh":"Name the document, revision, or record that established this answer","nextHeading":"Recommended next steps","scopeHeading":"Recommended scope: {label}","scopeBasis":"Audit scope basis","dispLabel":"Disposition","desYes":"DESIGNATE","desNo":"DO NOT DESIGNATE","typeLabel":"Audit type","fca":"FCA","pca":"PCA","both":"Both","delta":"Delta audit of open scope","internal":"Internally initiated. Internal co-chair and certification","internalText":"internally initiated, internal co-chair and certification","internalNote":"Ceremony only. The safety-mandatory reconciliation, the traceability matrix, and the as-built examination are performed in full.","pcaOnlyNote":"A PCA on its own is valid only where the CI is already validated by a completed FCA. Where it is not, select Both.","typeMsg":"Select the audit type: FCA, PCA, or both.","cmDetLabel":"CM determination","cmLabel":"CM","dispSigLead":"The downloaded record carries signature blocks for Systems Engineering and for System Safety. Those functions sign the record itself.","dispSigYes":"**System Safety must sign this one.** {n} safety question{s} {were} answered yes.","dispSigNo":"System Safety signs only where a safety question is answered yes.","dispSigTail":"A concurrence signature confirms that the technical basis is sound. It does not make the determination. The determination is CM’s.","metLine":"Meets {id}: {text}","sourceIn":" Source: {x}","dlButton":"Download the assessment as Word","dlInterim":"Download the interim record","interimTitle":"INTERIM ASSESSMENT. NOT A DISPOSITION.","interimSub":"This is a working record of an assessment in progress. It carries no disposition and no signatures. Do not file it as the Audit Designation Assessment Record.","interimEnd":"No disposition is recorded. The assessment is not complete and is not signed.","interimTail":"Reopen the saved assessment file to continue. Attach the completed checklist to the Audit Designation Assessment Record once every answer is established.","openDocHeading":"Open answers. Escalate each one.","docIntro":"CM answers every question. CM derives each answer from the documentation set named for it, and records the source relied on. An answer that has not been established from its source is not a NO.","reassessHeading":"Part D. Reassessment triggers","reassessText":"Re-run this checklist for the CI upon any of the following. A substantive design, process, facility, tooling, or supplier change, which is a safety management system management-of-change trigger. A new quality escape or safety event traceable to the CI. A CSA reconciliation anomaly. A hazard log revision adding a risk control to the CI. A CM-plan revision. A sub-supplier effectiveness determination of less than effective for a supplier building the CI.","docSafetyPara":"A safety question was answered yes. The CI is designated for both an FCA and a PCA, and that designation is not subject to concurrence. System Safety signs this assessment. A proposal not to conduct an audit the CI is designated for is dispositioned through the safety disposition gate.","sigHeading":"Signatures","sigIntro":"A concurrence signature confirms that the technical basis is sound. It does not make the determination. The determination is CM’s.","docClosing":"Attach this completed checklist to the Audit Designation Assessment Record. Retained for the program life, for every CI evaluated, designated for audit or not.","textClosing":"Attach to the Audit Designation Assessment Record. Retained for the program life.","oldRevMsg":"written by rev {rev} of this tool. Rev D makes a Part B yes an absolute designation for both audits. Check the answers and the disposition"},"notes":{"heading":"General Notes","paras":[{"style":"normal","text":"**CM answers. The functions supply.** CM derives every answer from a documentation set and records the source relied on. Systems Engineering and Design Engineering jointly supply the design history and the released design definition, and author the technical content of each engineering change. Airworthiness and Certification supplies the certification basis, the previously approved data, and the change classification where the program has a certification basis. System Safety supplies the hazard log, the safety analyses, and the severities. RM&SH owns and supplies the FMECA and the single point failure identification. Quality supplies the escape, nonconformance, and foreign object findings. Supplier Requirements Engineering supplies the procurement records and the supplier classification log. CM supplies the item index, the change records against the CI since its last audit, the CSA reconciliation indicators, the prior audit records, and the supplier effectiveness determinations."},{"style":"normal","text":"**Escalate on unclear documentation.** CM opens the FMECA to see whether the item is associated with a safety-related function. If the FMECA answers, that is the answer and the FMECA is the source. If the FMECA is unclear, CM asks RM&SH. That order holds for all sixteen questions."},{"style":"pull","text":"A no that means nobody checked is the most expensive answer on the form. It reads exactly like a no that somebody established, and only one of them is true."},{"style":"normal","text":"**Signatures confirm. They do not determine.** CM and Systems Engineering sign. System Safety signs whenever any safety question was answered yes. A concurrence signature confirms that the technical basis is sound. The determination is CM's."},{"style":"normal","text":"**Audit scope.** Designation says whether the CI is audited. Scope says which audit. Both are read from the same answers. The FCA asks whether the design was verified against its requirements. The PCA asks whether the unit conforms to its product definition. An answer that raises doubt about verification points to an FCA. An answer that raises doubt about manufacture, sources, or records points to a PCA. The tool recommends a scope from the answers. The recommendation is not a substitute for the contract, which sets a minimum that the assessment may expand and may not reduce."},{"style":"normal","text":"**A PCA on its own needs a completed FCA.** A PCA does not begin unless the corresponding FCA has been successfully completed or is being conducted concurrently, because the PCA examines the as-built configuration of a validated CI. Where the CI has never been validated and the answers point to a PCA, designate both."},{"style":"normal","text":"**Part A is contractual.** A contract, SOW, or CMP call-out makes designation mandatory. Part B and Part C still run. Contract designation sets a minimum on scope, not a ceiling. Stopping at Part A is the most common error on this assessment."},{"style":"normal","text":"**Part B is absolute.** Any yes in Part B designates the CI for audit, for both an FCA and a PCA. There is no risk factor threshold to reach and no concurrence route by which that designation is set aside. Conducting the FCA and conducting the PCA are themselves entries in the register of safety-mandatory CM requirements, so a proposal not to conduct an audit the CI is designated for goes to the safety disposition gate: performed, replaced with an independently validated equivalent control, or formally risk-accepted at the authority matching the recorded severity. System Safety signs the assessment. System Safety does not concur in the omission."},{"style":"normal","text":"**Part C is cumulative.** One risk factor is recorded and monitored. Two risk factors designate the CI, or the program documents the rationale and CM and Systems Engineering sign it."},{"style":"normal","text":"**Ceremony versus substance.** An internally initiated audit may tailor the ceremony. It may not tailor the substance. The safety-mandatory reconciliation, the traceability matrix, and the as-built examination are performed in full."},{"style":"normal","text":"**Glossary.** CSA is Configuration Status Accounting. PBL is the Product Baseline. FMECA is the Failure Modes, Effects, and Criticality Analysis. FOD is Foreign Object Debris. RFA is a Request for Action. CSCI is a Computer Software Configuration Item. RM&SH is Reliability, Maintainability, Safety, and Health."}]},"footer":{"paras":[{"text":"**Reference.** Configuration Audit Process (FCA/PCA), §5.2.1 Audit Designation, and Appendix C, the FCA/PCA CI Selection Checklist."},{"text":"This tool is a decision aid. It does not substitute for engineering judgment, the safety disposition gate, or contractual requirements."},{"text":"**Record the assessment for every CI evaluated, designated or not.** Attach the completed assessment to the Audit Designation Assessment Record. Retained for the program life."},{"text":"Nothing is saved here. Print or transcribe the result before you close the tab. Process document number and revision: `[to be assigned]`"}]}};
+/* Builds a standalone tool file from its parts. Used by the builder and by the build script. */
+function assembleTool(parts, def, preview){
+  function safe(s){ return String(s).replace(/<\/(script)/gi,'<\\/$1').replace(/<!--/g,'<\\!--'); }
+  var json=JSON.stringify(def,null,1).replace(/</g,'\\u003c');
+  var t=(def.tool&&(def.tool.pageTitle||def.tool.barTitle))||'Tool';
+  t=String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  return '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'+
+    '<meta name="viewport" content="width=device-width, initial-scale=1">\n'+
+    '<meta name="generator" content="Tool Builder: '+def.builder+'">\n'+
+    '<title>'+t+'</title>\n<style>\n'+parts.css+'\n</style>\n</head>\n<body>\n<div id="app"></div>\n'+
+    '<!-- The tool definition. The builder reads this block to reopen the tool for editing. -->\n'+
+    '<script type="application/json" id="tool-def">\n'+json+'\n<\/script>\n'+
+    (preview?'<script>window.TOOL_PREVIEW=1;<\/script>\n':'')+
+    '<script>\n'+safe(parts.runtime)+'\n'+safe(parts.engine)+'\n<\/script>\n</body>\n</html>\n';
+}
+if(typeof module!=='undefined') module.exports={assembleTool:assembleTool};
+
+/* Help text and helpers shared by the three builders */
+var MARKUP='Markup: <code>**bold**</code>, <code>*italic*</code>, <code>`mono`</code>. A new line is a line break.';
+var COND_HELP='Rows in one box must all be true. Use <b>Or another set</b> for a second box. Either box can match.';
+var LINES_HELP='One item per line.';
+function startHelp(o){
+  return ''+
+  '<div class="help-card"><h3>How this builder works</h3>'+
+  '<p>The left list holds the parts of the tool. Pick a part and edit it here. The preview on the right updates as you type.</p>'+
+  '<p>Answer questions in the preview to test the logic. Your test answers stay put while you edit.</p>'+
+  '<p>The builder is one web page. It runs offline in your browser. Nothing installs.</p></div>'+
+  '<div class="help-card"><h3>What you have loaded</h3>'+o.loaded+'</div>'+
+  '<div class="help-card"><h3>Save and export</h3><ul>'+
+  '<li><b>Save project</b> writes a <code>.json</code> file. Open it later to keep working.</li>'+
+  '<li><b>Export tool</b> writes one <code>.html</code> file. That file is the finished tool. Share it like the tools you use now.</li>'+
+  '<li>An exported tool carries its own definition. Use <b>Open</b> on an exported tool to edit it again.</li>'+
+  '<li>The builder also keeps your last session in this browser. It offers that session back next time. Do not rely on it. Save the project.</li>'+
+  '<li><b>New</b> starts over from the loaded tool or from a blank one. <b>Undo</b> brings back what you had.</li></ul></div>'+
+  '<div class="help-card"><h3>How the logic works</h3>'+o.logic+'</div>'+
+  '<div class="help-card"><h3>Conditions</h3>'+
+  '<p>A condition tests an answer, a count, or the verdict. Pick what to test, how to test it, and the value.</p>'+
+  '<p>Rows inside one box must all be true. <b>Or another set</b> adds a second box. Either box can match. A condition with no rows always applies.</p></div>'+
+  '<div class="help-card"><h3>IDs</h3>'+
+  '<p>Questions, verdicts, and other parts carry short IDs. Rules point at those IDs. Change an ID here and the builder updates every rule that points at it.</p>'+
+  '<p>The <b>Checks</b> list at the left flags broken links. Examples: a rule that names a deleted question, or two questions with the same ID. Click a check to jump to it.</p></div>'+
+  '<div class="help-card"><h3>Text tricks</h3>'+
+  '<p>'+MARKUP+'</p>'+(o.tokens||'')+'</div>';
+}
+function yesNoOpts(){ return [['yes','yes'],['no','no']]; }
+
+/* ================= Audit designation builder: sections, subjects, checks ================= */
+function auPartOpts(d){ return asArr(d.parts).map(function(p){return [p.id,p.id+' · '+(p.name||'')];}); }
+var AU_TAGS=[['','None'],['fca','Design. Points to FCA'],['pca','Production or records. Points to PCA'],['delta','Audit history. Points to both, or a delta audit'],['both','Safety. Points to both']];
+var FAMILY={
+  id:'audit',
+  name:'Audit Designation Tool Builder',
+  sub:'Question-set tools with parts, open answers, and a disposition · offline',
+  others:{checklist:'Checklist Tool Builder',tree:'Decision Tree Tool Builder'},
+  subjects:function(d){
+    var out=[];
+    asArr(d.questions).forEach(function(q){
+      out.push({id:'a:'+q.id,label:q.id+' · '+(q.short||''),group:'Answers',kind:'choice',values:[['yes','yes'],['no','no'],['open','open']]});
+    });
+    asArr(d.parts).forEach(function(p){
+      out.push({id:'yes:'+p.id,short:'yes in '+p.id,label:'Yes answers in '+(p.name||p.id),group:'Counts',kind:'number'});
+    });
+    AU_TAGS.slice(1).forEach(function(t){
+      out.push({id:'tag:'+t[0],short:t[0]+' factors',label:'Yes answers tagged: '+t[1],group:'Scope tags',kind:'number'});
+    });
+    out.push({id:'cnt:open',short:'open',label:'Open answers',group:'Counts',kind:'number'});
+    return out;
+  },
+  rename:function(d,kind,old,nw,obj){
+    if(kind==='q') return renameRefs(d,'a:'+old,'a:'+nw);
+    if(kind==='part'){
+      var n=renameRefs(d,'yes:'+old,'yes:'+nw,null,old,nw,['part']);
+      (function walk(o){ if(Array.isArray(o)){o.forEach(walk);return;} if(!o||typeof o!=='object') return;
+        for(var k in o){ if(typeof o[k]==='string'&&o[k].indexOf(':'+old+'}')>=0){ o[k]=o[k].split(':'+old+'}').join(':'+nw+'}'); n++; } else walk(o[k]); } })(d);
+      return n;
+    }
+    if(kind==='verdict') return 0;
+    return 0;
+  },
+  validate:function(d){
+    var out=[], subs=FAMILY.subjects(d);
+    dupes(asArr(d.questions),'id','question','questions',out);
+    dupes(asArr(d.parts),'id','part','parts',out);
+    dupes(asArr(d.verdicts),'key','verdict','verdicts',out);
+    var pk={}; asArr(d.parts).forEach(function(p){pk[p.id]=1;});
+    asArr(d.questions).forEach(function(q){ if(!pk[q.part]) out.push({sec:'questions',msg:(q.id||'A question')+' sits in part '+q.part+', which does not exist.'}); });
+    var last=null;
+    asArr(d.questions).forEach(function(q,i){ if(i&&q.part!==last&&asArr(d.questions).slice(0,i).some(function(x){return x.part===q.part;}))
+      out.push({sec:'questions',msg:q.id+' is separated from the rest of part '+q.part+'. Keep each part’s questions together.'}); last=q.part; });
+    asArr(d.verdicts).forEach(function(v,i){
+      checkCond(v.when,subs,'Verdict '+(v.key||i+1),'verdicts',out);
+      asArr(v.tables).forEach(function(t){ if(!pk[t.part]) out.push({sec:'verdicts',msg:'Verdict '+v.key+' lists part '+t.part+', which does not exist.'}); });
+    });
+    var vs=asArr(d.verdicts);
+    if(!vs.length) out.push({sec:'verdicts',msg:'No verdicts yet.'});
+    else if(asArr(vs[vs.length-1].when).length) out.push({sec:'verdicts',msg:'The last verdict has conditions. Some answers may match no verdict. Give the last one no conditions.'});
+    asArr((d.scope||{}).rules).forEach(function(r,i){ checkCond(r.when,subs,'Scope rule '+(i+1),'scope',out); });
+    return out;
+  },
+  sections:[
+    {id:'start',title:'Start here',html:function(){return startHelp({
+      loaded:'<p>This builder opened with <b>FCA/PCA CI Selection</b>. It walks a fixed set of questions in parts. Every answer is Yes, No, or Open. It keeps sources, owners, due dates, a recommended audit scope, a disposition block, an interim record, and a Word record.</p><p>Export it unchanged and you get the same page you have now.</p><p>Use it to edit that tool. Or use <b>New</b> to start a similar one.</p>',
+      logic:'<ol><li>Questions sit in <b>parts</b>. Each part sets its own rule in words and its own lock.</li>'+
+        '<li>While any answer is <b>Open</b>, the verdict is “Open answers remain”. Nothing else runs.</li>'+
+        '<li>Otherwise the <b>Verdicts</b> run from the top. The first match wins. Keep one with no conditions at the bottom.</li>'+
+        '<li><b>Audit scope</b> rules run the same way. They recommend FCA, PCA, or both, and can lock the choice.</li>'+
+        '<li>A part can <b>lock</b> the disposition. A Yes in that part forces DESIGNATE, or forces both audits.</li></ol>',
+      tokens:'<p>Tokens fill in at run time. <code>{yes:c}</code> gives the Yes count in part c. <code>{total:c}</code> gives the question count in part c. In rationale templates, a line with only <code>{met:b}</code> expands to one line per Yes in part b. A line with only <code>{scope}</code> adds the scope sentence.</p>'});}},
+    {id:'page',title:'Page and record titles',intro:'<p>The words around the tool.</p>',
+     fields:[
+      {t:'group',label:'On the page',k:'tool',fields:[
+        {t:'row',fields:[{t:'text',k:'barTitle',label:'Header bar title'},{t:'text',k:'barSub',label:'Header bar subtitle'}]},
+        {t:'text',k:'h1',label:'Big title'},{t:'area',k:'lede',label:'Line under the title',help:MARKUP},{t:'text',k:'pageTitle',label:'Browser tab title'}]},
+      {t:'group',label:'On the record',k:'tool',fields:[
+        {t:'row',fields:[{t:'text',k:'docTitle',label:'Word record title'},{t:'text',k:'textTitle',label:'Copy text title'}]},
+        {t:'text',k:'docSub',label:'Word record subtitle'},
+        {t:'row',fields:[{t:'text',k:'fileStem',label:'Word and save file name start',code:true},{t:'text',k:'exportName',label:'Exported tool file name',code:true}]}]},
+      {t:'group',label:'Saved assessments',k:'tool',help:'A saved assessment opens only in a tool with the same tool ID.',fields:[
+        {t:'row',fields:[{t:'text',k:'id',label:'Tool ID',code:true},{t:'text',k:'rev',label:'Revision',code:true}]},
+        {t:'text',k:'build',label:'Build stamp',code:true}]},
+      {t:'labels',k:'labels',spec:[['oldRevMsg','Message when a file from another revision opens. {rev}']]}
+     ]},
+    {id:'meta',title:'Header and guidance cards',intro:'<p>The boxes at the top, and the guidance cards under them.</p>',
+     fields:[
+      {t:'obj',k:'meta',fields:[
+        {t:'text',k:'label',label:'Card label'},
+        {t:'list',k:'fields',label:'Fields',addLabel:'Add a field',sum:function(f){return [f.id,' '+(f.label||'')];},
+         add:function(){return {id:'field'+Math.floor(Math.random()*900+100),label:'New field'};},
+         item:[{t:'row',fields:[{t:'text',k:'label',label:'Label'},{t:'text',k:'id',label:'ID',code:true}]}]},
+        {t:'row',fields:[
+          {t:'select',k:'nameField',label:'Name field',opts:function(d){return [['','(none)']].concat(asArr((d.meta||{}).fields).map(function(f){return [f.id,f.label];}));},help:'Required before download.'},
+          {t:'select',k:'authorField',label:'Author field',opts:function(d){return [['','(none)']].concat(asArr((d.meta||{}).fields).map(function(f){return [f.id,f.label];}));}}]},
+        {t:'text',k:'nameMsg',label:'Message when the name is missing'}]},
+      {t:'list',k:'cards',label:'Guidance cards',addLabel:'Add a card',sum:function(c){return c.label||'(untitled)';},
+       add:function(){return {label:'New card',paras:'Text.'};},
+       item:[{t:'text',k:'label',label:'Card label'},{t:'area',k:'paras',label:'Paragraphs',rows:4,help:'One paragraph per line. '+MARKUP}]},
+      {t:'labels',k:'labels',spec:[['actNote','Note under the action buttons']]}
+     ]},
+    {id:'parts',title:'Parts',intro:'<p>The groups of questions. Each part shows a chip in the tally and a heading in the list.</p>',
+     fields:[
+      {t:'list',k:'parts',label:'Parts',addLabel:'Add a part',sum:function(p){return [p.id,' '+(p.name||'')];},
+       add:function(d){return {id:'p'+(asArr(d.parts).length+1),name:'New part',docName:'New part',chip:'New part: {yes} yes',threshold:1,note:'',lock:'none',safety:false,lockNote:'',blockNo:'',blockType:''};},
+       item:[
+        {t:'row',fields:[{t:'text',k:'id',label:'ID',code:true,kind:'part'},{t:'text',k:'name',label:'Heading'}]},
+        {t:'row',fields:[{t:'text',k:'docName',label:'Heading in Word'},{t:'text',k:'chip',label:'Tally chip',help:'Tokens: <code>{yes}</code> <code>{total}</code> <code>{th}</code>.'}]},
+        {t:'area',k:'note',label:'Rule in words, under the heading'},
+        {t:'num',k:'threshold',label:'Chip turns rust at this many Yes answers',min:1,help:'Above 1, one Yes turns the chip amber.'},
+        {t:'select',k:'lock',label:'A Yes in this part',rerender:true,opts:[['none','Does not lock the disposition'],['designate','Forces DESIGNATE'],['both','Forces DESIGNATE and both audits']]},
+        {t:'check',k:'safety',label:'This is a safety part. A Yes here calls for the System Safety signature.'},
+        {t:'area',k:'lockNote',label:'Note in the disposition block',help:'Start with <code>**Bold opening.**</code> if you want one.',show:function(p){return p.lock!=='none';}},
+        {t:'area',k:'blockNo',label:'Message if DO NOT DESIGNATE is chosen',show:function(p){return p.lock!=='none';}},
+        {t:'area',k:'blockType',label:'Message if an audit type other than Both is chosen',show:function(p){return p.lock==='both';}}]},
+      {t:'group',label:'Answer buttons',k:'answers',fields:[{t:'row',fields:[{t:'text',k:'yes',label:'Yes button'},{t:'text',k:'no',label:'No button'}]},{t:'text',k:'open',label:'Open button'}]}
+     ]},
+    {id:'questions',title:'Questions',intro:'<p>Every question, in order. Keep each part’s questions together.</p>',
+     fields:[{t:'list',k:'questions',label:'Questions, in order',addLabel:'Add a question',
+       sum:function(q){return [q.id||'?',' '+(q.short||'')];},
+       add:function(d){var p=(asArr(d.parts).slice(-1)[0]||{}).id||'a';return {id:p.toUpperCase()+'x',part:p,tag:'New',text:'New question?',why:'',doc:'',own:'',short:'New question',scopeTag:'',scopeText:'',scopePoint:''};},
+       item:[
+        {t:'row',fields:[{t:'text',k:'id',label:'ID',code:true,kind:'q'},{t:'select',k:'part',label:'Part',opts:function(d){return auPartOpts(d);}}]},
+        {t:'text',k:'tag',label:'Tag over the open question',help:'For example: A1 · Contract'},
+        {t:'area',k:'text',label:'Question'},
+        {t:'area',k:'why',label:'Guidance'},
+        {t:'area',k:'short',label:'Short form',help:'Used once answered, in tables, and in the rationale.'},
+        {t:'row',fields:[{t:'area',k:'doc',label:'Derive from'},{t:'area',k:'own',label:'If unclear, ask',help:'Also the default owner of an open answer.'}]},
+        {t:'group',label:'Audit scope',help:'How a Yes here bears on which audit.',fields:[
+          {t:'select',k:'scopeTag',label:'Tag',opts:AU_TAGS},
+          {t:'text',k:'scopeText',label:'Text in the scope table',help:'Blank uses the short form.'},
+          {t:'text',k:'scopePoint',label:'Points-to text',help:'Blank uses the tag default.'}]}
+       ]}]},
+    {id:'verdicts',title:'Verdicts',intro:'<p>The tool checks these from top to bottom once nothing is open. The first match wins. Keep one with no conditions at the bottom.</p>',
+     fields:[
+      {t:'list',k:'verdicts',label:'Verdicts, in order',addLabel:'Add a verdict',
+       sum:function(v){return [v.key||'?',' '+(v.lab||'')+'  ←  '+condText(v.when)];},
+       add:function(){return {key:'new',when:[],lab:'New verdict',cls:'on',designating:true,title:'New verdict',desc:'',desc2:'',tables:[],next:'',rat:''};},
+       item:[
+        {t:'row',fields:[{t:'text',k:'key',label:'ID',code:true},{t:'select',k:'cls',label:'Color',opts:[['on','Rust'],['on hold','Amber'],['','Slate']]}]},
+        {t:'cond',k:'when',label:'When',help:COND_HELP},
+        {t:'check',k:'designating',label:'This verdict designates. Show the recommended scope.'},
+        {t:'text',k:'lab',label:'Small label over the title',help:'Tokens work here.'},
+        {t:'text',k:'title',label:'Title'},
+        {t:'area',k:'desc',label:'Description',help:'Tokens such as <code>{yes:c}</code> work here.'},
+        {t:'area',k:'desc2',label:'Second paragraph'},
+        {t:'list',k:'tables',label:'Tables of Yes answers',addLabel:'Add a table',sum:function(t){return [t.part,' '+(t.label||'')];},
+         add:function(d){return {part:(asArr(d.parts)[0]||{}).id||'',label:'Triggered'};},
+         item:[{t:'row',fields:[{t:'select',k:'part',label:'Part',opts:function(d){return auPartOpts(d);}},{t:'text',k:'label',label:'Heading'}]}]},
+        {t:'area',k:'next',label:'Next steps',rows:4,help:LINES_HELP},
+        {t:'area',k:'rat',label:'Rationale template',rows:4,help:'One line per sentence. <code>{met:a}</code> on its own line lists the Yes answers in part a. <code>{scope}</code> adds the scope sentence.'}]},
+      {t:'group',label:'While answers are open',k:'openVerdict',help:'Shown instead of any verdict while an answer is open. <code>{n}</code> is the count. <code>{s}</code> adds an s for more than one.',fields:[
+        {t:'row',fields:[{t:'text',k:'lab',label:'Small label'},{t:'text',k:'title',label:'Title'}]},
+        {t:'area',k:'desc',label:'Description'},{t:'text',k:'tableTitle',label:'Table heading'},
+        {t:'area',k:'next',label:'Next steps',help:LINES_HELP}]},
+      {t:'group',label:'Safety banner',k:'safetyBanner',help:'Shown when any safety part has a Yes. <code>{n}</code> <code>{s}</code> <code>{were}</code> work here.',fields:[
+        {t:'text',k:'title',label:'Bold opening'},{t:'area',k:'text',label:'Text'}]}
+     ]},
+    {id:'scope',title:'Audit scope',intro:'<p>The recommended audit. The tool checks these from top to bottom and uses the first match. A rule can lock the audit type to Both.</p><p>Each question carries a scope tag. The conditions here count Yes answers by tag.</p>',
+     fields:[{t:'obj',k:'scope',fields:[
+       {t:'list',k:'rules',label:'Scope rules, in order',addLabel:'Add a scope rule',
+        sum:function(r,i){return [String(i+1),' '+(r.type||'contract')+(r.locked?' (locked)':'')+'  ←  '+condText(r.when)];},
+        add:function(){return {when:[],type:'both',locked:false,why:''};},
+        item:[{t:'row',fields:[{t:'select',k:'type',label:'Recommend',opts:[['fca','FCA only'],['pca','PCA only'],['both','FCA and PCA'],['','Set by contract scope']]},
+                               {t:'check',k:'locked',label:'Lock the audit type to Both'}]},
+              {t:'cond',k:'when',label:'When',help:COND_HELP},{t:'area',k:'why',label:'Reason shown',rows:3}]},
+       {t:'group',label:'Scope names',k:'labels',fields:[{t:'row',fields:[{t:'text',k:'both',label:'Both'},{t:'text',k:'fca',label:'FCA'}]},{t:'row',fields:[{t:'text',k:'pca',label:'PCA'},{t:'text',k:'none',label:'None'}]}]}
+     ]}]},
+    {id:'disp',title:'Disposition and signatures',intro:'<p>The block the assessor fills in, and the signature lines in the Word record.</p>',
+     fields:[
+      {t:'labels',k:'labels',label:'Disposition block',spec:[['dispLabel','Block label'],['desYes','Designate'],['desNo','Do not designate'],['typeLabel','Audit type label'],
+        ['fca','FCA'],['pca','PCA'],['both','Both'],['delta','Delta audit'],['internal','Internally initiated'],['internalText','Internally initiated, in Copy'],
+        ['internalNote','Note when internally initiated'],['pcaOnlyNote','Note when PCA alone is recommended'],['typeMsg','Message when no type is chosen'],
+        ['cmDetLabel','CM determination label'],['cmLabel','CM field'],['dispSigLead','Signature note: opening'],['dispSigYes','Signature note: with a safety Yes. {n} {s} {were}'],
+        ['dispSigNo','Signature note: without'],['dispSigTail','Signature note: closing']]},
+      {t:'list',k:'sigs',label:'Signature lines in Word',addLabel:'Add a signature line',sum:function(s){return s.name||'(unnamed)';},
+       add:function(){return {name:'New function',filled:false,note:'',noteSafety:'',textNote:'',textNoteSafety:''};},
+       item:[{t:'text',k:'name',label:'Function'},{t:'check',k:'filled',label:'Fill this line from the CM determination fields'},
+             {t:'row',fields:[{t:'area',k:'note',label:'Note in Word'},{t:'area',k:'noteSafety',label:'Note in Word with a safety Yes',help:'Prints in red.'}]},
+             {t:'row',fields:[{t:'area',k:'textNote',label:'Note in Copy'},{t:'area',k:'textNoteSafety',label:'Note in Copy with a safety Yes'}]}]}
+     ]},
+    {id:'notes',title:'Notes and footer',intro:'<p>The General Notes under the questions, and the footer.</p>',
+     fields:[
+      {t:'obj',k:'notes',fields:[{t:'text',k:'heading',label:'Notes heading'},
+       {t:'list',k:'paras',label:'Note paragraphs',addLabel:'Add a paragraph',
+        sum:function(p){return String(p.text||'').replace(/\*\*/g,'');}, add:function(){return {style:'normal',text:'**New note.** Text.'};},
+        item:[{t:'select',k:'style',label:'Style',opts:[['normal','Normal'],['pull','Pull quote']]},{t:'area',k:'text',label:'Text',rows:3,help:MARKUP}]}]},
+      {t:'obj',k:'footer',fields:[{t:'list',k:'paras',label:'Footer paragraphs',addLabel:'Add a paragraph',
+        sum:function(p){return String(p.text||'').replace(/\*\*/g,'');}, add:function(){return {text:'New footer line.'};},
+        item:[{t:'area',k:'text',label:'Text',rows:2,help:MARKUP}]}]}]},
+    {id:'wording',title:'Other wording',intro:'<p>Headings, placeholders, and record text.</p>',
+     fields:[{t:'labels',k:'labels',spec:[
+       ['openBox','Open answer box'],['deriveFrom','Derive from label'],['ifUnclear','If unclear label'],['sourceLabel','Source label'],['sourcePh','Source placeholder'],
+       ['nextHeading','Next steps heading'],['scopeHeading','Scope heading. {label}'],['scopeBasis','Record: scope heading'],
+       ['metLine','Rationale line for a Yes. {id} {text}'],['sourceIn','Added source. {x}'],
+       ['dlButton','Download button'],['dlInterim','Interim download button'],
+       ['interimTitle','Interim: title'],['interimSub','Interim: subtitle'],['interimEnd','Interim: closing'],['interimTail','Interim: last line'],
+       ['openDocHeading','Record: open answers heading'],['docIntro','Word: intro'],['reassessHeading','Word: reassessment heading'],['reassessText','Word: reassessment text'],
+       ['docSafetyPara','Word: safety paragraph'],['sigHeading','Word: signature heading'],['sigIntro','Word: signature intro'],
+       ['docClosing','Word: closing'],['textClosing','Copy: closing']]}]}
+  ],
+  blank:null
+};
+FAMILY.blank=(function(){
+  var b=clone(STARTER);
+  b.tool={id:'new-designation-tool',rev:'A',build:'',exportName:'new-designation-tool',pageTitle:'New Designation Tool',barTitle:'New Designation Tool',
+    barSub:'Configuration Management · Draft',h1:'Designate this item?',lede:'Answer every question from documentation. Mark an answer open when the documentation is unclear.',
+    docTitle:'New Designation Checklist',docSub:'Complete one checklist per item.',textTitle:'NEW DESIGNATION CHECKLIST',fileStem:'Designation-Record'};
+  b.cards=[{label:'How to answer',paras:'Read the documentation first. An answer that has not been established is not a NO. Mark it open.'}];
+  b.parts=[
+    {id:'a',name:'Part A · Mandatory',docName:'Part A. Mandatory',chip:'Part A: {yes} yes',threshold:1,note:'Any yes designates.',lock:'designate',safety:false,
+     lockNote:'**Designation is mandatory here.** A Part A answer is yes.',blockNo:'A Part A answer is yes. Designation is mandatory.',blockType:''},
+    {id:'b',name:'Part B · Risk factors',docName:'Part B. Risk factors',chip:'Part B: {yes} of {total} yes, {th} designate',threshold:2,note:'Two yes answers designate.',lock:'none',safety:false,lockNote:'',blockNo:'',blockType:''}];
+  b.questions=[
+    {id:'A1',part:'a',tag:'A1 · Contract',text:'Does the contract call for this item?',why:'',doc:'The contract',own:'Contracts',short:'Called out in the contract',scopeTag:'',scopeText:'',scopePoint:''},
+    {id:'B1',part:'b',tag:'B1 · New design',text:'Is the design new?',why:'',doc:'Design history',own:'Engineering',short:'New design',scopeTag:'fca',scopeText:'',scopePoint:''},
+    {id:'B2',part:'b',tag:'B2 · New source',text:'Is the manufacturing source new?',why:'',doc:'Procurement records',own:'Supply chain',short:'New manufacturing source',scopeTag:'pca',scopeText:'',scopePoint:''}];
+  b.verdicts=[
+    {key:'mandatory',when:[[{s:'yes:a',o:'gte',v:'1'}]],lab:'Designate · Mandatory',cls:'on',designating:true,title:'Mandatory designation',desc:'A Part A answer is yes.',desc2:'',
+     tables:[{part:'a',label:'Part A, met'},{part:'b',label:'Part B, triggered'}],next:'Record the assessment\nMark the Disposition block',rat:'Designated. Part A applies.\n{met:a}\n{met:b}\n{scope}'},
+    {key:'risk',when:[[{s:'yes:b',o:'gte',v:'2'}]],lab:'Designate · Risk based',cls:'on',designating:true,title:'Designate',desc:'{yes:b} of {total:b} risk factors are met.',desc2:'',
+     tables:[{part:'b',label:'Part B, triggered'}],next:'Record the assessment\nMark the Disposition block',rat:'Designated. {yes:b} risk factors apply.\n{met:b}\n{scope}'},
+    {key:'below',when:[[{s:'yes:b',o:'gte',v:'1'}]],lab:'Below threshold',cls:'on hold',designating:false,title:'Designation not required',desc:'One risk factor is met. Record it and monitor it.',desc2:'',
+     tables:[{part:'b',label:'Part B, triggered'}],next:'Record the assessment\nMark the Disposition block: DO NOT DESIGNATE',rat:'Not designated. One risk factor applies.\n{met:b}'},
+    {key:'none',when:[],lab:'Do not designate',cls:'',designating:false,title:'No designation',desc:'No criteria are met.',desc2:'',tables:[],next:'Record the assessment\nMark the Disposition block: DO NOT DESIGNATE',rat:'Not designated. No criterion applies.'}];
+  b.scope={labels:clone(STARTER.scope.labels),rules:[
+    {when:[[{s:'tag:fca',o:'gte',v:'1'},{s:'tag:pca',o:'gte',v:'1'}]],type:'both',locked:false,why:'Factors sit on both the design and the production side.'},
+    {when:[[{s:'tag:pca',o:'gte',v:'1'}]],type:'pca',locked:false,why:'Every factor bears on how the article is produced.'},
+    {when:[[{s:'tag:fca',o:'gte',v:'1'}]],type:'fca',locked:false,why:'Every factor bears on whether the design meets its requirements.'}]};
+  b.notes={heading:'General Notes',paras:[{style:'normal',text:'**About this tool.** Write the notes here.'}]};
+  b.footer={paras:[{text:'Nothing is saved here. Save the assessment before you close the tab.'}]};
+  b.labels.oldRevMsg=''; b.labels.reassessHeading=''; b.labels.reassessText='';
+  return b;
+})();
+
+FAMILY.help={
+  family:'question-set tools with parts, Yes, No, or Open answers, sources, owners, a recommended audit scope, a disposition block, and a Word record',
+  loaded:'FCA/PCA CI Selection, Rev D draft',
+  condEx:['<code>yes in a</code> · is at least · <code>1</code>','<code>yes in c</code> · is at least · <code>1</code>','<code>C8</code> · is · <code>yes</code>'],
+  condShort:'yes in c ≥ 2',
+  logic:'<ol><li>The user answers every question Yes, No, or Open, and names the source relied on.</li>'+
+    '<li>While any answer is Open, the verdict is <b>Open answers remain</b>. Nothing else runs. The user can download an interim record.</li>'+
+    '<li>Once nothing is open, the <b>Verdicts</b> run top to bottom. The first match wins.</li>'+
+    '<li>For a verdict that designates, the <b>Audit scope</b> rules run the same way and recommend FCA, PCA, or both.</li>'+
+    '<li>A <b>part</b> can lock the disposition. A Yes in Part A forces DESIGNATE. A Yes in Part B forces DESIGNATE and both audits.</li></ol>'+
+    '<h4>The loaded verdicts, in order</h4><ol>'+
+    '<li>Part A and Part B Yes: Mandatory designation, contract and safety.</li><li>Part A and Part C Yes: Mandatory designation, with risk factors.</li>'+
+    '<li>Part A Yes: Mandatory designation.</li><li>Part B Yes: Designate for both audits.</li>'+
+    '<li>Two or more Part C Yes: Designate for FCA or PCA.</li><li>One Part C Yes: Designation not required.</li><li>Anything else: No audit designation.</li></ol>'+
+    '<p>The original tool picked between three wordings of the Part A verdict in code. The builder shows them as three verdicts, so you can edit each one.</p>'+
+    '<h4>Scope tags</h4><p>Each question carries a scope tag. Design questions point to FCA. Production and records questions point to PCA. C8 points to both or a delta audit. Part B points to both. Scope rules count Yes answers by tag.</p>',
+  tokens:'<table class="hp-t"><tr><th>Token</th><th>Becomes</th></tr>'+
+    '<tr><td><code>{yes:c}</code></td><td>The Yes count in part c</td></tr>'+
+    '<tr><td><code>{total:c}</code></td><td>The number of questions in part c</td></tr>'+
+    '<tr><td><code>{met:b}</code></td><td>On its own line in a rationale: one line per Yes in part b, with its source</td></tr>'+
+    '<tr><td><code>{scope}</code></td><td>On its own line in a rationale: the recommended scope and its reason</td></tr>'+
+    '<tr><td><code>{n}</code> <code>{s}</code> <code>{were}</code></td><td>In open and safety text: the count, a plural s, and was or were</td></tr></table>'+
+    '<p>Part chips take <code>{yes}</code>, <code>{total}</code>, and <code>{th}</code>, the threshold.</p>',
+  checks:['A question sits in a part that does not exist.','A part’s questions are split up by another part.','A verdict or scope rule tests a question that was deleted.','Two questions share an ID.','The last verdict has conditions, so some answers may match nothing.'],
+  tasks:[
+    ['Change the wording of a question',['Click <b>Questions</b>.','Open the question by its ID.','Edit the question, guidance, short form, or the derive-from and owner text.'],'The short form appears in the tables and the rationale. Keep it short.'],
+    ['Add a risk factor',['Click <b>Questions</b>, then <b>+ Add a question</b>.','Pick Part C. Give it the next ID, such as <code>C10</code>.','Write the tag, question, guidance, short form, source, and owner.','Pick its scope tag.','Move it to the end of Part C with the arrows.'],'The tally chip and the of-N counts update on their own. The two-factor rule still applies.'],
+    ['Change the Part C threshold',['Click <b>Verdicts</b>.','Open the <code>risk</code> verdict. Change <b>is at least 2</b> to the new number.','Open the <code>below</code> verdict. It catches anything above zero and below the new number, so leave it as is.','Click <b>Parts</b>, open Part C, and set the chip threshold to match.','Update the part note and any text that says two.']],
+    ['Add a part',['Click <b>Parts</b>, then <b>+ Add a part</b>. Set its ID, heading, chip, and lock.','Add its questions in <b>Questions</b>. Keep them together.','Add verdicts that test <b>Yes answers in</b> the new part.']],
+    ['Change what the scope recommends',['Click <b>Audit scope</b>.','Edit a rule, or add one and move it into place. The first match wins.'],'Tick <b>Lock the audit type to Both</b> only where the user must not pick a narrower audit.'],
+    ['Edit the open-answer behavior',['Click <b>Verdicts</b>.','Edit the <b>While answers are open</b> box at the bottom.']],
+    ['Edit the disposition and signatures',['Click <b>Disposition and signatures</b>.','Edit the labels, the notes, and the signature lines.']]
+  ]
+};
+
+/* ================= Help page. Shared text plus FAMILY.help. ================= */
+function helpTasks(list){
+  return list.map(function(t){
+    return '<div class="hp-task"><h4>'+t[0]+'</h4><ol>'+t[1].map(function(s){return '<li>'+s+'</li>';}).join('')+'</ol>'+(t[2]?'<p class="hp-note">'+t[2]+'</p>':'')+'</div>';
+  }).join('');
+}
+function helpPages(){
+  var H=FAMILY.help||{}, P=[];
+  P.push({id:'about',title:'What this builder does',html:
+    '<p>This builder makes and edits one family of tools: '+H.family+'.</p>'+
+    '<p>It opened loaded with <b>'+H.loaded+'</b>. Export it without changes and you get the same tool you have now. The answers, the verdicts, Copy, and the Word record all match the original.</p>'+
+    '<p>You edit in forms. You never touch code. The builder is one web page. It runs offline in your browser and installs nothing.</p>'+
+    '<p>Use a desktop browser such as Chrome or Edge. The builder works on a phone, but the screen is small for real work.</p>'});
+  P.push({id:'screen',title:'The screen',html:
+    '<h4>Top bar</h4><ul>'+
+    '<li><b>New</b> starts over. Pick the loaded tool or a blank one. Undo brings back what you had.</li>'+
+    '<li><b>Open</b> loads a saved project, or a tool this builder exported.</li>'+
+    '<li><b>Save project</b> saves your work as a file.</li>'+
+    '<li><b>Undo</b> and <b>Redo</b> step through your changes.</li>'+
+    '<li><b>Help</b> opens this page.</li>'+
+    '<li><b>Export tool</b> downloads the finished tool as one HTML file.</li></ul>'+
+    '<h4>Sections list</h4><p>The column on the left. Each entry is one part of the tool. Click one to edit it. A red mark beside an entry means the Checks found a problem there.</p>'+
+    '<h4>Editor</h4><p>The middle column. It holds the forms for the section you picked. Lists open and close when you click a row. The arrows on a row move it up or down. The square copies it. The cross deletes it.</p>'+
+    '<h4>Preview pane</h4><p>The right column. It shows the tool as you build it. It is the real tool, so you can click it, answer it, and download from it.</p><ul>'+
+    '<li><b>Desktop</b> and <b>Phone</b> change the preview width.</li>'+
+    '<li><b>Record</b> opens a second panel under the tool. It shows the text the tool will put in Copy, for the answers in the preview. The Word record carries the same content.</li>'+
+    '<li><b>Clear answers</b> resets the preview.</li>'+
+    '<li><b>Open in tab</b> shows the preview full size in its own tab.</li></ul>'+
+    '<p>On a phone, the editor and the preview share the screen. Use the <b>Edit</b> and <b>Preview</b> tabs under the top bar to switch.</p>'+
+    '<h4>Checks</h4><p>The box under the sections list. It flags broken links in the logic. Click a check to jump to the section that needs work.</p>'});
+  P.push({id:'first',title:'Your first ten minutes',html:'<ol class="hp-steps">'+
+    '<li>Click <b>Page and record titles</b>. Change the header bar subtitle, for example to a new revision. Watch the preview change.</li>'+
+    '<li>Answer a few questions in the preview. Watch the verdict move.</li>'+
+    '<li>Click <b>Record</b> in the preview bar. Read the text the tool will record.</li>'+
+    '<li>Open a question in the editor. Change its wording. The preview keeps your answers.</li>'+
+    '<li>Open <b>Rules</b>'+(FAMILY.id==='audit'?' or <b>Verdicts</b>':'')+'. Read how the verdict is picked. Each row summary shows its conditions in short form.</li>'+
+    '<li>Click <b>Save project</b>. Keep that file. It is your working copy.</li>'+
+    '<li>Click <b>Export tool</b>. Open the downloaded HTML file in your browser. That file is the finished tool.</li></ol>'+
+    '<p>Nothing you do here changes your original tool file. The builder only writes new files when you save or export.</p>'});
+  P.push({id:'tasks',title:'Common tasks',html:helpTasks(H.tasks||[])});
+  P.push({id:'logic',title:'How the logic works',html:H.logic||''});
+  P.push({id:'conditions',title:'Conditions',html:
+    '<p>A condition says when something applies. Rules, warnings, signature lines, and some questions use them.</p>'+
+    '<p>Each row has three parts. Pick what to test. Pick how to test it. Pick the value.</p>'+
+    '<div class="hp-ex"><div class="cg"><div class="cgh">All of these are true</div><div>'+H.condEx[0]+'</div><div>'+H.condEx[1]+'</div></div>'+
+    '<div class="cor">or</div><div class="cg"><div class="cgh">All of these are true</div><div>'+H.condEx[2]+'</div></div></div>'+
+    '<ul><li>Rows in one box must <b>all</b> be true.</li>'+
+    '<li><b>+ And</b> adds a row to a box.</li>'+
+    '<li><b>+ Or another set</b> adds a second box. The condition holds when <b>any</b> box holds.</li>'+
+    '<li>A condition with no rows always holds. Use one on the last rule as the fallback.</li>'+
+    '<li>Counts use <b>is at least</b>, <b>is at most</b>, and <b>is exactly</b>.</li>'+
+    '<li><b>is answered</b> and <b>is not answered</b> test whether the user has picked anything yet.</li></ul>'+
+    '<p>The list rows show conditions in short form. For example: <code>'+H.condShort+'</code>. The symbol <code>≥</code> means at least. <code>≠</code> means is not.</p>'});
+  P.push({id:'ids',title:'IDs and renaming',html:
+    '<p>Questions, answers, verdicts, and other parts carry short IDs. Rules and conditions point at those IDs, not at the wording.</p>'+
+    '<ul><li>Change wording freely. The logic does not care.</li>'+
+    '<li>Change an ID and the builder updates every condition that points at it. A note at the bottom of the screen says how many it changed.</li>'+
+    '<li>Keep IDs short. Use letters, numbers, and dashes. Avoid spaces.</li>'+
+    '<li>Delete a part and any rule that pointed at it breaks. The Checks list names each one. Undo puts the part back.</li>'+
+    (FAMILY.id==='tree'?'<li>Two questions may share an ID when they sit on different paths. Renaming one of them leaves the conditions alone, because the other still uses the old ID.</li>':'')+
+    '</ul><p>Renaming an ID clears the answers in the preview for that question. Answer it again to keep testing.</p>'});
+  P.push({id:'text',title:'Text tricks',html:
+    '<h4>Markup</h4><p>Fields marked for markup accept three styles.</p>'+
+    '<table class="hp-t"><tr><th>Type this</th><th>To get</th></tr>'+
+    '<tr><td><code>**Safety linkage.**</code></td><td><b>Safety linkage.</b></td></tr>'+
+    '<tr><td><code>*in italics*</code></td><td><i>in italics</i></td></tr>'+
+    '<tr><td><code>`[to be assigned]`</code></td><td><span style="font-family:var(--mono)">[to be assigned]</span></td></tr></table>'+
+    '<p>A new line in a markup field becomes a line break.</p>'+
+    '<h4>Lists</h4><p>Fields that say <b>one item per line</b> turn each line into a list item. Blank lines drop out.</p>'+
+    '<h4>Tokens</h4><p>A token is a word in braces. The tool swaps it for live text when it runs.</p>'+(H.tokens||'')+
+    '<p>A misspelled token stays on the page as typed. That makes the mistake easy to spot in the preview.</p>'});
+  P.push({id:'files',title:'Saving, exporting, and sharing',html:
+    '<table class="hp-t"><tr><th>File</th><th>What it is</th><th>What to do with it</th></tr>'+
+    '<tr><td><code>.tool-project.json</code></td><td>Your working copy</td><td>Keep it. Use <b>Open</b> to keep editing.</td></tr>'+
+    '<tr><td><code>.html</code> from Export</td><td>The finished tool</td><td>Share it. People open it in a browser.</td></tr></table>'+
+    '<ul><li>An exported tool also carries its own definition. Use <b>Open</b> on it to edit it again. You can lose the project file and still recover the tool.</li>'+
+    '<li>The builder keeps your last session in this browser. Next time it offers to restore it. Treat that as a safety net only. Save the project.</li>'+
+    '<li>Put the revision in two places: the header bar subtitle and the exported file name. Both sit in <b>Page and record titles</b>.</li>'+
+    '<li>Keep the builder file with your project files. Each builder is self-contained. Copy it to a new computer and it works the same.</li>'+
+    (FAMILY.id==='checklist'?'':'<li>Saved assessments carry the tool ID. A user can reopen a saved assessment only in a tool with the same ID. Keep the ID when you issue a new revision of the same tool. Change it when you make a different tool.</li>')+
+    '</ul>'});
+  P.push({id:'checks',title:'The Checks list',html:
+    '<p>The Checks list reads the whole tool after every change. It flags problems such as these:</p><ul>'+
+    (H.checks||[]).map(function(x){return '<li>'+x+'</li>';}).join('')+
+    '</ul><p>A check does not stop you. You can still preview and export. Clear every check before you issue a tool.</p>'});
+  P.push({id:'keys',title:'Keyboard shortcuts',html:'<table class="hp-t">'+
+    '<tr><td><span class="kbd">Ctrl</span> + <span class="kbd">Z</span></td><td>Undo, when the cursor is not in a text box</td></tr>'+
+    '<tr><td><span class="kbd">Ctrl</span> + <span class="kbd">Y</span></td><td>Redo</td></tr>'+
+    '<tr><td><span class="kbd">Ctrl</span> + <span class="kbd">S</span></td><td>Save project</td></tr>'+
+    '<tr><td><span class="kbd">Esc</span></td><td>Close this help page</td></tr></table>'+
+    '<p>On a Mac, use <span class="kbd">Cmd</span> in place of <span class="kbd">Ctrl</span>.</p>'});
+  P.push({id:'trouble',title:'Troubleshooting',html:
+    '<h4>The preview is blank.</h4><p>Click <b>Clear answers</b>. If it stays blank, undo your last change. A broken token or an empty list rarely blanks the page, but undo will tell you.</p>'+
+    '<h4>A rule never fires.</h4><p>Rules run top to bottom, and the first match wins. A rule higher up probably matches first. Move your rule up, or narrow the one above it.</p>'+
+    '<h4>The verdict says no rule matched.</h4><p>No rule covers those answers. Add a rule with no conditions at the bottom.</p>'+
+    '<h4>Open says the page was not made by a Tool Builder.</h4><p>You opened one of the original tools. The builder cannot read those. It does not need to. Use <b>New</b>, then <b>Start from the current tool</b>. That copy matches the original exactly.</p>'+
+    '<h4>Open says the file belongs to another builder.</h4><p>Each builder handles one family of tools. Open the file in the builder it names.</p>'+
+    '<h4>My preview answers disappeared.</h4><p>That happens after you rename an ID or use Undo. Answer the questions again.</p>'+
+    '<h4>The download did nothing.</h4><p>Your browser may ask where to save, or may block downloads from local files. Check the download bar. Allow downloads for this page if asked.</p>'+
+    '<h4>An emailed tool opens as text.</h4><p>Save the attachment first. Then open the saved file in Chrome or Edge.</p>'+
+    '<h4>The restore offer did not appear.</h4><p>Some browsers do not keep data for local files. Use Save project.</p>'});
+  P.push({id:'ref',title:'Section reference',html:FAMILY.sections.filter(function(s){return s.id!=='start';}).map(function(s){
+    return '<h4>'+escH(s.title)+'</h4>'+(s.intro||'<p></p>')+'<p><button class="hp-go" data-go="'+s.id+'">Go to '+escH(s.title)+' →</button></p>';
+  }).join('')});
+  return P;
+}
+function buildHelp(){
+  $('hp-title').textContent='Help \u00b7 '+FAMILY.name;
+  var P=helpPages(), toc=$('hp-toc'), body=$('hp-body');
+  toc.innerHTML=''; body.innerHTML='';
+  P.forEach(function(p,i){
+    toc.appendChild(el('a',{href:'#hp-'+p.id,'data-id':p.id,text:(i+1)+'. '+p.title,onclick:function(e){e.preventDefault();$('hp-'+p.id).scrollIntoView({block:'start'});}}));
+    body.appendChild(el('section',{id:'hp-'+p.id,class:'hp-sec'},[el('h3',{text:(i+1)+'. '+p.title}),el('div',{html:p.html})]));
+  });
+  body.querySelectorAll('[data-go]').forEach(function(b){ b.addEventListener('click',function(){ closeHelp(); go(b.dataset.go); }); });
+}
+function openHelp(id){
+  if(!$('hp-body').children.length) buildHelp();
+  $('help').classList.add('on'); $('help').setAttribute('aria-hidden','false');
+  $('hp-q').value=''; filterHelp('');
+  if(id&&$('hp-'+id)) $('hp-'+id).scrollIntoView({block:'start'}); else $('hp-body').scrollTop=0;
+  $('hp-close').focus();
+}
+function closeHelp(){ $('help').classList.remove('on'); $('help').setAttribute('aria-hidden','true'); }
+function filterHelp(q){
+  q=String(q||'').toLowerCase().trim(); var n=0;
+  $('hp-body').querySelectorAll('.hp-sec').forEach(function(s){
+    var hit=!q||s.textContent.toLowerCase().indexOf(q)>=0; s.style.display=hit?'':'none'; if(hit) n++;
+    var a=$('hp-toc').querySelector('[data-id="'+s.id.slice(3)+'"]'); if(a) a.style.display=hit?'':'none';
+  });
+  $('hp-none').style.display=n?'none':'block';
+}
+
+/* ================= Tool Builder core. Shared by the three builders. =================
+   FAMILY   : the builder description (sections, subjects, rename, validate, blank)
+   STARTER  : the definition that reproduces the current tool
+   PARTS    : {css, runtime, engine} for the generated tool
+*/
+var DEF=clone(STARTER);
+var CUR='start';
+var OPEN=new WeakSet();
+var DIRTY=false, HIST=[], HPOS=-1, commitT=null, pvT=null, lastPvState=null;
+var LSKEY=null;
+
+function clone(o){return JSON.parse(JSON.stringify(o));}
+function $(id){return document.getElementById(id);}
+function el(tag,attrs,kids){
+  var e=document.createElement(tag);
+  if(attrs) for(var k in attrs){
+    var v=attrs[k];
+    if(v==null||v===false) continue;
+    if(k==='class') e.className=v;
+    else if(k==='text') e.textContent=v;
+    else if(k==='html') e.innerHTML=v;
+    else if(k.slice(0,2)==='on') e.addEventListener(k.slice(2),v);
+    else if(k==='value') e.value=v;
+    else if(k==='checked') e.checked=!!v;
+    else e.setAttribute(k,v===true?'':v);
+  }
+  (kids||[]).forEach(function(c){ if(c==null) return; e.appendChild(typeof c==='string'?document.createTextNode(c):c); });
+  return e;
+}
+function escH(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function asArr(x){return Array.isArray(x)?x:[];}
+function opts(o,item){ return typeof o==='function'?o(DEF,item):(o||[]); }
+function slugF(s){return String(s||'tool').replace(/[^A-Za-z0-9._-]+/g,'-').replace(/^-|-$/g,'').slice(0,80)||'tool';}
+
+/* ---------------- history and autosave ---------------- */
+function snapshot(){ return JSON.stringify(DEF); }
+function pushHist(){
+  var s=snapshot();
+  if(HPOS>=0&&HIST[HPOS]===s) return;
+  HIST=HIST.slice(0,HPOS+1); HIST.push(s); if(HIST.length>150) HIST.shift(); HPOS=HIST.length-1;
+  undoState();
+  if(LSKEY){ try{ localStorage.setItem(LSKEY,JSON.stringify({saved:new Date().toISOString(),def:DEF})); }catch(e){} }
+}
+function commit(now){
+  DIRTY=true;
+  clearTimeout(commitT);
+  if(now) pushHist(); else commitT=setTimeout(pushHist,500);
+  schedulePreview(); checkProblems();
+}
+function undoState(){ $('undo').disabled=HPOS<=0; $('redo').disabled=HPOS>=HIST.length-1; }
+function undo(){ DIRTY=true; clearTimeout(commitT); pushHist(); if(HPOS<=0) return; HPOS--; DEF=JSON.parse(HIST[HPOS]); afterLoad(); undoState(); toast('Undone.'); }
+function redo(){ DIRTY=true; if(HPOS>=HIST.length-1) return; HPOS++; DEF=JSON.parse(HIST[HPOS]); afterLoad(); undoState(); toast('Redone.'); }
+function afterLoad(){
+  OPEN=new WeakSet();
+  if(LSKEY){ try{ localStorage.setItem(LSKEY,JSON.stringify({saved:new Date().toISOString(),def:DEF})); }catch(e){} }
+  renderNav(); renderSection(); schedulePreview(true); checkProblems();
+}
+function loadDef(d,msg){
+  DEF=d; HIST=[]; HPOS=-1; pushHist(); afterLoad(); if(msg) banner(msg,'good');
+}
+
+/* ---------------- banners and toasts ---------------- */
+function banner(html,kind,buttons){
+  var b=$('banner'); b.className='banner on '+(kind||''); b.innerHTML='';
+  b.appendChild(el('span',{html:html}));
+  (buttons||[]).forEach(function(x){ b.appendChild(el('button',{text:x[0],onclick:function(){ x[1](); }})); });
+  b.appendChild(el('button',{class:'x',title:'Dismiss','aria-label':'Dismiss',text:'×',onclick:function(){b.className='banner';}}));
+}
+function hideBanner(){ $('banner').className='banner'; }
+var toastT=null;
+function toast(msg,undoBtn){
+  var t=$('toast'); t.innerHTML=''; t.appendChild(el('span',{text:msg}));
+  if(undoBtn) t.appendChild(el('button',{text:'Undo',onclick:function(){undo();t.className='toast';}}));
+  t.className='toast on'; clearTimeout(toastT); toastT=setTimeout(function(){t.className='toast';},undoBtn?5000:2200);
+}
+
+/* ---------------- navigation ---------------- */
+function renderNav(){
+  var probs=problems(), bySec={};
+  probs.forEach(function(p){bySec[p.sec]=(bySec[p.sec]||0)+1;});
+  var box=$('secs'); box.innerHTML='';
+  FAMILY.sections.forEach(function(s,i){
+    box.appendChild(el('button',{class:'sec'+(s.id===CUR?' on':''),onclick:function(){go(s.id);}},[
+      el('span',{class:'n',text:i?String(i):'•'}), el('span',{text:s.title}),
+      bySec[s.id]?el('span',{class:'bad',text:'!'+bySec[s.id]}):null
+    ]));
+  });
+}
+function go(id,focusItem){
+  CUR=id; renderNav(); renderSection(focusItem);
+  $('editor').scrollTop=0;
+  document.body.classList.add('m-edit'); document.body.classList.remove('m-prev');
+  syncMtabs();
+}
+function section(){ return FAMILY.sections.filter(function(s){return s.id===CUR;})[0]||FAMILY.sections[0]; }
+function renderSection(){
+  var s=section(), ed=$('editor'); ed.innerHTML='';
+  ed.appendChild(el('h2',{text:s.title}));
+  if(s.id==='start') ed.appendChild(el('div',{class:'start-cta'},[
+    el('p',{html:'<b>New here?</b> The help page walks through the screen, the first ten minutes, and the common tasks. The live preview sits to the right'+(window.innerWidth<=960?', behind the <b>Preview</b> tab':'')+'.'}),
+    el('button',{text:'Open the help page',onclick:function(){openHelp();}})]));
+  if(s.intro) ed.appendChild(el('div',{class:'intro',html:s.intro}));
+  if(s.html) ed.appendChild(el('div',{html:typeof s.html==='function'?s.html():s.html}));
+  renderFields(ed,s.fields||[],DEF);
+}
+
+/* ---------------- field rendering ---------------- */
+function getK(obj,k){ if(!k) return obj; var p=k.split('.'),o=obj; for(var i=0;i<p.length;i++){ if(o==null) return undefined; o=o[p[i]]; } return o; }
+function setK(obj,k,v){ var p=k.split('.'),o=obj; for(var i=0;i<p.length-1;i++){ if(o[p[i]]==null||typeof o[p[i]]!=='object') o[p[i]]={}; o=o[p[i]]; } o[p[p.length-1]]=v; }
+function helpEl(h){ return h?el('div',{class:'help',html:h}):null; }
+var ALT_HELP='Used when the <b>Alternate wording</b> condition holds. Leave blank to keep the normal text.';
+function autosize(t){ t.style.height='auto'; t.style.height=Math.min(Math.max(t.scrollHeight+2,38),420)+'px'; }
+
+function renderFields(host,fields,obj,ctx){
+  fields.forEach(function(f){
+    if(f.show && !f.show(obj,DEF)) return;
+    var n=FIELD[f.t]; if(!n){ host.appendChild(el('div',{text:'Unknown field '+f.t})); return; }
+    host.appendChild(n(f,obj,ctx||{}));
+  });
+}
+var FIELD={};
+FIELD.info=function(f){ return el('div',{class:'help-card',html:typeof f.html==='function'?f.html(DEF):f.html}); };
+FIELD.row=function(f,obj,ctx){ var d=el('div',{class:'row2'}); renderFields(d,f.fields,obj,ctx); return d; };
+FIELD.group=function(f,obj,ctx){
+  var d=el('div',{class:'grp'},[el('div',{class:'gt',text:f.label}),f.help?el('div',{class:'gh',html:f.help}):null]);
+  renderFields(d,f.fields,f.k?ensureObj(obj,f.k):obj,ctx); return d;
+};
+FIELD.obj=function(f,obj,ctx){ var d=el('div'); renderFields(d,f.fields,ensureObj(obj,f.k),ctx); return d; };
+function ensureObj(obj,k){ var v=getK(obj,k); if(v==null||typeof v!=='object'){ v={}; setK(obj,k,v);} return v; }
+FIELD.text=function(f,obj){
+  var id='f'+Math.random().toString(36).slice(2,9), v=getK(obj,f.k);
+  var inp=el('input',{type:'text',id:id,value:v==null?'':String(v),placeholder:f.ph||null,spellcheck:f.code?'false':null});
+  if(f.code) inp.style.fontFamily='var(--mono)';
+  var before=null;
+  inp.addEventListener('focus',function(){before=inp.value;});
+  inp.addEventListener('input',function(){ setK(obj,f.k,inp.value); if(f.onInput) f.onInput(obj); commit(); });
+  inp.addEventListener('change',function(){
+    if(f.kind && before!==null && before!==inp.value && before!==''){
+      var n=FAMILY.rename(DEF,f.kind,before,inp.value,obj);
+      if(n) toast('Updated '+n+' reference'+(n>1?'s':'')+' to the new name.');
+      commit(true); renderNav();
+      var st=$('editor').scrollTop; renderSection(); $('editor').scrollTop=st;
+    } else if(f.kind){ commit(true); renderNav(); }
+    before=inp.value;
+  });
+  return el('div',{class:'f'+(f.alt?' alt':'')},[el('label',{for:id,text:f.label}),inp,helpEl(f.help||(f.alt?ALT_HELP:''))]);
+};
+FIELD.num=function(f,obj){
+  var id='f'+Math.random().toString(36).slice(2,9), v=getK(obj,f.k);
+  var inp=el('input',{type:'number',id:id,value:v==null?'':String(v),min:f.min!=null?f.min:null});
+  inp.addEventListener('input',function(){ setK(obj,f.k,inp.value===''?'':+inp.value); commit(); });
+  return el('div',{class:'f'},[el('label',{for:id,text:f.label}),inp,helpEl(f.help)]);
+};
+FIELD.area=function(f,obj){
+  var id='f'+Math.random().toString(36).slice(2,9), v=getK(obj,f.k);
+  if(Array.isArray(v)) v=v.join('\n');
+  var t=el('textarea',{id:id,rows:f.rows||2,placeholder:f.ph||null});
+  t.value=v==null?'':String(v);
+  t.addEventListener('input',function(){
+    var x=t.value; if(f.arr) x=x.split(/\r?\n/).map(function(s){return s.trim();}).filter(Boolean);
+    setK(obj,f.k,x); autosize(t); commit();
+  });
+  setTimeout(function(){autosize(t);},0);
+  return el('div',{class:'f'+(f.alt?' alt':'')},[el('label',{for:id,text:f.label}),t,helpEl(f.help||(f.alt?ALT_HELP:''))]);
+};
+FIELD.check=function(f,obj){
+  var id='f'+Math.random().toString(36).slice(2,9);
+  var c=el('input',{type:'checkbox',id:id,checked:!!getK(obj,f.k)});
+  c.addEventListener('change',function(){ setK(obj,f.k,c.checked); commit(true); if(f.rerender) renderSection(); });
+  return el('div',{class:'f ck'},[c,el('div',{},[el('label',{for:id,text:f.label}),helpEl(f.help)])]);
+};
+FIELD.select=function(f,obj){
+  var id='f'+Math.random().toString(36).slice(2,9), v=getK(obj,f.k); if(v==null) v='';
+  var o=opts(f.opts,obj), s=el('select',{id:id}), found=false;
+  o.forEach(function(x){ var val=Array.isArray(x)?x[0]:x, lab=Array.isArray(x)?x[1]:x;
+    if(String(val)===String(v)) found=true;
+    s.appendChild(el('option',{value:val,text:lab})); });
+  if(!found){ s.insertBefore(el('option',{value:v,text:v===''?'(choose)':'(missing) '+v}),s.firstChild); }
+  s.value=v;
+  s.addEventListener('change',function(){ setK(obj,f.k,s.value); commit(true); if(f.rerender) renderSection(); });
+  return el('div',{class:'f'},[el('label',{for:id,text:f.label}),s,helpEl(f.help)]);
+};
+FIELD.multi=function(f,obj){
+  var v=asArr(getK(obj,f.k)), box=el('div',{class:'multi'});
+  opts(f.opts,obj).forEach(function(x){
+    var val=Array.isArray(x)?x[0]:x, lab=Array.isArray(x)?x[1]:x;
+    var c=el('input',{type:'checkbox',checked:v.indexOf(val)>=0});
+    c.addEventListener('change',function(){
+      var cur=asArr(getK(obj,f.k)).filter(function(y){return y!==val;});
+      if(c.checked) cur.push(val);
+      setK(obj,f.k,cur); commit(true);
+    });
+    box.appendChild(el('label',{},[c,lab]));
+  });
+  return el('div',{class:'f'},[el('span',{class:'flab',text:f.label}),box,helpEl(f.help)]);
+};
+FIELD.labels=function(f,obj){
+  var d=ensureObj(obj,f.k), g=el('div',{class:'lbl'});
+  var seen={};
+  f.spec.forEach(function(s){
+    seen[s[0]]=1;
+    var t=el('textarea',{rows:1}); t.value=d[s[0]]==null?'':d[s[0]];
+    t.addEventListener('input',function(){ d[s[0]]=t.value; autosize(t); commit(); });
+    setTimeout(function(){autosize(t);},0);
+    g.appendChild(el('div',{class:'k'},[s[1],el('small',{text:s[0]})])); g.appendChild(t);
+  });
+  Object.keys(d).forEach(function(k){
+    if(seen[k]) return;
+    var t=el('textarea',{rows:1}); t.value=d[k];
+    t.addEventListener('input',function(){ d[k]=t.value; autosize(t); commit(); });
+    g.appendChild(el('div',{class:'k'},[k])); g.appendChild(t);
+  });
+  return el('div',{class:'f'},[f.label?el('span',{class:'flab',text:f.label}):null,g,helpEl(f.help)]);
+};
+
+/* lists of objects */
+FIELD.list=function(f,obj,ctx){
+  var list=getK(obj,f.k); if(!Array.isArray(list)){ list=[]; setK(obj,f.k,list); }
+  var wrap=el('div',{class:'lst'});
+  var cnt=el('span',{class:'cnt',text:String(list.length)});
+  wrap.appendChild(el('div',{class:'lh'},[el('span',{class:'flab',text:f.label}),cnt]));
+  if(f.help) wrap.appendChild(el('div',{class:'help',html:f.help}));
+  var body=el('div'); wrap.appendChild(body);
+  function draw(){
+    body.innerHTML=''; cnt.textContent=String(list.length);
+    list.forEach(function(item,i){
+      var isObj=item&&typeof item==='object';
+      var sm=el('span',{class:'sm'});
+      function sum(){ var s=f.sum?f.sum(item,i,DEF):(isObj?JSON.stringify(item).slice(0,80):String(item));
+        if(Array.isArray(s)){ sm.innerHTML='<b>'+escH(s[0])+'</b>'+escH(s[1]); } else sm.textContent=s||'(empty)'; }
+      sum();
+      var it=el('div',{class:'it'+(OPEN.has(item)?' open':'')});
+      function btn(txt,title,fn,cls){ return el('button',{class:'ib'+(cls?' '+cls:''),title:title,'aria-label':title,text:txt,onclick:function(e){e.stopPropagation();fn();}}); }
+      var head=el('div',{class:'ih',onclick:function(){ if(OPEN.has(item)) OPEN.delete(item); else OPEN.add(item); it.classList.toggle('open'); if(it.classList.contains('open')&&!bodyBuilt){buildBody();} }},[
+        el('span',{class:'tw',text:'▶'}), sm,
+        btn('↑','Move up',function(){ if(i>0){ list.splice(i-1,0,list.splice(i,1)[0]); commit(true); draw(); } }),
+        btn('↓','Move down',function(){ if(i<list.length-1){ list.splice(i+1,0,list.splice(i,1)[0]); commit(true); draw(); } }),
+        btn('⧉','Duplicate',function(){ var c=clone(item); if(f.onDup) f.onDup(c,list,DEF); list.splice(i+1,0,c); OPEN.add(c); commit(true); draw(); }),
+        btn('✕','Delete',function(){ list.splice(i,1); commit(true); draw(); toast('Deleted.',true); },'del')
+      ]);
+      it.appendChild(head);
+      var ib=el('div',{class:'ib2'}), bodyBuilt=false;
+      function buildBody(){ bodyBuilt=true; ib.innerHTML='';
+        if(isObj) renderFields(ib,f.item,item,ctx);
+        it.addEventListener('input',function(){sum();});
+        it.addEventListener('change',function(){sum();});
+      }
+      if(OPEN.has(item)) buildBody();
+      it.appendChild(ib);
+      body.appendChild(it);
+    });
+  }
+  draw();
+  wrap.appendChild(el('button',{class:'add',text:'+ '+(f.addLabel||'Add'),onclick:function(){
+    var n=f.add?f.add(DEF,list):{}; list.push(n); OPEN.add(n); commit(true); draw();
+    var last=body.lastChild; if(last){ last.classList.add('flash'); var i=last.querySelector('input,textarea'); if(i) i.focus(); }
+  }}));
+  return wrap;
+};
+
+/* conditions */
+var OPS={
+  choice:[['is','is'],['not','is not'],['set','is answered'],['unset','is not answered']],
+  number:[['gte','is at least'],['lte','is at most'],['eq','is exactly']],
+  verdict:[['is','is'],['not','is not'],['set','has a result'],['unset','has no result']]
+};
+FIELD.cond=function(f,obj){
+  var wrap=el('div',{class:'f'});
+  wrap.appendChild(el('span',{class:'flab',text:f.label||'Applies when'}));
+  var box=el('div',{class:'cond'}); wrap.appendChild(box);
+  if(f.help) wrap.appendChild(helpEl(f.help));
+  function C(){ var c=getK(obj,f.k); if(!Array.isArray(c)){ c=[]; setK(obj,f.k,c);} return c; }
+  var SUB=FAMILY.subjects(DEF,f.ctx||'', obj);
+  var SMAP={}; SUB.forEach(function(s){SMAP[s.id]=s;});
+  function draw(){
+    box.innerHTML='';
+    var c=C();
+    if(!c.length) box.appendChild(el('div',{class:'always',text:f.emptyText||'Always applies. Add a condition to narrow it.'}));
+    c.forEach(function(g,gi){
+      if(gi) box.appendChild(el('div',{class:'cor',text:'or'}));
+      var gd=el('div',{class:'cg'},[el('div',{class:'cgh',text:'All of these are true'})]);
+      g.forEach(function(r,ri){
+        var s=SMAP[r.s];
+        var ss=el('select',{class:'subj'+(s?'':' miss'),'aria-label':'Subject'});
+        var groups={};
+        SUB.forEach(function(x){ var gname=x.group||'Answers';
+          if(!groups[gname]){ groups[gname]=el('optgroup',{label:gname}); ss.appendChild(groups[gname]); }
+          groups[gname].appendChild(el('option',{value:x.id,text:x.label})); });
+        if(!s) ss.insertBefore(el('option',{value:r.s,text:'(missing) '+r.s}),ss.firstChild);
+        ss.value=r.s;
+        ss.addEventListener('change',function(){ r.s=ss.value; var ns=SMAP[r.s]; fixRow(r,ns); commit(true); draw(); });
+        var kind=s?s.kind:'choice';
+        var os=el('select',{class:'op','aria-label':'Test'});
+        (OPS[kind]||OPS.choice).forEach(function(o){ os.appendChild(el('option',{value:o[0],text:o[1]})); });
+        if(!(OPS[kind]||OPS.choice).some(function(o){return o[0]===r.o;})) os.insertBefore(el('option',{value:r.o,text:r.o}),os.firstChild);
+        os.value=r.o;
+        os.addEventListener('change',function(){ r.o=os.value; commit(true); draw(); });
+        var val=null;
+        if(r.o!=='set'&&r.o!=='unset'){
+          if(kind==='number'){
+            val=el('input',{type:'number',class:'val',value:r.v,'aria-label':'Value'});
+            val.addEventListener('input',function(){ r.v=val.value; commit(); });
+          } else {
+            val=el('select',{class:'val','aria-label':'Value'});
+            var vs=s?s.values||[]:[], ok=false;
+            vs.forEach(function(x){ if(String(x[0])===String(r.v)) ok=true; val.appendChild(el('option',{value:x[0],text:x[1]})); });
+            if(!ok){ val.insertBefore(el('option',{value:r.v,text:r.v===''?'(choose)':'(missing) '+r.v}),val.firstChild); val.classList.add(r.v===''?'x':'miss'); }
+            val.value=r.v;
+            val.addEventListener('change',function(){ r.v=val.value; commit(true); draw(); });
+          }
+        }
+        var rm=el('button',{class:'rm',title:'Remove this condition','aria-label':'Remove this condition',text:'✕',onclick:function(){
+          g.splice(ri,1); if(!g.length) c.splice(gi,1); commit(true); draw(); }});
+        gd.appendChild(el('div',{class:'cr'},[ss,os,val,rm]));
+      });
+      gd.appendChild(el('button',{class:'cbtn',text:'+ And',onclick:function(){ g.push(newRow()); commit(true); draw(); }}));
+      box.appendChild(gd);
+    });
+    box.appendChild(el('div',{},[
+      el('button',{class:'cbtn',text:c.length?'+ Or another set':'+ Add a condition',onclick:function(){ c.push([newRow()]); commit(true); draw(); }})
+    ]));
+  }
+  function newRow(){ var s=SUB[0]||{id:'',kind:'choice',values:[]}; var r={s:s.id,o:'',v:''}; fixRow(r,s); return r; }
+  function fixRow(r,s){
+    var kind=s?s.kind:'choice', ops=OPS[kind]||OPS.choice;
+    if(!ops.some(function(o){return o[0]===r.o;})) r.o=ops[0][0];
+    if(kind==='number'){ if(r.v===''||isNaN(+r.v)) r.v='1'; }
+    else { var vs=(s&&s.values)||[]; if(!vs.some(function(x){return String(x[0])===String(r.v);})) r.v=vs.length?vs[0][0]:''; }
+  }
+  draw();
+  return wrap;
+};
+
+/* a condition in a few words, for list summaries */
+function condText(c,ctx){
+  c=asArr(c); if(!c.length) return 'always';
+  var m={}; FAMILY.subjects(DEF,ctx||'warn').forEach(function(s){m[s.id]=s;});
+  var OPW={is:'=',not:'\u2260',gte:'\u2265',lte:'\u2264',eq:'=',set:'answered',unset:'unanswered'};
+  return c.map(function(g){ return asArr(g).map(function(r){
+    var s=m[r.s], nm=r.s.indexOf('a:')===0?r.s.slice(2):(s?s.short||s.label:r.s);
+    if(r.o==='set'||r.o==='unset') return nm+' '+OPW[r.o];
+    return nm+' '+(OPW[r.o]||r.o)+' '+r.v; }).join(' and '); }).join('  or  ');
+}
+
+/* ---------------- problems ---------------- */
+function problems(){ try{ return FAMILY.validate(DEF)||[]; }catch(e){ return [{sec:'start',msg:'Check failed: '+e.message}]; } }
+var probT=null;
+function checkProblems(){ clearTimeout(probT); probT=setTimeout(drawProblems,300); }
+function drawProblems(){
+  var p=problems(), box=$('probs'); box.innerHTML='';
+  box.appendChild(el('div',{class:'lab',text:'Checks'}));
+  if(!p.length) box.appendChild(el('div',{class:'ok',text:'No problems found.'}));
+  else {
+    var ul=el('ul'); p.slice(0,30).forEach(function(x){
+      var sec=FAMILY.sections.filter(function(s){return s.id===x.sec;})[0];
+      ul.appendChild(el('li',{text:(sec?sec.title+': ':'')+x.msg,onclick:function(){go(x.sec);}})); });
+    box.appendChild(ul);
+  }
+  renderNav();
+}
+/* shared checks every builder uses */
+function checkCond(c,subs,where,sec,out){
+  var m={}; subs.forEach(function(s){m[s.id]=s;});
+  asArr(c).forEach(function(g){ asArr(g).forEach(function(r){
+    var s=m[r.s];
+    if(!s){ out.push({sec:sec,msg:where+' tests '+r.s+', which no longer exists.'}); return; }
+    if(s.kind!=='number'&&r.o!=='set'&&r.o!=='unset'&&!(s.values||[]).some(function(x){return String(x[0])===String(r.v);}))
+      out.push({sec:sec,msg:where+' tests '+s.label+' for "'+r.v+'", which is not one of its answers.'});
+  });});
+}
+function dupes(list,key,what,sec,out){
+  var seen={}; asArr(list).forEach(function(x){ var k=x[key]; if(!k) out.push({sec:sec,msg:'A '+what+' has no ID.'}); else if(seen[k]) out.push({sec:sec,msg:'Two '+what+'s share the ID '+k+'.'}); seen[k]=1; });
+}
+/* renames a reference everywhere in the definition. Returns the count. */
+function renameRefs(def,subjectOld,subjectNew,valueSubject,valOld,valNew,fieldNames){
+  var n=0;
+  (function walk(o){
+    if(Array.isArray(o)){ o.forEach(walk); return; }
+    if(!o||typeof o!=='object') return;
+    if(typeof o.s==='string'&&typeof o.o==='string'){
+      if(subjectOld&&o.s===subjectOld){ o.s=subjectNew; n++; }
+      if(valueSubject&&(o.s===valueSubject||(typeof valueSubject==='function'&&valueSubject(o.s)))&&o.v===valOld){ o.v=valNew; n++; }
+      return;
+    }
+    (fieldNames||[]).forEach(function(f){ if(o[f]===valOld&&valOld!==undefined){ o[f]=valNew; n++; } });
+    for(var k in o) walk(o[k]);
+  })(def);
+  return n;
+}
+
+/* ---------------- preview ---------------- */
+function buildHTML(preview){ return assembleTool(PARTS,DEF,preview); }
+function schedulePreview(now){ clearTimeout(pvT); pvT=setTimeout(drawPreview,now?0:380); }
+function drawPreview(){
+  var host=$('pvwrap'), old=host.querySelector('iframe'), st=null, sy=0;
+  if(old){ try{ var w=old.contentWindow; if(w.__getState) st=w.__getState(); sy=w.scrollY||0; }catch(e){} }
+  if(st===null) st=lastPvState;
+  var f=el('iframe',{title:'Live preview of the tool'});
+  f.addEventListener('load',function(){
+    try{
+      var w=f.contentWindow;
+      if(st&&w.__setState) w.__setState(st);
+      w.scrollTo(0,sy);
+      lastPvState=null;
+    }catch(e){}
+  });
+  f.srcdoc=buildHTML(true);
+  if(old) host.replaceChild(f,old); else host.appendChild(f);
+}
+var recT=null;
+function recOn(){ return $('pv-rec').getAttribute('aria-pressed')==='true'; }
+function drawRecord(){
+  if(!recOn()) return;
+  var f=$('pvwrap').querySelector('iframe'), out=null;
+  try{ var w=f&&f.contentWindow; if(w&&w.__recordText) out=w.__recordText(); }catch(e){}
+  if(!out){ $('pvrs').textContent='Loading the preview.'; return; }
+  $('pvrs').textContent=out.note||'';
+  if($('pvrt').textContent!==out.text) $('pvrt').textContent=out.text;
+}
+function toggleRecord(){
+  var on=!recOn(); $('pv-rec').setAttribute('aria-pressed',on?'true':'false');
+  document.querySelector('.preview').classList.toggle('rec',on);
+  clearInterval(recT); if(on){ drawRecord(); recT=setInterval(drawRecord,600); }
+}
+function restartPreview(){ lastPvState=null; var old=$('pvwrap').querySelector('iframe'); if(old) old.remove(); drawPreview(); }
+
+/* ---------------- files ---------------- */
+function download(name,text,mime){
+  var u=URL.createObjectURL(new Blob([text],{type:mime}));
+  var a=el('a',{href:u,download:name}); document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function(){URL.revokeObjectURL(u);},4000);
+}
+function exportName(){ var t=DEF.tool||{}; return slugF(t.exportName||t.pageTitle||t.barTitle); }
+function doExport(){
+  var p=problems();
+  download(exportName()+'.html',buildHTML(false),'text/html');
+  DIRTY=false;
+  toast(p.length?'Tool exported. '+p.length+' check'+(p.length>1?'s':'')+' still open.':'Tool exported.');
+}
+function doSaveProject(){
+  download(exportName()+'.tool-project.json',JSON.stringify({toolBuilderProject:FAMILY.id,saved:new Date().toISOString(),def:DEF},null,1),'application/json');
+  DIRTY=false; toast('Project saved.');
+}
+function readDefFrom(text,name){
+  var d=null;
+  if(/^\s*</.test(text)){
+    var m=/<script type="application\/json" id="tool-def">([\s\S]*?)<\/script>/.exec(text);
+    if(!m) throw new Error('This page was not made by a Tool Builder. The built-in starter already matches the original tool. Use New, then Start from the current tool.');
+    d=JSON.parse(m[1]);
+  } else {
+    var o=JSON.parse(text);
+    d=o&&o.def?o.def:o;
+  }
+  if(!d||typeof d!=='object'||!d.builder) throw new Error('No tool definition found in '+name+'.');
+  if(d.builder!==FAMILY.id) throw new Error('This file belongs to the '+(FAMILY.others[d.builder]||d.builder)+'. Open it there.');
+  return d;
+}
+function doOpen(ev){
+  var f=ev.target.files&&ev.target.files[0]; if(!f) return;
+  var r=new FileReader();
+  r.onload=function(){
+    try{ var d=readDefFrom(r.result,f.name); loadDef(d,'Opened <b>'+escH(f.name)+'</b>. Edits now apply to this tool.'); go('start'); }
+    catch(e){ banner(escH(e.message),'bad'); }
+  };
+  r.readAsText(f); ev.target.value='';
+}
+function newFrom(kind){
+  closeMenus();
+  var cur=snapshot();
+  loadDef(clone(kind==='blank'?FAMILY.blank:STARTER), kind==='blank'?'Started a blank tool. Your previous work is one Undo away.':'Started from the current tool. Your previous work is one Undo away.');
+  HIST.unshift(cur); HPOS=HIST.length-1; undoState();
+  go('start');
+}
+function closeMenus(){ document.querySelectorAll('.menu.open').forEach(function(m){m.classList.remove('open');}); }
+function syncMtabs(){
+  var e=document.body.classList.contains('m-prev');
+  $('mt-edit').className=e?'':'on'; $('mt-prev').className=e?'on':'';
+}
+
+/* ---------------- start up ---------------- */
+function boot(){
+  document.title=FAMILY.name;
+  $('brand-t').textContent=FAMILY.name;
+  $('brand-s').textContent=FAMILY.sub;
+  $('undo').addEventListener('click',undo); $('redo').addEventListener('click',redo);
+  $('export').addEventListener('click',doExport);
+  $('saveproj').addEventListener('click',doSaveProject);
+  $('openbtn').addEventListener('click',function(){$('openfile').click();});
+  $('openfile').addEventListener('change',doOpen);
+  $('newbtn').addEventListener('click',function(e){ e.stopPropagation(); $('newmenu').classList.toggle('open'); });
+  $('new-start').addEventListener('click',function(){newFrom('start');});
+  $('new-blank').addEventListener('click',function(){newFrom('blank');});
+  document.addEventListener('click',function(e){ if(!e.target.closest('.menu')) closeMenus(); });
+  $('pv-desk').addEventListener('click',function(){ $('pvwrap').className='pvwrap'; this.className='on'; $('pv-phone').className=''; });
+  $('pv-phone').addEventListener('click',function(){ $('pvwrap').className='pvwrap phone'; this.className='on'; $('pv-desk').className=''; });
+  $('pv-rec').addEventListener('click',toggleRecord);
+  $('helpbtn').addEventListener('click',function(){openHelp();});
+  $('hp-close').addEventListener('click',closeHelp);
+  $('hp-q').addEventListener('input',function(){filterHelp(this.value);});
+  $('hp-print').addEventListener('click',function(){ filterHelp(''); document.body.classList.add('printing'); window.print(); setTimeout(function(){document.body.classList.remove('printing');},500); });
+  $('pv-reset').addEventListener('click',function(){ restartPreview(); toast('Preview answers cleared.'); });
+  $('pv-open').addEventListener('click',function(){
+    var w=window.open('','_blank'); if(!w){ toast('The browser blocked the new tab.'); return; }
+    w.document.open(); w.document.write(buildHTML(true)); w.document.close();
+  });
+  $('mt-edit').addEventListener('click',function(){ document.body.classList.add('m-edit'); document.body.classList.remove('m-prev'); syncMtabs(); });
+  $('mt-prev').addEventListener('click',function(){ document.body.classList.add('m-prev'); document.body.classList.remove('m-edit'); syncMtabs(); schedulePreview(true); });
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape'&&$('help').classList.contains('on')){ closeHelp(); return; }
+    var mod=e.ctrlKey||e.metaKey;
+    if(mod&&!e.shiftKey&&e.key.toLowerCase()==='z'&&!/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)){ e.preventDefault(); undo(); }
+    if(mod&&(e.key.toLowerCase()==='y'||(e.shiftKey&&e.key.toLowerCase()==='z'))&&!/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)){ e.preventDefault(); redo(); }
+    if(mod&&e.key.toLowerCase()==='s'){ e.preventDefault(); doSaveProject(); }
+  });
+  document.body.classList.add('m-edit');
+  pushHist(); renderNav(); renderSection(); drawPreview(); drawProblems();
+  /* offer to restore the last session on this computer */
+  try{
+    var raw=localStorage.getItem('toolbuilder:'+FAMILY.id+':last');
+    if(raw){
+      var o=JSON.parse(raw);
+      if(o&&o.def&&JSON.stringify(o.def)!==JSON.stringify(STARTER)){
+        var when=new Date(o.saved);
+        banner('Your last session in this builder was kept on this computer ('+escH(when.toLocaleString())+').','',
+          [['Restore it',function(){ loadDef(o.def,'Last session restored.'); }],['Keep the starter',hideBanner]]);
+      }
+    }
+  }catch(e){}
+  /* from now on, keep this session for next time */
+  LSKEY='toolbuilder:'+FAMILY.id+':last';
+}
+window.addEventListener('beforeunload',function(e){
+  if(DIRTY){ e.preventDefault(); e.returnValue=''; }
+});
+boot();
+
+</script>
+</body>
+</html>
