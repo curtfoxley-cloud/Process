@@ -25,11 +25,11 @@ input,textarea,select{font-family:inherit;font-size:inherit;color:inherit}
 
 /* ---------- top bar ---------- */
 .top{flex:0 0 56px;background:var(--ink);color:#fff;display:flex;align-items:center;gap:10px;padding:0 16px;border-bottom:1px solid #000;z-index:20}
-.brand{display:flex;flex-direction:column;line-height:1.15;min-width:0;margin-right:6px}
-.brand b{font-family:var(--serif);font-size:16px;white-space:nowrap}
+.brand{display:flex;flex-direction:column;line-height:1.15;flex:0 1 auto;min-width:128px;overflow:hidden;margin-right:6px}
+.brand b{font-family:var(--serif);font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .brand span{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#93A2AB;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px}
 .spacer{flex:1}
-.tbtn{background:transparent;border:1px solid #46545F;color:#DCE3E7;border-radius:4px;padding:6px 11px;font-size:12.5px;white-space:nowrap}
+.tbtn{flex:0 0 auto;background:transparent;border:1px solid #46545F;color:#DCE3E7;border-radius:4px;padding:6px 11px;font-size:12.5px;white-space:nowrap}
 .tbtn:hover{background:#2C3841;border-color:#5E6D77}
 .tbtn:focus-visible{outline:2px solid var(--rust);outline-offset:2px}
 .tbtn.pri{background:var(--rust);border-color:var(--rust);color:#fff;font-weight:600}
@@ -37,7 +37,7 @@ input,textarea,select{font-family:inherit;font-size:inherit;color:inherit}
 .tbtn[disabled]{opacity:.35;cursor:default}
 .tbtn .badge{display:inline-block;min-width:17px;padding:0 5px;margin-left:5px;border-radius:9px;background:var(--alert);color:#fff;font-size:11px;font-weight:700;text-align:center}
 .tbtn .badge.ok{background:var(--teal)}
-.sep{width:1px;height:26px;background:#3D4B55;margin:0 2px}
+.sep{flex:0 0 1px;width:1px;height:26px;background:#3D4B55;margin:0 2px}
 
 /* ---------- workspace ---------- */
 .work{flex:1;min-height:0;display:grid;grid-template-columns:290px minmax(440px,1fr) minmax(380px,1fr)}
@@ -153,7 +153,7 @@ h1.et{font-family:var(--serif);font-size:27px;line-height:1.2;margin:0 0 6px}
 .warnbox{background:var(--amber-soft);border:1px solid #E4D3AE;border-radius:5px;padding:10px 13px;font-size:13px;margin:0 0 14px}
 .errbox{background:var(--alert-soft);border:1px solid #E8CFCF;border-radius:5px;padding:10px 13px;font-size:13px;margin:0 0 14px}
 .okbox{background:var(--teal-soft);border:1px solid #CBDDDA;border-radius:5px;padding:10px 13px;font-size:13px;margin:0 0 14px}
-.fmtbar{display:flex;gap:4px;align-items:center}
+.fmtbar{display:flex;gap:4px;align-items:center;flex:0 0 auto}
 .fmtbar button{width:28px;height:26px;border:1px solid #46545F;background:transparent;color:#DCE3E7;border-radius:4px;padding:0}
 .fmtbar button:hover{background:#2C3841}
 .dec-ctl{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:6px}
@@ -192,8 +192,18 @@ h1.et{font-family:var(--serif);font-size:27px;line-height:1.2;margin:0 0 6px}
 .drop{position:fixed;inset:0;background:rgba(168,72,31,.12);border:3px dashed var(--rust);display:none;align-items:center;justify-content:center;z-index:70;font-family:var(--serif);font-size:24px;color:var(--rust-ink)}
 .drop.show{display:flex}
 body.resmode #bCmp{display:none}
+/* header compaction: every control stays on screen as the window narrows */
+.top{overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
+.top::-webkit-scrollbar{display:none}
+@media(max-width:1440px){ .top{gap:6px;padding:0 12px} .tbtn{padding:6px 9px} .sep{margin:0} }
+@media(max-width:1260px){ .lng2{display:none} .brand span{max-width:170px} }
 @media(max-width:1180px){ .work{grid-template-columns:250px minmax(400px,1fr) minmax(320px,.8fr)} .lng{display:none} }
-@media(max-width:980px){ body:not(.pvforce) .work{grid-template-columns:230px 1fr} body:not(.pvforce) .preview{display:none} .brand span{display:none} }
+@media(max-width:1060px){ .brand span{display:none} .tbtn{padding:6px 8px;font-size:12px} }
+@media(max-width:980px){ body:not(.pvforce) .work{grid-template-columns:230px 1fr} body:not(.pvforce) .preview{display:none}
+  body.pvforce .work{grid-template-columns:200px minmax(0,1fr) minmax(0,1fr)}
+  .top{gap:5px;padding:0 10px} .sep{display:none} .brand{min-width:106px} .brand b{font-size:14.5px} .tbtn{padding:5px 7px} }
+@media(max-width:900px){ .fmtbar{display:none} }
+@media(max-width:800px){ .brand{min-width:0;flex:0 1 0} .brand b{text-overflow:clip} }
 </style>
 </head>
 <body>
@@ -202,7 +212,7 @@ body.resmode #bCmp{display:none}
   <div class="brand"><b>Training Builder</b><span id="docName">untitled</span></div>
   <button class="tbtn" id="bNew" title="Start a new training">New</button>
   <button class="tbtn" id="bOpen" title="Open a training .html file or a draft .json file">Open…</button>
-  <button class="tbtn edonly" id="bDraft" title="Download the work in progress as a draft file">Save draft</button>
+  <button class="tbtn edonly" id="bDraft" title="Download the work in progress as a draft file">Save<span class="lng2"> draft</span></button>
   <div class="sep edonly"></div>
   <button class="tbtn edonly" id="bUndo" title="Undo (Ctrl+Z)">↶<span class="lng"> Undo</span></button>
   <button class="tbtn edonly" id="bRedo" title="Redo (Ctrl+Y)">↷<span class="lng"> Redo</span></button>
@@ -216,9 +226,9 @@ body.resmode #bCmp{display:none}
   <button class="tbtn" id="bSplit" title="Divide this training into two trainings">Split…</button>
   <button class="tbtn" id="bRes" title="Load trainee files, see scores, grade written answers, and sign off">Results</button>
   <button class="tbtn edonly" id="bPrint" title="Make a printable handout or a trainer answer key">Print…</button>
-  <button class="tbtn edonly" id="bHealth" title="Check the training for problems">Health check<span class="badge ok" id="hBadge">0</span></button>
+  <button class="tbtn edonly" id="bHealth" title="Check the training for problems">Health<span class="lng2"> check</span><span class="badge ok" id="hBadge">0</span></button>
   <button class="tbtn edonly" id="bPv" title="Show or hide the live preview">Preview</button>
-  <button class="tbtn pri edonly" id="bExport" title="Download the finished training as one .html file">Export training</button>
+  <button class="tbtn pri edonly" id="bExport" title="Download the finished training as one .html file">Export<span class="lng2"> training</span></button>
   <input type="file" id="fileIn" accept=".html,.htm,.json,text/html,application/json" hidden>
   <input type="file" id="imgIn" accept="image/*" hidden>
   <input type="file" id="cmpIn" accept=".html,.htm,.json,text/html,application/json" hidden>
@@ -451,7 +461,15 @@ textarea:focus{outline:2px solid var(--rust);outline-offset:0;border-color:var(-
   .lng{display:none}
   .who{flex:1;min-width:0}
   .who label{display:none}
-  .who input{width:100%;min-width:0}
+  .top .who input{width:100%;min-width:90px}
+  .tbtn{padding:7px 10px}
+}
+@media(max-width:440px){
+  .top{flex-wrap:wrap;height:auto;padding:8px 12px;row-gap:8px}
+  .who{order:9;flex:1 0 100%}
+  .top .spacer{display:none}
+  .top .tbtn{flex:1 1 auto}
+  .top .who input{width:100%}
 }
 @media(max-width:900px){
   .cards.c3,.cards.c2{grid-template-columns:1fr}
@@ -2486,7 +2504,7 @@ function buildTraining(p, opts){
   const docTitle = course.docTitle || course.title || "Training";
   return '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n'+
   '<title>'+escHtml(docTitle)+'</title>\n<style>'+css+'</style>\n</head>\n<body>\n\n'+
-  '<div class="chrome" id="chrome">\n<div id="mkTop"></div>\n<header class="top">\n  <button class="tbtn railtoggle" id="railToggle" aria-label="Show section register">Sections</button>\n'+
+  '<div class="chrome" id="chrome">\n<div id="mkTop"></div>\n<header class="top">\n  <button class="tbtn railtoggle" id="railToggle" aria-label="Show section register">☰<span class="lng"> Sections</span></button>\n'+
   '  <div class="brand">\n    <b>'+escHtml(course.title)+'</b>\n    <span id="brandSub">Interactive modules</span>\n  </div>\n  <div class="spacer"></div>\n'+
   '  <div class="who">\n    <label for="who">Trainee</label>\n    <input id="who" type="text" placeholder="Your name" autocomplete="name">\n  </div>\n'+
   '  <button class="tbtn" id="btnSave">Save<span class="lng"> progress</span></button>\n  <button class="tbtn" id="btnLoad">Resume</button>\n'+
@@ -2778,6 +2796,7 @@ function renderOutline(){
   o.appendChild(h("button",{class:"oadd big", onclick:addModule}, "+ Add module"));
   o.scrollTop=st;
   $("docName").textContent = (P.course.title||"untitled")+" · Rev "+(P.config.contentRev||"?");
+  $("docName").parentNode.title = $("docName").textContent;
 }
 
 /* ==========================================================================
