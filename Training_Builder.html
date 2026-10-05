@@ -114,6 +114,38 @@ h1.et{font-family:var(--serif);font-size:27px;line-height:1.2;margin:0 0 6px}
 .ib.x:hover{color:var(--alert);border-color:#E8CFCF;background:var(--alert-soft)}
 .ib[disabled]{opacity:.3;cursor:default}
 .blk .bb{padding:12px}
+/* moving content between sections */
+.grip{cursor:grab;color:var(--mute);font-size:16px;line-height:1;padding:2px 3px;border-radius:3px;user-select:none;-webkit-user-select:none}
+.grip:hover{color:var(--ink);background:var(--rule)}
+.grip:active{cursor:grabbing}
+.blk.dragging,.panel.dragging{opacity:.45}
+.blk.over-top{box-shadow:0 -4px 0 0 var(--rust)}
+.blk.over-bot{box-shadow:0 4px 0 0 var(--rust)}
+.ib.mvb{font-size:14px}
+.ph .mvc{font-size:11.5px;padding:3px 9px}
+body.mdrag .oitem[data-si]{outline:1px dashed #B4C0C7;outline-offset:-3px}
+body.mdrag .oitem.src{opacity:.45}
+.oitem.dropon{background:var(--rust-soft)!important;outline:2px solid var(--rust)!important;outline-offset:-2px}
+.movepick{position:fixed;z-index:95;background:var(--paper);border:1px solid var(--rule);border-radius:8px;box-shadow:0 14px 36px rgba(0,0,0,.2);display:flex;flex-direction:column;overflow:hidden}
+.mph{display:flex;align-items:center;gap:8px;padding:9px 8px 9px 14px;border-bottom:1px solid var(--rule);background:var(--surface-2)}
+.mph b{flex:1;font-size:13.5px}
+.mpo{display:flex;flex-direction:column;gap:4px;padding:9px 14px;font-size:12.5px;color:var(--ink-2);border-bottom:1px solid var(--rule)}
+.mpo label{display:flex;gap:7px;align-items:center;cursor:pointer}
+.mpo.help{color:var(--slate);font-size:12px;line-height:1.45}
+.mpf{margin:9px 12px 4px;padding:6px 9px;border:1px solid var(--rule);border-radius:5px;font-size:13px;background:var(--paper)}
+.mpl{overflow:auto;padding:0 0 8px;flex:1;min-height:0}
+.mpm{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--rust-ink);font-weight:700;padding:10px 14px 4px}
+.mpi{display:flex;gap:8px;align-items:baseline;width:100%;text-align:left;background:none;border:0;padding:6px 14px;font-size:13px;color:var(--ink-2);cursor:pointer}
+.mpi:hover:not([disabled]),.mpi:focus-visible{background:var(--surface)}
+.mpi[disabled]{opacity:.5;cursor:default}
+.mpi .id{font-family:var(--mono);font-size:10.5px;color:var(--mute);flex:0 0 52px}
+.mpi .nm{flex:1;min-width:0}
+.mpi .ct{font-family:var(--mono);font-size:10px;color:var(--mute);white-space:nowrap}
+.mpi .ct.sw{color:var(--amber)}
+.mpn{padding:10px 14px;color:var(--slate);font-size:12.5px}
+.toast .tact{margin-left:14px;background:none;border:1px solid rgba(255,255,255,.55);color:#fff;border-radius:4px;padding:3px 10px;font-size:13px;cursor:pointer}
+.toast .tact:hover{background:rgba(255,255,255,.14)}
+.toast.act.show{pointer-events:auto}
 .palette{display:flex;flex-wrap:wrap;gap:6px;padding:12px;border:1px dashed #AEB9BF;border-radius:6px;background:transparent;margin:6px 0 0}
 .palette .pl{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--slate);width:100%;margin-bottom:2px}
 .palette button{border:1px solid var(--rule);background:var(--paper);border-radius:4px;padding:5px 10px;font-size:12.5px}
@@ -2302,7 +2334,9 @@ function h(tag, attrs, ...kids){
   return e;
 }
 const $ = id => document.getElementById(id);
-function toast(m){ const t=$("toast"); t.textContent=m; t.classList.add("show"); clearTimeout(toast.t); toast.t=setTimeout(()=>t.classList.remove("show"),4200); }
+function toast(m, act){ const t=$("toast"); t.textContent=m; t.classList.toggle("act", !!act);
+  if(act) t.appendChild(h("button",{class:"tact", onclick:()=>{ t.classList.remove("show"); act.fn(); }}, act.label));
+  t.classList.add("show"); clearTimeout(toast.t); toast.t=setTimeout(()=>t.classList.remove("show"), act?7000:4200); }
 const clone = o => JSON.parse(JSON.stringify(o));
 function pad2(n){ return n<10 ? "0"+n : ""+n; }
 function today(){ const d=new Date(); return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate()); }
@@ -2788,7 +2822,7 @@ function renderOutline(){
   o.appendChild(h("div",{class:"oh"},"Modules"));
   P.modules.forEach((m,mi)=>{
     o.appendChild(oItem({k:"mod", mi}, m.id, m.label+": "+m.title, "mod", null, B({k:"mod",mi})));
-    m.sections.forEach((s,si)=> o.appendChild(oItem({k:"sect", mi, si}, s.id, s.title, "sub", null, B({k:"sect",mi,si}))));
+    m.sections.forEach((s,si)=> o.appendChild(sectItem(oItem({k:"sect", mi, si}, s.id, s.title, "sub", null, B({k:"sect",mi,si})), mi, si)));
     o.appendChild(h("button",{class:"oadd", onclick:()=>addSection(mi)}, "+ Add section"));
     o.appendChild(oItem({k:"drill", mi}, m.id+"-DR", P.drill.title||"Drill", "sub", m.drill.length, B({k:"drill",mi})));
     o.appendChild(oItem({k:"ex", mi}, m.id+"-EX", "Exercises", "sub", m.exercises.length, B({k:"ex",mi})));
@@ -3167,7 +3201,7 @@ function edSection(w, m, mi, si){
   });
   bw.appendChild(palette(s.body, s.body.length, "Add to the end of this section"));
   w.appendChild(panel("Content", bw));
-  w.appendChild(checkEditor(s));
+  w.appendChild(checkMoveTools(checkEditor(s), s, mi, si));
 }
 function insertBar(arr, at){
   const box = h("div",{class:"ins"});
@@ -3186,9 +3220,13 @@ function blockCard(arr, i){
   card.addEventListener("focusout", ()=>card.classList.remove("focus"));
   const typeSel = ["p","h","list","olist"].indexOf(b.t)>=0 ? h("select",{class:"btn sm",style:"padding:2px 6px;font-size:11.5px", title:"Change type", onchange:e=>{ convertText(b, e.target.value); commit(true); }},
     [["p","Paragraph"],["h","Sub-heading"],["list","Bullet list"],["olist","Numbered list"]].map(([v,t])=>h("option",{value:v,selected:v===b.t?"selected":null},t))) : null;
-  card.appendChild(h("div",{class:"bh"}, h("span",{class:"ty"}, (BLOCKS[b.t]||{name:b.t}).name), typeSel, mover(arr,i),
+  const loc = blockLoc(arr);
+  card.appendChild(h("div",{class:"bh"}, loc ? blockGrip(card, b, loc, i) : null, h("span",{class:"ty"}, (BLOCKS[b.t]||{name:b.t}).name), typeSel, mover(arr,i),
+    loc ? h("button",{class:"ib mvb", title:"Move to another section", "aria-label":"Move this block to another section",
+      onclick:e=>movePick(e.currentTarget, {title:"Move "+blkName(b).toLowerCase()+" to…", kind:"block", mi:loc.mi, si:loc.si, i, below:arr.length-1-i})}, "⇄") : null,
     h("button",{class:"ib", title:"Duplicate", onclick:()=>{ arr.splice(i+1,0,clone(b)); commit(true); }}, "⧉"), delBtn(arr,i,"block")));
   card.appendChild(h("div",{class:"bb"}, blockBody(b)));
+  if(loc) blockDropTarget(card, loc, i);
   return card;
 }
 function convertText(b, to){
@@ -3648,6 +3686,179 @@ document.addEventListener("keydown", e=>{
   else if(mod && e.key.toLowerCase()==="i" && /TEXTAREA|INPUT/.test((document.activeElement||{}).tagName||"")){ e.preventDefault(); wrapSel("*"); }
   else if(mod && e.key.toLowerCase()==="s"){ e.preventDefault(); $("bDraft").click(); }
 });
+/* ==========================================================================
+   MOVING CONTENT BETWEEN SECTIONS
+   Blocks and Check yourself questions move two ways:
+   - Move to… (⇄) opens a picker of every section, grouped by module.
+   - Drag the grip (⠿). Drop on a section in the outline to put it at the end
+     of that section. Drop on a block in this section to put it before or after.
+   Each section has one check. Moving a check into a section that has one swaps
+   the two, so no question is ever lost. Every move is one Undo step.
+   ========================================================================== */
+let MDRAG = null;                       // {kind:"block"|"check", mi, si, i}
+function blkName(b){ return (BLOCKS[b.t]||{name:b.t}).name; }
+function hasCheck(s){ const c=s&&s.check; return !!(c && !c._off && (String(c.q||"").trim() || c.dec || (c.o||[]).some(x=>String(x||"").trim()))); }
+function blockLoc(arr){
+  if(SEL.k!=="sect") return null;
+  const m=P.modules[SEL.mi], s=m&&m.sections[SEL.si];
+  return s && s.body===arr ? {mi:SEL.mi, si:SEL.si} : null;
+}
+function sectItem(el, mi, si){
+  el.setAttribute("data-mi", mi); el.setAttribute("data-si", si);
+  if(MDRAG && MDRAG.mi===mi && MDRAG.si===si) el.classList.add("src");
+  return el;
+}
+function goSect(mi, si){ select({k:"sect", mi, si}); }
+
+function moveBlocks(fm, fs, i, n, tm, ts, at){
+  // at: "top", "end", or an index in the destination section's body
+  flushPending();
+  const src=P.modules[fm].sections[fs].body, dS=P.modules[tm].sections[ts], dst=dS.body, same = src===dst;
+  if(same && typeof at==="number" && (at===i || at===i+n)) return;          // dropped where it already is
+  const moved = src.splice(i, n);
+  if(!same && dst.length===1 && isEmptyBlock(dst[0])) dst.splice(0,1);      // a new section's blank paragraph
+  let pos = at==="top" ? 0 : (typeof at==="number" ? at : dst.length);
+  if(same && typeof at==="number" && at>i) pos -= n;
+  dst.splice(Math.max(0, Math.min(pos, dst.length)), 0, ...moved);
+  commit(true);
+  if(same) return;
+  const what = n===1 ? blkName(moved[0]) : n+" blocks";
+  toast(what+" moved to the "+(at==="top"?"top":"end")+" of "+dS.id+".", {label:"Go there", fn:()=>goSect(tm,ts)});
+}
+function moveCheck(fm, fs, tm, ts){
+  if(fm===tm && fs===ts) return;
+  flushPending();
+  const a=P.modules[fm].sections[fs], b=P.modules[tm].sections[ts], swap=hasCheck(b), c=a.check;
+  a.check = swap ? b.check : {q:"", o:["","","",""], a:0, why:"", _off:true};
+  b.check = c;
+  commit(true);
+  toast(swap ? "Checks swapped. "+b.id+" has this check now. "+a.id+" has the one from "+b.id+"."
+             : "Check moved to "+b.id+". "+a.id+" has no check now.", {label:"Go there", fn:()=>goSect(tm,ts)});
+}
+
+/* ---- the Move to… picker ---- */
+function closeMovePick(){
+  const p=$("movePick"); if(p) p.remove();
+  clearTimeout(movePick.t); $("editor").removeEventListener("scroll", closeMovePick);
+  document.removeEventListener("mousedown", movePickOut, true);
+  document.removeEventListener("keydown", movePickKey, true);
+}
+function movePickOut(e){ const p=$("movePick"); if(p && !p.contains(e.target)) closeMovePick(); }
+function movePickKey(e){ if(e.key==="Escape"){ e.preventDefault(); e.stopPropagation(); closeMovePick(); if(movePick.from && movePick.from.isConnected) movePick.from.focus(); } }
+function movePick(anchor, o){
+  // o: {title, kind:"block"|"check", mi, si, i, below}
+  closeMovePick(); flushPending(); movePick.from=anchor;
+  const st={all:false, top:false, q:""};
+  const list=h("div",{class:"mpl"});
+  const go=(mi,si)=>{ closeMovePick();
+    if(o.kind==="check") moveCheck(o.mi, o.si, mi, si);
+    else moveBlocks(o.mi, o.si, o.i, st.all ? o.below+1 : 1, mi, si, st.top ? "top" : "end"); };
+  const draw=()=>{
+    list.innerHTML=""; const q=st.q.trim().toLowerCase(); let any=false;
+    P.modules.forEach((m,mi)=>{
+      const items=m.sections.map((s,si)=>({s,si})).filter(x=>!q || (x.s.id+" "+x.s.title+" "+m.label+" "+m.title).toLowerCase().indexOf(q)>=0);
+      if(!items.length) return; any=true;
+      list.appendChild(h("div",{class:"mpm"}, m.label+": "+(m.title||"")));
+      items.forEach(({s,si})=>{
+        const here = mi===o.mi && si===o.si, sw = o.kind==="check" && !here && hasCheck(s);
+        const n = s.body.filter(b=>!isEmptyBlock(b)).length;
+        const note = here ? "this section" : (o.kind==="check" ? (sw ? "has a check · swaps" : "no check") : n+(n===1?" block":" blocks"));
+        list.appendChild(h("button",{class:"mpi", disabled:here?"disabled":null, onclick:()=>go(mi,si)},
+          h("span",{class:"id"}, s.id), h("span",{class:"nm"}, s.title||"(untitled)"), h("span",{class:"ct"+(sw?" sw":"")}, note)));
+      });
+    });
+    if(!any) list.appendChild(h("div",{class:"mpn"}, "No section matches."));
+  };
+  const opts = o.kind==="check"
+    ? h("div",{class:"mpo help"}, "Each section has one check. If the section you pick already has one, the two checks swap places.")
+    : [ o.below>0 ? h("div",{class:"mpo"},
+          h("label",null, h("input",{type:"radio", name:"mpn", checked:true, onchange:()=>{ st.all=false; }}), "This block only"),
+          h("label",null, h("input",{type:"radio", name:"mpn", onchange:()=>{ st.all=true; }}), "This block and the "+o.below+" below it")) : null,
+        h("div",{class:"mpo"},
+          h("label",null, h("input",{type:"radio", name:"mpw", checked:true, onchange:()=>{ st.top=false; }}), "Put it at the end of the section"),
+          h("label",null, h("input",{type:"radio", name:"mpw", onchange:()=>{ st.top=true; }}), "Put it at the top of the section")) ];
+  const find = h("input",{class:"mpf", type:"search", placeholder:"Find a section by ID or title", "aria-label":"Find a section", oninput:e=>{ st.q=e.target.value; draw(); },
+    onkeydown:e=>{ if(e.key==="Enter"){ const b=list.querySelector(".mpi:not([disabled])"); if(b){ e.preventDefault(); b.click(); } } }});
+  const box=h("div",{class:"movepick", id:"movePick", role:"dialog", "aria-label":o.title},
+    h("div",{class:"mph"}, h("b",null,o.title), h("button",{class:"ib", title:"Close", "aria-label":"Close", onclick:closeMovePick},"✕")),
+    opts, find, list);
+  document.body.appendChild(box); draw();
+  const W=Math.min(380, innerWidth-24), r=anchor.getBoundingClientRect();
+  box.style.width=W+"px"; box.style.maxHeight=Math.min(500, innerHeight-24)+"px";
+  const left=Math.min(innerWidth-W-12, Math.max(12, r.right-W));
+  let top=r.bottom+6; const bh=box.offsetHeight;
+  if(top+bh>innerHeight-12) top=Math.max(12, Math.min(r.top-6-bh, innerHeight-12-bh));
+  box.style.left=left+"px"; box.style.top=top+"px";
+  find.focus();
+  document.addEventListener("mousedown", movePickOut, true);
+  document.addEventListener("keydown", movePickKey, true);
+  // close if the editor scrolls the button away; wait out any scroll still settling from the click
+  movePick.t = setTimeout(()=>{ if($("movePick")) $("editor").addEventListener("scroll", closeMovePick, {once:true}); }, 250);
+}
+
+/* ---- drag and drop ---- */
+function startMDrag(e, d, el, label){
+  flushPending(); closeMovePick();
+  MDRAG=d; el.classList.add("dragging"); document.body.classList.add("mdrag");
+  toast(d.kind==="check" ? "Drop on a section in the outline to move this check there." : "Drop on a section in the outline, or above or below a block here.");
+  const src=document.querySelector('#outline .oitem[data-mi="'+d.mi+'"][data-si="'+d.si+'"]'); if(src) src.classList.add("src");
+  try{ e.dataTransfer.setData("text/plain", label); e.dataTransfer.effectAllowed="move"; e.dataTransfer.setDragImage(el, 24, 18); }catch(x){}
+}
+function endMDrag(){
+  MDRAG=null; document.body.classList.remove("mdrag");
+  document.querySelectorAll(".dragging,.dropon,.over-top,.over-bot,.oitem.src").forEach(x=>x.classList.remove("dragging","dropon","over-top","over-bot","src"));
+}
+function blockGrip(card, b, loc, i){
+  const g=h("span",{class:"grip", draggable:"true", title:"Drag to move. Drop on a section in the outline, or above or below another block here."}, "⠿");
+  g.addEventListener("dragstart", e=>startMDrag(e, {kind:"block", mi:loc.mi, si:loc.si, i}, card, blkName(b)));
+  g.addEventListener("dragend", endMDrag);
+  return g;
+}
+function blockDropTarget(card, loc, i){
+  const half=e=>{ const r=card.getBoundingClientRect(); return e.clientY < r.top+r.height/2 ? "top" : "bot"; };
+  card.addEventListener("dragover", e=>{
+    if(!MDRAG || MDRAG.kind!=="block" || MDRAG.mi!==loc.mi || MDRAG.si!==loc.si) return;
+    e.preventDefault(); e.dataTransfer.dropEffect="move";
+    const hf=half(e); card.classList.toggle("over-top", hf==="top"); card.classList.toggle("over-bot", hf==="bot");
+  });
+  card.addEventListener("dragleave", e=>{ if(!card.contains(e.relatedTarget)) card.classList.remove("over-top","over-bot"); });
+  card.addEventListener("drop", e=>{
+    if(!MDRAG || MDRAG.kind!=="block" || MDRAG.mi!==loc.mi || MDRAG.si!==loc.si) return;
+    e.preventDefault(); e.stopPropagation();
+    const d=MDRAG, at = half(e)==="top" ? i : i+1; endMDrag();
+    moveBlocks(d.mi, d.si, d.i, 1, loc.mi, loc.si, at);
+  });
+}
+function checkMoveTools(panelEl, s, mi, si){
+  if(!hasCheck(s)) return panelEl;
+  const ph=panelEl.querySelector(".ph"); if(!ph) return panelEl;
+  const g=h("span",{class:"grip", draggable:"true", title:"Drag to move this check. Drop on a section in the outline."}, "⠿");
+  g.addEventListener("dragstart", e=>startMDrag(e, {kind:"check", mi, si}, panelEl, "Check yourself"));
+  g.addEventListener("dragend", endMDrag);
+  ph.insertBefore(g, ph.firstChild);
+  const b=ph.querySelector("b");
+  b.after(h("button",{class:"btn sm mvc", title:"Move this check to another section", onclick:e=>movePick(e.currentTarget, {title:"Move this check to…", kind:"check", mi, si})}, "⇄ Move to…"));
+  return panelEl;
+}
+(function outlineDrops(){
+  const o=$("outline");
+  const tgt=e=>e.target.closest && e.target.closest(".oitem[data-si]");
+  const ok=(it)=>{ if(!it||!MDRAG) return false; return !(+it.getAttribute("data-mi")===MDRAG.mi && +it.getAttribute("data-si")===MDRAG.si); };
+  o.addEventListener("dragover", e=>{
+    if(!MDRAG) return; const it=tgt(e);
+    o.querySelectorAll(".dropon").forEach(x=>{ if(x!==it) x.classList.remove("dropon"); });
+    if(!ok(it)) return;
+    e.preventDefault(); e.dataTransfer.dropEffect="move"; it.classList.add("dropon");
+  });
+  o.addEventListener("dragleave", e=>{ const it=tgt(e); if(it && !it.contains(e.relatedTarget)) it.classList.remove("dropon"); });
+  o.addEventListener("drop", e=>{
+    const it=tgt(e); if(!ok(it)) return;
+    e.preventDefault(); e.stopPropagation();
+    const d=MDRAG, mi=+it.getAttribute("data-mi"), si=+it.getAttribute("data-si"); endMDrag();
+    if(d.kind==="check") moveCheck(d.mi, d.si, mi, si); else moveBlocks(d.mi, d.si, d.i, 1, mi, si, "end");
+  });
+})();
+
 let dragN=0;
 window.addEventListener("dragenter", e=>{ if(e.dataTransfer && [...e.dataTransfer.types].indexOf("Files")>=0){ dragN++; $("drop").classList.add("show"); } });
 window.addEventListener("dragleave", ()=>{ dragN=Math.max(0,dragN-1); if(!dragN) $("drop").classList.remove("show"); });
