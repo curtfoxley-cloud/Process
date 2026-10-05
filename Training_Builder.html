@@ -355,12 +355,12 @@ ul.pl li::before{content:"";position:absolute;left:3px;top:10px;width:5px;height
 .callout.bg{background:transparent;border:1px dashed #AEB9BF;font-size:14.5px;color:var(--ink-2)}
 .callout.bg .lab{color:var(--slate)}
 .grader{margin-top:8px;background:var(--amber-soft);border:1px solid #E4D3AE;border-radius:5px;padding:10px 13px;font-size:13.5px}
-.grader b{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);margin-bottom:4px}
+.grader>b{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);margin-bottom:4px}
 .callout p:last-child{margin-bottom:0}
 
 .stmt{background:var(--ink);color:#fff;border-radius:6px;padding:20px 22px;margin:0 0 20px}
-.stmt b{display:block;font-family:var(--serif);font-size:19px;line-height:1.35;font-weight:700}
-.stmt span{display:block;margin-top:9px;font-size:13.5px;color:#B4C0C7}
+.stmt>b{display:block;font-family:var(--serif);font-size:19px;line-height:1.35;font-weight:700}
+.stmt>span{display:block;margin-top:9px;font-size:13.5px;color:#B4C0C7}
 
 .cards{display:grid;gap:12px;margin:0 0 20px}
 .cards.c2{grid-template-columns:1fr 1fr}
@@ -374,7 +374,7 @@ ul.pl li::before{content:"";position:absolute;left:3px;top:10px;width:5px;height
 .step .n{flex:0 0 26px;height:26px;border-radius:50%;background:var(--rust);color:#fff;
   font-family:var(--mono);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
 .step.tl .n{background:var(--teal)}
-.step .tx b{display:block;font-size:14px;margin-bottom:2px}
+.step .tx>b{display:block;font-size:14px;margin-bottom:2px}
 .step .tx span{font-size:13.5px;color:var(--ink-2)}
 
 .tw{overflow-x:auto;margin:0 0 20px;border:1px solid var(--rule);border-radius:6px;background:var(--paper)}
@@ -398,7 +398,7 @@ td.k{font-family:var(--mono);font-size:12px;color:var(--ink-2);white-space:nowra
 .fb.show{display:block}
 .fb.ok{background:var(--teal-soft);border:1px solid #CBDDDA}
 .fb.no{background:var(--alert-soft);border:1px solid #E8CFCF}
-.fb b{display:block;margin-bottom:4px;font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase}
+.fb>b{display:block;margin-bottom:4px;font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase}
 .fb.ok b{color:var(--teal)} .fb.no b{color:var(--alert)}
 
 /* ---------- exercises ---------- */
@@ -494,7 +494,7 @@ textarea:focus{outline:2px solid var(--rust);outline-offset:0;border-color:var(-
 .trow:first-child{border-top:0}
 .trow .tn{flex:1;min-width:0;color:var(--ink-2)}
 .trow .tn b{color:var(--ink)}
-.trow .tn i{display:block;font-style:normal;font-size:12.5px;color:var(--slate);margin-top:2px}
+.trow .tn>i{display:block;font-style:normal;font-size:12.5px;color:var(--slate);margin-top:2px}
 .trow .tc{flex:0 0 auto;display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;max-width:45%}
 .chip{font-family:var(--mono);font-size:11px;font-weight:700;border-radius:3px;padding:1px 6px;background:var(--surface-2);color:var(--ink-2);border:1px solid var(--rule)}
 .chip.none{font-weight:400;color:var(--mute)}
@@ -560,7 +560,7 @@ body{padding-bottom:var(--mkb,0px)}
 .stmt .gl:hover,.hero .gl:hover{background:rgba(255,255,255,.12)}
 .gl:focus-visible{outline:2px solid var(--rust);outline-offset:1px;border-radius:2px}
 #glTip{position:fixed;z-index:95;max-width:360px;background:var(--ink);color:#fff;border-radius:6px;padding:11px 14px;font-size:13.5px;line-height:1.5;box-shadow:0 8px 28px rgba(0,0,0,.28);display:none}
-#glTip b{display:block;font-family:var(--serif);font-size:15px;margin-bottom:2px}
+#glTip>b{display:block;font-family:var(--serif);font-size:15px;margin-bottom:2px}
 #glTip .al{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;color:#93A2AB;margin-bottom:5px}
 #glTip strong{color:#fff}
 #glTip .glgo{margin-top:8px;background:none;border:0;padding:0;color:var(--rust-soft);font-size:12.5px;text-decoration:underline;cursor:pointer}
@@ -703,7 +703,7 @@ body.printmode .chrome, body.printmode .shell, body.printmode #mkBot, body.print
 .pright{color:var(--teal);font-weight:600}
 .pright .pbox{border-color:var(--teal);background:var(--teal-soft);-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .pkey{background:var(--teal-soft);border-radius:4px;padding:8px 11px;margin:8px 0 0;font-size:13.5px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-.pkey b{display:block;color:var(--teal);margin-bottom:2px}
+.pkey>b{display:block;color:var(--teal);margin-bottom:2px}
 .pkey ol{margin:4px 0 0;padding-left:22px}
 .pwhy{background:var(--surface)}
 .pcodes{display:flex;flex-wrap:wrap;gap:6px 14px;margin:6px 0 0}
