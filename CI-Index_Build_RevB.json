@@ -1,0 +1,1984 @@
+{
+ "builder": "ci-index-builder",
+ "rev": "A",
+ "saved": "2026-10-06",
+ "config": {
+  "schema": 1,
+  "build": {
+   "name": "CI Index",
+   "rev": "B",
+   "changes": [
+    {
+     "rev": "A",
+     "date": "2026-10-06",
+     "by": "CM",
+     "text": "First release. Implements CI Index Template Rev C draft."
+    },
+    {
+     "rev": "B",
+     "date": "2026-10-06",
+     "by": "CM",
+     "text": "Configuration moved into one build block. Editable in the CI Index Builder."
+    }
+   ]
+  },
+  "text": {
+   "title": "CI Index",
+   "top": "CI Index",
+   "sub": "Configuration Management · CI Index Template Rev C draft · Tool rev B draft",
+   "h1": "Configuration Item Index",
+   "lede": "One record per Configuration Item. The index flags what applies to each CI and points to the record that owns each answer. It does not copy content from those records. The tool checks every row as you work and shows what needs review.",
+   "foot": [
+    "**Reference.** CI Identification Process Rev I draft, the records and outputs section. CI Index Template Rev C draft.",
+    "This tool is a working aid. The index of record is maintained current in the CSA system for the program life.",
+    "Nothing is stored in the browser. Save the index to a file before you close the tab. The saved file keeps the edit log. An Excel export does not."
+   ],
+   "stem": "CI-Index"
+  },
+  "theme": {
+   "accent": "#A8481F",
+   "ink": "#1E262E"
+  },
+  "features": {
+   "tabs": {
+    "overview": true,
+    "table": true,
+    "variants": true,
+    "checks": true,
+    "bound": true,
+    "log": true,
+    "ref": true
+   },
+   "actions": {
+    "dup": true,
+    "split": true,
+    "cons": true,
+    "dedes": true,
+    "del": true
+   },
+   "sheets": {
+    "about": true,
+    "checks": true,
+    "queue": true,
+    "bound": true,
+    "log": true
+   },
+   "examples": true
+  },
+  "cols": [
+   {
+    "k": "level",
+    "h": "Level",
+    "kind": "level",
+    "w": 6,
+    "help": "Derived from Parent CI ID. 0 is the top-level CI.",
+    "group": "",
+    "wide": false,
+    "core": true,
+    "req": "",
+    "reqGFE": false
+   },
+   {
+    "k": "id",
+    "h": "CI ID",
+    "kind": "text",
+    "w": 11,
+    "help": "Program-unique identifier for the CI. It is not the PIN. Renaming a CI ID updates every parent, variant, and supersession reference to it.",
+    "group": "Identification",
+    "wide": false,
+    "core": true,
+    "req": "",
+    "reqGFE": false
+   },
+   {
+    "k": "parent",
+    "h": "Parent CI ID",
+    "kind": "parent",
+    "w": 12,
+    "help": "Every CI except the top-level CI names a parent that exists in the index. The tool derives Level and the name indentation from the parent, so the three forms of hierarchy always agree.",
+    "group": "Structure",
+    "wide": false,
+    "core": true,
+    "req": "",
+    "reqGFE": false
+   },
+   {
+    "k": "name",
+    "h": "CI Name / Nomenclature",
+    "kind": "text",
+    "w": 36,
+    "help": "Nomenclature for the CI. Enter it without indentation. The export indents it two spaces per level.",
+    "group": "Identification",
+    "wide": true,
+    "core": true,
+    "req": "",
+    "reqGFE": false
+   },
+   {
+    "k": "type",
+    "h": "CI Type",
+    "kind": "enum",
+    "w": 9,
+    "help": "HWCI, CSCI, or Firmware. Computer software is designated as CIs (CSCIs).",
+    "group": "Identification",
+    "wide": false,
+    "core": false,
+    "req": "",
+    "reqGFE": false,
+    "list": "type"
+   },
+   {
+    "k": "tier",
+    "h": "Control Tier",
+    "kind": "enum",
+    "w": 24,
+    "help": "Who baselines and controls the CI’s specification. Acquirer-spec controlled: the CI has its own specification, which the Acquirer baselines and controls. Company-spec controlled: the CI sits below an Acquirer-spec controlled CI. The company baselines and controls its specification, where it has one. A change with Class I effect reaches the Acquirer through the parent CI’s baselines. GFE: government furnished and installed in the product structure. The Government holds its definition.",
+    "group": "Structure",
+    "wide": false,
+    "core": false,
+    "req": "",
+    "reqGFE": false,
+    "list": "tier"
+   },
+   {
+    "k": "oda",
+    "h": "Owning Design Activity",
+    "kind": "text",
+    "w": 26,
+    "help": "The design activity that owns the CI’s design.",
+    "group": "Identification",
+    "wide": false,
+    "core": false,
+    "req": "",
+    "reqGFE": false
+   },
+   {
+    "k": "cage",
+    "h": "CAGE",
+    "kind": "text",
+    "w": 8,
+    "help": "CAGE code of the design activity. CAGE and PIN together form the full identification.",
+    "group": "Identification",
+    "wide": false,
+    "core": false,
+    "req": "",
+    "reqGFE": false
+   },
+   {
+    "k": "pin",
+    "h": "PIN",
+    "kind": "text",
+    "w": 16,
+    "help": "Part or identifying number per design activity convention. PIN is not unique across rows. One PIN may map to more than one CI. One CI may carry several PIN variants. Keep the base or representative PIN here.",
+    "group": "Identification",
+    "wide": false,
+    "core": false,
+    "req": "",
+    "reqGFE": false
+   },
+   {
+    "k": "nhpin",
+    "h": "NH PIN",
+    "kind": "text",
+    "w": 16,
+    "help": "PIN of the next higher assembly the CI installs into. Where the CI trees directly to the end item, enter the end item’s PIN. Enter N/A only where the CI has no higher assembly.",
+    "group": "Structure",
+    "wide": false,
+    "core": false,
+    "req": "",
+    "reqGFE": false,
+    "pins": true
+   },
+   {
+    "k": "qty",
+    "h": "Qty per NH",
+    "kind": "text",
+    "w": 8,
+    "help": "Number of instances of this PIN in the next higher assembly, from that assembly’s parts list. Enter N/A where NH PIN is N/A. Above 1, run Decision Path B of the same-CI decision aid.",
+    "group": "Structure",
+    "wide": false,
+    "core": false,
+    "req": "",
+    "reqGFE": false
+   },
+   {
+    "k": "spec",
+    "h": "Specification No.",
+    "kind": "text",
+    "w": 18,
+    "help": "The CI’s specification. A vendor item control drawing goes here, not in SCD.",
+    "group": "Documentation pointers",
+    "wide": false,
+    "core": false,
+    "req": "",
+    "reqGFE": false
+   },
+   {
+    "k": "scd",
+    "h": "SCD (optional)",
+    "kind": "text",
+    "w": 15,
+    "help": "The source control drawing, for an item whose internals the supplier designs while the company controls form, fit, function, interface, and qualification.",
+    "group": "Documentation pointers",
+    "wide": false,
+    "core": false,
+    "req": "",
+    "reqGFE": false
+   },
+   {
+    "k": "icd",
+    "h": "ICD (optional)",
+    "kind": "text",
+    "w": 28,
+    "help": "The interface control documents that define this CI’s interfaces, including interface requirements specifications and interface design descriptions. Separate entries with semicolons. They must match the interface register.",
+    "group": "Documentation pointers",
+    "wide": true,
+    "core": false,
+    "req": "",
+    "reqGFE": false
+   },
+   {
+    "k": "ssow",
+    "h": "SSOW (optional)",
+    "kind": "text",
+    "w": 12,
+    "help": "The supplier statement of work that flows CM requirements to the supplier. The classification log holds the work type and the designation authorship case.",
+    "group": "Documentation pointers",
+    "wide": false,
+    "core": false,
+    "req": "",
+    "reqGFE": false
+   },
+   {
+    "k": "mbse",
+    "h": "MBSE Element ID",
+    "kind": "text",
+    "w": 14,
+    "help": "The model element the CI resolves to, where MBSE is used.",
+    "group": "Model alignment",
+    "wide": false,
+    "core": false,
+    "req": "",
+    "reqGFE": false
+   },
+   {
+    "k": "ata",
+    "h": "ATA / SNS Ref",
+    "kind": "text",
+    "w": 10,
+    "help": "The ATA chapter or S1000D SNS reference.",
+    "group": "Model alignment",
+    "wide": false,
+    "core": false,
+    "req": "",
+    "reqGFE": false
+   },
+   {
+    "k": "mae",
+    "h": "Model Alignment Exception",
+    "kind": "long",
+    "w": 36,
+    "help": "Leave blank where the CI resolves to a model element. Where the CI structure departs from the model, record the reason Systems Engineering accepted.",
+    "group": "Model alignment",
+    "wide": true,
+    "core": false,
+    "req": "",
+    "reqGFE": false
+   },
+   {
+    "k": "critB",
+    "h": "Criterion (b) Met (Y/N)",
+    "kind": "yn",
+    "w": 11,
+    "help": "Criterion (b): failure might result in serious injury, loss of life, or loss of primary system capability. Record the answer from the CI selection criteria checklist. Before recording N, check the SCI sources and the unit record sources. Neither check catches an item whose loss is loss of primary system capability with no injury pathway. Find those items in the program’s own decomposition.",
+    "group": "Safety",
+    "wide": false,
+    "core": false,
+    "req": "",
+    "reqGFE": false
+   },
+   {
+    "k": "sci",
+    "h": "SCI (Y/N)",
+    "kind": "yn",
+    "w": 8,
+    "help": "Safety-Critical Item: a hardware or software item that has been determined through analysis to potentially contribute to a hazard with Catastrophic or Critical mishap potential, or that may be implemented to mitigate a hazard with Catastrophic or Critical mishap potential. Before recording N, examine the FMEA or FMECA, the SMS hazard log, and the system safety hazard analysis reports. A FMECA criticality code names a failure mode, not an item.",
+    "group": "Safety",
+    "wide": false,
+    "core": false,
+    "req": "",
+    "reqGFE": false
+   },
+   {
+    "k": "sciRef",
+    "h": "SCI Source Ref",
+    "kind": "text",
+    "w": 22,
+    "help": "The FMEA, FMECA, SMS hazard log entry, or system safety hazard analysis report that names the item. Blank where SCI = N.",
+    "group": "Safety",
+    "wide": false,
+    "core": false,
+    "req": "",
+    "reqGFE": false
+   },
+   {
+    "k": "selRef",
+    "h": "Selection Assessment Ref",
+    "kind": "text",
+    "w": 14,
+    "help": "The completed CI selection criteria checklist. The rationale lives on that checklist, not in this index.",
+    "group": "Selection, concurrence, and status",
+    "wide": false,
+    "core": false,
+    "req": "",
+    "reqGFE": false
+   },
+   {
+    "k": "concur",
+    "h": "Acquirer Concurrence Ref/Date",
+    "kind": "text",
+    "w": 24,
+    "help": "The latest submittal and concurrence that cover this CI. Update it on resubmittal. GFE rows read N/A.",
+    "group": "Selection, concurrence, and status",
+    "wide": false,
+    "core": false,
+    "req": "",
+    "reqGFE": false
+   },
+   {
+    "k": "fbl",
+    "h": "FBL Status/Date",
+    "kind": "text",
+    "w": 22,
+    "help": "The FBL is a system-level baseline. Record it on the top-level CI only. Enter N/A (system-level baseline) on every other row.",
+    "group": "Baselines",
+    "wide": false,
+    "core": false,
+    "req": "",
+    "reqGFE": false,
+    "sug": [
+     "N/A (system-level baseline)",
+     "Planned CDR",
+     "Planned PCA",
+     "Planned first production unit delivery",
+     "Internal, planned CDR",
+     "Established YYYY-MM-DD",
+     "Internal, YYYY-MM-DD"
+    ]
+   },
+   {
+    "k": "abl",
+    "h": "ABL Status/Date",
+    "kind": "text",
+    "w": 20,
+    "help": "Status or establishment date. For example: Established 2026-03-14, Planned CDR, or Internal, 2026-04-10.",
+    "group": "Baselines",
+    "wide": false,
+    "core": false,
+    "req": "",
+    "reqGFE": false,
+    "sug": [
+     "N/A (system-level baseline)",
+     "Planned CDR",
+     "Planned PCA",
+     "Planned first production unit delivery",
+     "Internal, planned CDR",
+     "Established YYYY-MM-DD",
+     "Internal, YYYY-MM-DD"
+    ]
+   },
+   {
+    "k": "ipbl",
+    "h": "Initial PBL Status/Date",
+    "kind": "text",
+    "w": 20,
+    "help": "The initial product baseline is established at completion of CDR.",
+    "group": "Baselines",
+    "wide": false,
+    "core": false,
+    "req": "",
+    "reqGFE": false,
+    "sug": [
+     "N/A (system-level baseline)",
+     "Planned CDR",
+     "Planned PCA",
+     "Planned first production unit delivery",
+     "Internal, planned CDR",
+     "Established YYYY-MM-DD",
+     "Internal, YYYY-MM-DD"
+    ]
+   },
+   {
+    "k": "fpbl",
+    "h": "Formalized PBL Status/Date",
+    "kind": "text",
+    "w": 22,
+    "help": "Takes its event from the CI’s Audit Designation Assessment Record. For a CI designated for PCA, the event is PCA completion. Otherwise, it is no later than first production unit delivery.",
+    "group": "Baselines",
+    "wide": false,
+    "core": false,
+    "req": "",
+    "reqGFE": false,
+    "sug": [
+     "N/A (system-level baseline)",
+     "Planned CDR",
+     "Planned PCA",
+     "Planned first production unit delivery",
+     "Internal, planned CDR",
+     "Established YYYY-MM-DD",
+     "Internal, YYYY-MM-DD"
+    ]
+   },
+   {
+    "k": "ser",
+    "h": "Serialization Recording Required (Y/N)",
+    "kind": "yn",
+    "w": 13,
+    "help": "Whether the product definition data requires serial number recording. Software CIs read N.",
+    "group": "Product unit records",
+    "wide": false,
+    "core": false,
+    "req": "",
+    "reqGFE": false
+   },
+   {
+    "k": "lot",
+    "h": "Lot/Batch Recording Required (Y/N)",
+    "kind": "yn",
+    "w": 13,
+    "help": "Whether the product definition data requires lot or batch recording. Both flags can be Y.",
+    "group": "Product unit records",
+    "wide": false,
+    "core": false,
+    "req": "",
+    "reqGFE": false
+   },
+   {
+    "k": "src",
+    "h": "Product Unit Record Requirement Source",
+    "kind": "src",
+    "w": 40,
+    "help": "Every source that drives serial or lot/batch recording. Sources stack. Name the designation, not only the mechanism. A critical safety item gets its serial number through IUID, so pick Critical safety item, and add IUID only where IUID also applies on its own. Leave blank where no unit record is required.",
+    "group": "Product unit records",
+    "wide": true,
+    "core": false,
+    "req": "",
+    "reqGFE": false
+   },
+   {
+    "k": "life",
+    "h": "Life Clock",
+    "kind": "enum",
+    "w": 13,
+    "help": "The category of life limit only. The limit value stays in the product definition data. The recording flags come from the sources, not from the clock.",
+    "group": "Product unit records",
+    "wide": false,
+    "core": false,
+    "req": "",
+    "reqGFE": false,
+    "list": "life"
+   },
+   {
+    "k": "sh",
+    "h": "Special Handling (Y/N)",
+    "kind": "yn",
+    "w": 10,
+    "help": "Y where the product definition data imposes controlled handling, packaging, or storage to keep the item conforming. Special handling is not a criticality designation and not a serialization driver.",
+    "group": "Product unit records",
+    "wide": false,
+    "core": false,
+    "req": "",
+    "reqGFE": false
+   },
+   {
+    "k": "iuid",
+    "h": "IUID Required (Y/N)",
+    "kind": "yn",
+    "w": 10,
+    "help": "Y where item unique identification applies to the CI. The identifier registers carry the unique item identifiers, not this index.",
+    "group": "Product unit records",
+    "wide": false,
+    "core": false,
+    "req": "",
+    "reqGFE": false
+   },
+   {
+    "k": "notdec",
+    "h": "Not Decomposed (supplier-designed unit)",
+    "kind": "yn",
+    "w": 13,
+    "help": "Y where the CI is a supplier-designed item procured as a unit, such as a vendor item or a supplier-designed assembly. The company does not decompose it into further CIs.",
+    "group": "Structure",
+    "wide": false,
+    "core": false,
+    "req": "",
+    "reqGFE": false
+   },
+   {
+    "k": "status",
+    "h": "Status",
+    "kind": "enum",
+    "w": 14,
+    "help": "A CI reads Proposed until the Acquirer concurs. Rows are not deleted once concurred. De-designate the CI, or supersede it by a split or a consolidation.",
+    "group": "Selection, concurrence, and status",
+    "wide": false,
+    "core": true,
+    "req": "",
+    "reqGFE": false,
+    "list": "status"
+   },
+   {
+    "k": "sup",
+    "h": "Supersedes / Superseded By",
+    "kind": "text",
+    "w": 18,
+    "help": "For a split or a consolidation. The old row names the new CI IDs. Each new row names the old CI ID. Separate IDs with semicolons.",
+    "group": "Selection, concurrence, and status",
+    "wide": false,
+    "core": false,
+    "req": "",
+    "reqGFE": false
+   },
+   {
+    "k": "notes",
+    "h": "Notes",
+    "kind": "long",
+    "w": 48,
+    "help": "Short notes. Point to the owning record rather than copying its content.",
+    "group": "Notes",
+    "wide": true,
+    "core": false,
+    "req": "",
+    "reqGFE": false
+   }
+  ],
+  "groups": [
+   "Identification",
+   "Structure",
+   "Safety",
+   "Product unit records",
+   "Selection, concurrence, and status",
+   "Baselines",
+   "Documentation pointers",
+   "Model alignment",
+   "Notes"
+  ],
+  "vcols": [
+   {
+    "k": "ciId",
+    "h": "CI ID",
+    "kind": "text",
+    "w": 11,
+    "core": true,
+    "help": ""
+   },
+   {
+    "k": "pin",
+    "h": "Variant PIN / Version Identifier",
+    "kind": "text",
+    "w": 20,
+    "core": true,
+    "help": ""
+   },
+   {
+    "k": "desc",
+    "h": "Variant Description",
+    "kind": "long",
+    "w": 34,
+    "core": false,
+    "help": ""
+   },
+   {
+    "k": "callout",
+    "h": "Interface Callout (spec/ICD ref)",
+    "kind": "text",
+    "w": 28,
+    "core": false,
+    "help": ""
+   },
+   {
+    "k": "ser",
+    "h": "Serialization Recording Required (Y/N)",
+    "kind": "yn",
+    "w": 13,
+    "core": true,
+    "help": ""
+   },
+   {
+    "k": "lot",
+    "h": "Lot/Batch Recording Required (Y/N)",
+    "kind": "yn",
+    "w": 13,
+    "core": true,
+    "help": ""
+   },
+   {
+    "k": "eff",
+    "h": "Effectivity",
+    "kind": "text",
+    "w": 16,
+    "core": false,
+    "help": ""
+   },
+   {
+    "k": "notes",
+    "h": "Notes",
+    "kind": "long",
+    "w": 44,
+    "core": false,
+    "help": ""
+   }
+  ],
+  "lists": {
+   "type": {
+    "name": "CI Type",
+    "core": true,
+    "items": [
+     {
+      "v": "HWCI",
+      "ab": "HW"
+     },
+     {
+      "v": "CSCI",
+      "ab": "CSCI",
+      "sw": true
+     },
+     {
+      "v": "Firmware",
+      "ab": "FW"
+     }
+    ]
+   },
+   "tier": {
+    "name": "Control Tier",
+    "core": true,
+    "items": [
+     {
+      "v": "Acquirer-spec controlled",
+      "ab": "ACQ",
+      "m": "acq"
+     },
+     {
+      "v": "Company-spec controlled",
+      "ab": "CO",
+      "m": "co"
+     },
+     {
+      "v": "GFE",
+      "ab": "GFE",
+      "m": "gfe"
+     }
+    ]
+   },
+   "status": {
+    "name": "Status",
+    "core": true,
+    "items": [
+     {
+      "v": "Active",
+      "m": "active"
+     },
+     {
+      "v": "Proposed",
+      "m": "proposed"
+     },
+     {
+      "v": "De-designated",
+      "m": "dedes",
+      "ret": true
+     },
+     {
+      "v": "Superseded (split)",
+      "m": "split",
+      "ret": true
+     },
+     {
+      "v": "Superseded (consolidated)",
+      "m": "cons",
+      "ret": true
+     }
+    ]
+   },
+   "life": {
+    "name": "Life Clock",
+    "core": true,
+    "items": [
+     {
+      "v": "Cycle/usage",
+      "m": "cycle"
+     },
+     {
+      "v": "Age/shelf-life",
+      "m": "age"
+     },
+     {
+      "v": "Both",
+      "m": "both"
+     },
+     {
+      "v": "None",
+      "m": "none"
+     }
+    ]
+   }
+  },
+  "sources": [
+   {
+    "name": "Cycle/usage-controlled life limit",
+    "d": "Serial",
+    "c1": false,
+    "role": "cycle"
+   },
+   {
+    "name": "ALI on a discrete part",
+    "d": "Serial",
+    "c1": false,
+    "role": "cycle"
+   },
+   {
+    "name": "Safe-life PSE",
+    "d": "Serial",
+    "c1": false,
+    "role": "cycle"
+   },
+   {
+    "name": "IUID",
+    "d": "Serial",
+    "c1": false,
+    "role": "iuid"
+   },
+   {
+    "name": "Physical parent of a serialized or lot-recorded item",
+    "d": "Serial",
+    "c1": false,
+    "role": ""
+   },
+   {
+    "name": "Premium selection material",
+    "d": "Both",
+    "c1": false,
+    "role": ""
+   },
+   {
+    "name": "Critical safety item",
+    "d": "Both",
+    "c1": true,
+    "role": "csi"
+   },
+   {
+    "name": "Fracture-critical traceable part",
+    "d": "Both",
+    "c1": true,
+    "role": ""
+   },
+   {
+    "name": "Fracture-critical part",
+    "d": "Lot/batch",
+    "c1": true,
+    "role": ""
+   },
+   {
+    "name": "Age/shelf-life-controlled life limit",
+    "d": "Lot/batch",
+    "c1": false,
+    "role": "age"
+   },
+   {
+    "name": "ALI expressed against a lot",
+    "d": "Lot/batch",
+    "c1": false,
+    "role": ""
+   },
+   {
+    "name": "Special handling",
+    "d": "Lot/batch",
+    "c1": false,
+    "role": "sh"
+   },
+   {
+    "name": "Process and batch conditions",
+    "d": "Lot/batch",
+    "c1": false,
+    "role": ""
+   },
+   {
+    "name": "Castings or alternative material design values",
+    "d": "Lot/batch",
+    "c1": false,
+    "role": ""
+   },
+   {
+    "name": "Counterfeit avoidance",
+    "d": "Lot/batch",
+    "c1": false,
+    "role": ""
+   },
+   {
+    "name": "Commercial grade dedication",
+    "d": "Lot/batch",
+    "c1": false,
+    "role": ""
+   },
+   {
+    "name": "Other (state)",
+    "d": "Either",
+    "c1": false,
+    "role": "other"
+   }
+  ],
+  "rules": {
+   "ST1": {
+    "on": true,
+    "sev": "flag",
+    "area": "Structure",
+    "what": "Every row carries a CI ID.",
+    "basis": "Column notes, CI ID",
+    "needs": [
+     "id"
+    ]
+   },
+   "ST2": {
+    "on": true,
+    "sev": "flag",
+    "area": "Structure",
+    "what": "Each CI ID is unique.",
+    "basis": "Column notes, CI ID",
+    "needs": [
+     "id"
+    ]
+   },
+   "ST3": {
+    "on": true,
+    "sev": "flag",
+    "area": "Structure",
+    "what": "The Parent CI ID exists in the CI ID column.",
+    "basis": "How to use, hierarchy",
+    "needs": [
+     "parent"
+    ]
+   },
+   "ST4": {
+    "on": true,
+    "sev": "flag",
+    "area": "Structure",
+    "what": "The parent chain does not loop back on itself.",
+    "basis": "How to use, hierarchy",
+    "needs": [
+     "parent"
+    ]
+   },
+   "ST5": {
+    "on": true,
+    "sev": "flag",
+    "area": "Structure",
+    "what": "Only one live CI has no parent. That CI is the top-level CI.",
+    "basis": "How to use, hierarchy",
+    "needs": [
+     "parent"
+    ]
+   },
+   "ST6": {
+    "on": true,
+    "sev": "review",
+    "area": "Structure",
+    "what": "A live CI does not sit under a retired parent.",
+    "basis": "Process, splits and consolidations",
+    "needs": [
+     "parent",
+     "status"
+    ]
+   },
+   "ST7": {
+    "on": true,
+    "sev": "flag",
+    "area": "Structure",
+    "what": "Control Tier is recorded.",
+    "basis": "Process, CI structure and hierarchy",
+    "needs": [
+     "tier"
+    ]
+   },
+   "ST8": {
+    "on": true,
+    "sev": "flag",
+    "area": "Structure",
+    "what": "A Company-spec controlled CI sits below an Acquirer-spec controlled CI.",
+    "basis": "Definitions, Company-spec controlled CI",
+    "needs": [
+     "tier"
+    ]
+   },
+   "ST9": {
+    "on": true,
+    "sev": "flag",
+    "area": "Structure",
+    "what": "A supplier-designed unit marked Not Decomposed has no child CIs.",
+    "basis": "Process, supplier-designed items are not decomposed",
+    "needs": [
+     "notdec"
+    ]
+   },
+   "CO1": {
+    "on": true,
+    "sev": "flag",
+    "area": "Concurrence",
+    "what": "Status is recorded.",
+    "basis": "How to use, Status",
+    "needs": [
+     "status"
+    ]
+   },
+   "CO2": {
+    "on": true,
+    "sev": "flag",
+    "area": "Concurrence",
+    "what": "A CI reads Active only after the Acquirer concurs.",
+    "basis": "How to use; Process, Acquirer review and concurrence",
+    "needs": [
+     "status",
+     "concur"
+    ]
+   },
+   "CO3": {
+    "on": true,
+    "sev": "review",
+    "area": "Concurrence",
+    "what": "A recorded concurrence moves Status from Proposed to Active.",
+    "basis": "How to use, Status",
+    "needs": [
+     "status",
+     "concur"
+    ]
+   },
+   "CO4": {
+    "on": true,
+    "sev": "review",
+    "area": "Concurrence",
+    "what": "GFE rows read N/A for Acquirer concurrence.",
+    "basis": "How to use, Status",
+    "needs": [
+     "tier",
+     "concur"
+    ]
+   },
+   "CO5": {
+    "on": true,
+    "sev": "review",
+    "area": "Concurrence",
+    "what": "A live CI points to its CI selection criteria checklist.",
+    "basis": "Column notes, Selection Assessment Ref",
+    "needs": [
+     "selRef"
+    ]
+   },
+   "SA1": {
+    "on": true,
+    "sev": "flag",
+    "area": "Safety",
+    "what": "Criterion (b) is answered on every live CI except GFE.",
+    "basis": "How to use, Criterion (b) Met",
+    "needs": [
+     "critB"
+    ]
+   },
+   "SA2": {
+    "on": true,
+    "sev": "flag",
+    "area": "Safety",
+    "what": "SCI = Y requires Criterion (b) Met = Y.",
+    "basis": "Highlight checks, safety",
+    "needs": [
+     "sci",
+     "critB"
+    ]
+   },
+   "SA3": {
+    "on": true,
+    "sev": "flag",
+    "area": "Safety",
+    "what": "A Table C-1 source requires Criterion (b) Met = Y.",
+    "basis": "Highlight checks, safety; Table C-1",
+    "needs": [
+     "src",
+     "critB"
+    ]
+   },
+   "SA4": {
+    "on": true,
+    "sev": "flag",
+    "area": "Safety",
+    "what": "A critical safety item with SCI = N goes to System Safety review.",
+    "basis": "Highlight checks, safety",
+    "needs": [
+     "src",
+     "sci"
+    ]
+   },
+   "SA5": {
+    "on": true,
+    "sev": "flag",
+    "area": "Safety",
+    "what": "SCI = Y names the record that names the item.",
+    "basis": "Column notes, SCI Source Ref",
+    "needs": [
+     "sci",
+     "sciRef"
+    ]
+   },
+   "SA6": {
+    "on": true,
+    "sev": "review",
+    "area": "Safety",
+    "what": "SCI Source Ref is blank where SCI = N.",
+    "basis": "Column notes, SCI Source Ref",
+    "needs": [
+     "sci",
+     "sciRef"
+    ]
+   },
+   "SA7": {
+    "on": true,
+    "sev": "review",
+    "area": "Safety",
+    "what": "SCI is answered on every live CI except GFE.",
+    "basis": "How to use, SCI",
+    "needs": [
+     "sci"
+    ]
+   },
+   "RE1": {
+    "on": true,
+    "sev": "flag",
+    "area": "Unit records",
+    "what": "Serialization = Y needs a source that drives serial recording.",
+    "basis": "Highlight checks, recording",
+    "needs": [
+     "ser",
+     "src"
+    ]
+   },
+   "RE2": {
+    "on": true,
+    "sev": "flag",
+    "area": "Unit records",
+    "what": "A source that drives serial recording needs Serialization = Y.",
+    "basis": "Highlight checks, recording",
+    "needs": [
+     "ser",
+     "src"
+    ]
+   },
+   "RE3": {
+    "on": true,
+    "sev": "flag",
+    "area": "Unit records",
+    "what": "Lot/Batch = Y needs a source that drives lot recording.",
+    "basis": "Highlight checks, recording",
+    "needs": [
+     "lot",
+     "src"
+    ]
+   },
+   "RE4": {
+    "on": true,
+    "sev": "flag",
+    "area": "Unit records",
+    "what": "A source that drives lot recording needs Lot/Batch = Y.",
+    "basis": "Highlight checks, recording",
+    "needs": [
+     "lot",
+     "src"
+    ]
+   },
+   "RE5": {
+    "on": true,
+    "sev": "flag",
+    "area": "Unit records",
+    "what": "Special Handling = Y needs the Special handling source.",
+    "basis": "Highlight checks, recording",
+    "needs": [
+     "sh",
+     "src"
+    ]
+   },
+   "RE6": {
+    "on": true,
+    "sev": "flag",
+    "area": "Unit records",
+    "what": "The Special handling source needs Special Handling = Y.",
+    "basis": "Highlight checks, recording",
+    "needs": [
+     "sh",
+     "src"
+    ]
+   },
+   "RE7": {
+    "on": true,
+    "sev": "flag",
+    "area": "Unit records",
+    "what": "IUID Required = Y needs IUID or Critical safety item as a source.",
+    "basis": "Highlight checks, recording",
+    "needs": [
+     "iuid",
+     "src"
+    ]
+   },
+   "RE8": {
+    "on": true,
+    "sev": "flag",
+    "area": "Unit records",
+    "what": "IUID or Critical safety item as a source needs IUID Required = Y.",
+    "basis": "Highlight checks, recording; Process, IUID",
+    "needs": [
+     "iuid",
+     "src"
+    ]
+   },
+   "RE9": {
+    "on": true,
+    "sev": "review",
+    "area": "Unit records",
+    "what": "Each source uses a spelling from the source list.",
+    "basis": "Lists sheet",
+    "needs": [
+     "src"
+    ]
+   },
+   "RE10": {
+    "on": true,
+    "sev": "flag",
+    "area": "Unit records",
+    "what": "Software CIs read N and N for the two recording flags.",
+    "basis": "Column notes, recording flags",
+    "needs": [
+     "type"
+    ]
+   },
+   "RE11": {
+    "on": true,
+    "sev": "note",
+    "area": "Unit records",
+    "what": "The life clock and the named sources tell the same story.",
+    "basis": "Process, two clocks, one phrase",
+    "needs": [
+     "life",
+     "src"
+    ]
+   },
+   "RE12": {
+    "on": true,
+    "sev": "review",
+    "area": "Unit records",
+    "what": "The recording flags and the life clock are answered.",
+    "basis": "How to use, recording flags",
+    "needs": []
+   },
+   "BA1": {
+    "on": true,
+    "sev": "flag",
+    "area": "Baselines",
+    "what": "The top-level CI records the FBL.",
+    "basis": "How to use, baseline columns",
+    "needs": [
+     "fbl"
+    ]
+   },
+   "BA2": {
+    "on": true,
+    "sev": "flag",
+    "area": "Baselines",
+    "what": "Every other row reads N/A (system-level baseline) for the FBL.",
+    "basis": "How to use, baseline columns",
+    "needs": [
+     "fbl"
+    ]
+   },
+   "QT1": {
+    "on": true,
+    "sev": "review",
+    "area": "Quantity",
+    "what": "Qty per NH reads N/A where NH PIN is N/A.",
+    "basis": "Column notes, Qty per NH",
+    "needs": [
+     "nhpin",
+     "qty"
+    ]
+   },
+   "QT2": {
+    "on": true,
+    "sev": "review",
+    "area": "Quantity",
+    "what": "Qty per NH is recorded where NH PIN is recorded.",
+    "basis": "Column notes, Qty per NH",
+    "needs": [
+     "nhpin",
+     "qty"
+    ]
+   },
+   "QT3": {
+    "on": true,
+    "sev": "flag",
+    "area": "Quantity",
+    "what": "Qty per NH is a whole number of 1 or more, or N/A.",
+    "basis": "Column notes, Qty per NH",
+    "needs": [
+     "qty"
+    ]
+   },
+   "QT4": {
+    "on": true,
+    "sev": "flag",
+    "area": "Quantity",
+    "what": "Rows sharing a PIN and NH PIN carry the same Qty per NH.",
+    "basis": "Column notes, Qty per NH",
+    "needs": [
+     "pin",
+     "nhpin",
+     "qty"
+    ]
+   },
+   "QT5": {
+    "on": true,
+    "sev": "flag",
+    "area": "Quantity",
+    "what": "Rows sharing a PIN and NH PIN number 1, or equal Qty per NH.",
+    "basis": "Column notes, Qty per NH",
+    "needs": [
+     "pin",
+     "nhpin",
+     "qty"
+    ]
+   },
+   "QT6": {
+    "on": true,
+    "sev": "note",
+    "area": "Quantity",
+    "what": "Qty per NH above 1 means Decision Path B has been run.",
+    "basis": "Column notes, Qty per NH",
+    "needs": [
+     "pin",
+     "nhpin",
+     "qty"
+    ]
+   },
+   "MO1": {
+    "on": true,
+    "sev": "review",
+    "area": "Model",
+    "what": "Where MBSE is used, each CI carries a model element or a model alignment exception.",
+    "basis": "Process, MBSE alignment requirement",
+    "needs": [
+     "mbse",
+     "mae"
+    ]
+   },
+   "MO2": {
+    "on": true,
+    "sev": "review",
+    "area": "Model",
+    "what": "A CI with a model element leaves Model Alignment Exception blank.",
+    "basis": "Column notes, Model Alignment Exception",
+    "needs": [
+     "mbse",
+     "mae"
+    ]
+   },
+   "SU1": {
+    "on": true,
+    "sev": "flag",
+    "area": "Supersession",
+    "what": "A superseded row names its new CI ID or IDs.",
+    "basis": "How to use, splits and consolidations",
+    "needs": [
+     "sup"
+    ]
+   },
+   "SU2": {
+    "on": true,
+    "sev": "flag",
+    "area": "Supersession",
+    "what": "Every ID named in Supersedes / Superseded By exists.",
+    "basis": "How to use, splits and consolidations",
+    "needs": [
+     "sup"
+    ]
+   },
+   "SU3": {
+    "on": true,
+    "sev": "flag",
+    "area": "Supersession",
+    "what": "The supersession trace is recorded on both rows.",
+    "basis": "How to use, splits and consolidations",
+    "needs": [
+     "sup"
+    ]
+   },
+   "GF1": {
+    "on": true,
+    "sev": "note",
+    "area": "GFE",
+    "what": "A GFE row is thin. Its other columns stay blank.",
+    "basis": "Column notes, Control Tier",
+    "needs": [
+     "tier"
+    ]
+   },
+   "DO1": {
+    "on": true,
+    "sev": "flag",
+    "area": "Documentation",
+    "what": "Specification No. reading See SCD needs an SCD.",
+    "basis": "Column notes, SCD",
+    "needs": [
+     "spec",
+     "scd"
+    ]
+   },
+   "VA1": {
+    "on": true,
+    "sev": "flag",
+    "area": "PN Variants",
+    "what": "Each variant row names a CI ID that exists.",
+    "basis": "How to use, PN Variants",
+    "needs": []
+   },
+   "VA2": {
+    "on": true,
+    "sev": "review",
+    "area": "PN Variants",
+    "what": "A variant flag that differs from its CI says why in Notes.",
+    "basis": "How to use, PN Variants",
+    "needs": [
+     "ser",
+     "lot"
+    ]
+   },
+   "VA3": {
+    "on": true,
+    "sev": "flag",
+    "area": "PN Variants",
+    "what": "Software variants read N and N for the two recording flags.",
+    "basis": "Column notes, recording flags",
+    "needs": [
+     "type"
+    ]
+   },
+   "VA4": {
+    "on": true,
+    "sev": "flag",
+    "area": "PN Variants",
+    "what": "Each variant row carries a PIN or version identifier.",
+    "basis": "How to use, PN Variants",
+    "needs": []
+   },
+   "VA5": {
+    "on": true,
+    "sev": "note",
+    "area": "PN Variants",
+    "what": "The CI row keeps the base or representative PIN.",
+    "basis": "How to use, PIN",
+    "needs": [
+     "pin"
+    ]
+   },
+   "VA6": {
+    "on": true,
+    "sev": "review",
+    "area": "PN Variants",
+    "what": "A CI with only one variant row is not a variant family.",
+    "basis": "Same-CI decision aid, verdicts",
+    "needs": []
+   },
+   "LS1": {
+    "on": true,
+    "sev": "review",
+    "area": "Lists",
+    "what": "A dropdown column holds a value from its list.",
+    "basis": "Lists sheet",
+    "needs": []
+   },
+   "TY1": {
+    "on": true,
+    "sev": "review",
+    "area": "Format",
+    "what": "A number or date column holds a number or a date.",
+    "basis": "Build settings",
+    "needs": []
+   }
+  },
+  "custom": [],
+  "reference": [
+   {
+    "title": "What this index is",
+    "kind": "list",
+    "items": [
+     "The index holds CIs, and only CIs. Customer equipment outside the product structure goes on the interface register only. CIs that exist only between a sub-supplier and the company stay out. End-item traceability is not an index topic.",
+     "The index is the hub for CI status. It flags what applies to each CI and points to the record that owns each answer. It does not copy content from those records.",
+     "Each column holds a fixed property of the CI. Timing lives in the baseline columns."
+    ]
+   },
+   {
+    "title": "Definitions",
+    "kind": "list",
+    "items": [
+     "**Configuration Item (CI).** Any hardware, software, firmware, or aggregation thereof that satisfies a system end-use function and is designated for separate configuration management. Designation includes establishing the CI’s requirements and verifying that its configuration meets those requirements and that its configuration documentation accurately describes its configuration.",
+     "**Part or Identifying Number (PIN).** The identifier that, combined with the design activity CAGE code, uniquely identifies an item and its configuration. The PIN changes when a modification creates a non-interchangeable condition.",
+     "**Safety-Critical Item (SCI).** A hardware or software item that has been determined through analysis to potentially contribute to a hazard with Catastrophic or Critical mishap potential, or that may be implemented to mitigate a hazard with Catastrophic or Critical mishap potential.",
+     "**Control Tier.** The record of who baselines and controls a CI’s specification. The three tiers are Acquirer-spec controlled, Company-spec controlled, and GFE.",
+     "**Product Definition Data (PDD).** The design data that defines an item’s physical and functional attributes: drawings, models, and associated lists such as parts lists."
+    ]
+   },
+   {
+    "title": "",
+    "kind": "pull",
+    "items": [
+     "The safety-critical item is not the critical safety item. Different authority, different object, different obligation."
+    ]
+   },
+   {
+    "title": "How the tool works",
+    "kind": "list",
+    "items": [
+     "**Hierarchy is entered once.** Pick the parent. The tool derives Level and the indented name. The three forms of hierarchy in the workbook can no longer disagree.",
+     "**Checks run as you type.** They mark a cell for review. They never block entry. The Checks tab lists every finding and the rule behind it.",
+     "**Sources drive the flags.** Pick each source that drives the unit record. The tool shows what the sources call for, and sets the four flags on request.",
+     "**Rows are retired, not deleted.** A CI the Acquirer has concurred in cannot be deleted. De-designate it, or split or consolidate it. The tool keeps the old row and writes the trace on both sides.",
+     "**Same PIN, another position.** Decision Path B can return separate CIs against one PIN. This action copies the row under a new CI ID. Key CSA on the CI and the installed position together.",
+     "**Save keeps everything.** The saved file holds the index, the variants, and the edit log. The Excel export is the exchange copy. Import reads a Rev C workbook or a prior export. It reads the CI Index and PN Variants sheets."
+    ]
+   },
+   {
+    "title": "Rules carried from the template",
+    "kind": "list",
+    "items": [
+     "Every CI goes to the Acquirer for concurrence, including Company-spec controlled CIs. A CI reads Proposed until the Acquirer concurs. Enter the concurrence, then set Status to Active. GFE rows read N/A.",
+     "Criterion (b) Met is the umbrella safety column. Criterion (b) is mandatory for safety. Any condition in Table C-1 satisfies criterion (b) on its own. Neither the SCI sources nor Table C-1 catch an item whose loss is loss of primary system capability with no injury pathway. Find those items in the program’s own decomposition.",
+     "Influencing parts fail criterion (b) by their own definition but qualify on criterion (a). See the criticality designations appendix.",
+     "The FBL is a system-level baseline. Record it on the top-level CI only. The initial product baseline is established at completion of CDR. The formalized PBL takes its event from the Audit Designation Assessment Record. This index does not record audit designation.",
+     "Do not copy handling instructions, IUID triggers, unique item identifiers, life limit values, date codes, or heat-lot details into this index.",
+     "Where MBSE is used, CI parent-child relationships mirror the model decomposition. A same-CI verdict that mismatches the model is not entered until Systems Engineering dispositions it."
+    ]
+   }
+  ],
+  "examples": {
+   "cis": [
+    {
+     "id": "CI-0001",
+     "parent": "",
+     "name": "Air Vehicle System",
+     "type": "HWCI",
+     "tier": "Acquirer-spec controlled",
+     "oda": "XYZ Aerostructures",
+     "cage": "1ABC2",
+     "pin": "AV-1000-001",
+     "nhpin": "N/A",
+     "qty": "N/A",
+     "spec": "SS-1000",
+     "scd": "",
+     "icd": "ICD-1000-501",
+     "ssow": "",
+     "mbse": "blk.AV",
+     "ata": "00",
+     "mae": "",
+     "critB": "Y",
+     "sci": "Y",
+     "sciRef": "SMS hazard log HL-001",
+     "selRef": "CISEL-0001",
+     "concur": "CIL-SUB-001 / 2025-08-29",
+     "fbl": "Established 2025-09-12",
+     "abl": "Established 2026-01-20",
+     "ipbl": "Planned CDR",
+     "fpbl": "Planned PCA",
+     "ser": "Y",
+     "lot": "N",
+     "src": "IUID; Cycle/usage-controlled life limit",
+     "life": "Cycle/usage",
+     "sh": "N",
+     "iuid": "Y",
+     "notdec": "N",
+     "status": "Active",
+     "sup": "",
+     "notes": "Top-level CI; capstone audits apply"
+    },
+    {
+     "id": "CI-0012",
+     "parent": "CI-0001",
+     "name": "Flight Control System",
+     "type": "HWCI",
+     "tier": "Acquirer-spec controlled",
+     "oda": "XYZ Flight Controls",
+     "cage": "1ABC2",
+     "pin": "FCS-2200-001",
+     "nhpin": "AV-1000-001",
+     "qty": "1",
+     "spec": "PS-2200",
+     "scd": "",
+     "icd": "",
+     "ssow": "",
+     "mbse": "blk.FCS",
+     "ata": "27",
+     "mae": "",
+     "critB": "Y",
+     "sci": "Y",
+     "sciRef": "SMS hazard log HL-014",
+     "selRef": "CISEL-0012",
+     "concur": "CIL-SUB-001 / 2025-08-29",
+     "fbl": "N/A (system-level baseline)",
+     "abl": "Established 2026-02-02",
+     "ipbl": "Planned CDR",
+     "fpbl": "Planned PCA",
+     "ser": "N",
+     "lot": "N",
+     "src": "",
+     "life": "None",
+     "sh": "N",
+     "iuid": "N",
+     "notdec": "N",
+     "status": "Active",
+     "sup": "",
+     "notes": "Implements hazard controls HL-014/-015"
+    },
+    {
+     "id": "CI-0013",
+     "parent": "CI-0012",
+     "name": "Flight Control Computer",
+     "type": "HWCI",
+     "tier": "Acquirer-spec controlled",
+     "oda": "XYZ Flight Controls",
+     "cage": "1ABC2",
+     "pin": "FCC-2210-003",
+     "nhpin": "RK-2205-001",
+     "qty": "1",
+     "spec": "PS-2210",
+     "scd": "",
+     "icd": "ICD-2200-210; ICD-2210-310; IRS-2210-101; IDD-2211-001",
+     "ssow": "",
+     "mbse": "blk.FCC",
+     "ata": "27-10",
+     "mae": "",
+     "critB": "Y",
+     "sci": "Y",
+     "sciRef": "SSHA-2210; HL-015",
+     "selRef": "CISEL-0013",
+     "concur": "CIL-SUB-001 / 2025-08-29",
+     "fbl": "N/A (system-level baseline)",
+     "abl": "Established 2026-02-02",
+     "ipbl": "Planned CDR",
+     "fpbl": "Planned PCA",
+     "ser": "Y",
+     "lot": "Y",
+     "src": "IUID; Special handling",
+     "life": "None",
+     "sh": "Y",
+     "iuid": "Y",
+     "notdec": "N",
+     "status": "Active",
+     "sup": "",
+     "notes": "NH PIN is the forward avionics rack, which is not a CI. The parent CI is the flight control system."
+    },
+    {
+     "id": "CI-0014",
+     "parent": "CI-0013",
+     "name": "FCC Operational Flight Program",
+     "type": "CSCI",
+     "tier": "Acquirer-spec controlled",
+     "oda": "XYZ Software",
+     "cage": "1ABC2",
+     "pin": "OFP-2211-001",
+     "nhpin": "FCC-2210-003",
+     "qty": "1",
+     "spec": "SRS-2211",
+     "scd": "",
+     "icd": "IRS-2210-101; IDD-2211-001",
+     "ssow": "",
+     "mbse": "blk.OFP",
+     "ata": "27-10",
+     "mae": "",
+     "critB": "Y",
+     "sci": "Y",
+     "sciRef": "SSHA-2211; HL-015",
+     "selRef": "CISEL-0014",
+     "concur": "CIL-SUB-001 / 2025-08-29",
+     "fbl": "N/A (system-level baseline)",
+     "abl": "Established 2026-02-02",
+     "ipbl": "Planned CDR",
+     "fpbl": "Planned PCA",
+     "ser": "N",
+     "lot": "N",
+     "src": "",
+     "life": "None",
+     "sh": "N",
+     "iuid": "N",
+     "notdec": "N",
+     "status": "Active",
+     "sup": "",
+     "notes": "SCI software; version ID per SVD"
+    },
+    {
+     "id": "CI-0021",
+     "parent": "CI-0012",
+     "name": "Actuator Assembly, Elevator",
+     "type": "HWCI",
+     "tier": "Company-spec controlled",
+     "oda": "ACME Actuation (sub-tier)",
+     "cage": "9XYZ8",
+     "pin": "ACT-2230-002",
+     "nhpin": "FCS-2200-001",
+     "qty": "2",
+     "spec": "PS-2230",
+     "scd": "",
+     "icd": "ICD-2200-210",
+     "ssow": "SSOW-114",
+     "mbse": "blk.ACT-E",
+     "ata": "27-30",
+     "mae": "",
+     "critB": "Y",
+     "sci": "Y",
+     "sciRef": "FMECA-2230; HL-014",
+     "selRef": "CISEL-0021",
+     "concur": "CIL-SUB-001 / 2025-08-29",
+     "fbl": "N/A (system-level baseline)",
+     "abl": "Internal, 2026-01-30",
+     "ipbl": "Internal, 2026-04-10",
+     "fpbl": "Planned PCA",
+     "ser": "Y",
+     "lot": "Y",
+     "src": "Critical safety item; Cycle/usage-controlled life limit",
+     "life": "Cycle/usage",
+     "sh": "N",
+     "iuid": "Y",
+     "notdec": "Y",
+     "status": "Active",
+     "sup": "",
+     "notes": "Supplier designs to company spec PS-2230 and builds (WT04 per SSOW-114). Customer-designated critical safety item: serial through IUID, lot through source traceability. Bounds hazard control HL-014-C1 (see IF-0003, IF-0006). Qty 2: left and right elevators, one CI."
+    },
+    {
+     "id": "CI-0030",
+     "parent": "CI-0001",
+     "name": "Mission Computer",
+     "type": "HWCI",
+     "tier": "Acquirer-spec controlled",
+     "oda": "XYZ Mission Systems",
+     "cage": "1ABC2",
+     "pin": "MC-3100-001",
+     "nhpin": "RK-2205-001",
+     "qty": "1",
+     "spec": "PS-3100",
+     "scd": "",
+     "icd": "",
+     "ssow": "",
+     "mbse": "blk.MC",
+     "ata": "46",
+     "mae": "",
+     "critB": "Y",
+     "sci": "N",
+     "sciRef": "",
+     "selRef": "CISEL-0030",
+     "concur": "CIL-SUB-002 / 2026-01-15",
+     "fbl": "N/A (system-level baseline)",
+     "abl": "Established 2026-02-02",
+     "ipbl": "Planned CDR",
+     "fpbl": "Planned PCA",
+     "ser": "Y",
+     "lot": "Y",
+     "src": "IUID; Special handling",
+     "life": "None",
+     "sh": "Y",
+     "iuid": "Y",
+     "notdec": "N",
+     "status": "Active",
+     "sup": "",
+     "notes": "Criterion (b) met on loss of primary system capability. No FMEA, FMECA, SMS hazard log entry, or system safety hazard analysis report names it, so SCI = N."
+    },
+    {
+     "id": "CI-0050",
+     "parent": "CI-0001",
+     "name": "VHF Communication Subsystem",
+     "type": "HWCI",
+     "tier": "Acquirer-spec controlled",
+     "oda": "XYZ Avionics",
+     "cage": "1ABC2",
+     "pin": "VHF-2310-001",
+     "nhpin": "AV-1000-001",
+     "qty": "1",
+     "spec": "PS-2310",
+     "scd": "",
+     "icd": "",
+     "ssow": "",
+     "mbse": "blk.VHF",
+     "ata": "23-10",
+     "mae": "",
+     "critB": "N",
+     "sci": "N",
+     "sciRef": "",
+     "selRef": "CISEL-0050",
+     "concur": "CIL-SUB-002 / 2026-01-15",
+     "fbl": "N/A (system-level baseline)",
+     "abl": "Established 2026-02-02",
+     "ipbl": "Planned CDR",
+     "fpbl": "Planned PCA",
+     "ser": "N",
+     "lot": "N",
+     "src": "",
+     "life": "None",
+     "sh": "N",
+     "iuid": "N",
+     "notdec": "N",
+     "status": "Active",
+     "sup": "",
+     "notes": "Criterion (b) answer is illustrative. Whether loss of VHF is loss of primary system capability is program-specific."
+    },
+    {
+     "id": "CI-0051",
+     "parent": "CI-0050",
+     "name": "Antenna, Broadband Blade",
+     "type": "HWCI",
+     "tier": "Company-spec controlled",
+     "oda": "BRAVO Antenna Co. (SCD source)",
+     "cage": "7QRS4",
+     "pin": "ANT-2390-001",
+     "nhpin": "AV-1000-001",
+     "qty": "2",
+     "spec": "See SCD",
+     "scd": "SCD-2390-001",
+     "icd": "",
+     "ssow": "SSOW-231",
+     "mbse": "pp.VHF.ANT",
+     "ata": "23-10",
+     "mae": "",
+     "critB": "N",
+     "sci": "N",
+     "sciRef": "",
+     "selRef": "CISEL-0051",
+     "concur": "CIL-SUB-002 / 2026-01-15",
+     "fbl": "N/A (system-level baseline)",
+     "abl": "Internal, 2026-02-15",
+     "ipbl": "Internal, planned CDR",
+     "fpbl": "Planned first production unit delivery",
+     "ser": "N",
+     "lot": "N",
+     "src": "",
+     "life": "None",
+     "sh": "N",
+     "iuid": "N",
+     "notdec": "Y",
+     "status": "Active",
+     "sup": "",
+     "notes": "Same PIN as CI-0053. Separate CIs per Decision Path B: B1 and B2 fire. Two rows share this PIN and NH PIN, matching Qty per NH = 2. Source-controlled (WT02): the company controls form, fit, function, interface, and qualification. Both part properties are typed by blk.ANT in the model."
+    },
+    {
+     "id": "CI-0052",
+     "parent": "CI-0001",
+     "name": "MIDS JTRS Subsystem",
+     "type": "HWCI",
+     "tier": "Acquirer-spec controlled",
+     "oda": "XYZ Avionics",
+     "cage": "1ABC2",
+     "pin": "MID-2320-001",
+     "nhpin": "AV-1000-001",
+     "qty": "1",
+     "spec": "PS-2320",
+     "scd": "",
+     "icd": "",
+     "ssow": "",
+     "mbse": "blk.MIDS",
+     "ata": "23",
+     "mae": "",
+     "critB": "N",
+     "sci": "N",
+     "sciRef": "",
+     "selRef": "CISEL-0052",
+     "concur": "CIL-SUB-002 / 2026-01-15",
+     "fbl": "N/A (system-level baseline)",
+     "abl": "Established 2026-02-02",
+     "ipbl": "Planned CDR",
+     "fpbl": "Planned PCA",
+     "ser": "N",
+     "lot": "N",
+     "src": "",
+     "life": "None",
+     "sh": "N",
+     "iuid": "N",
+     "notdec": "N",
+     "status": "Active",
+     "sup": "",
+     "notes": "Criterion (b) answer is illustrative. Whether loss of Link 16 is loss of primary system capability is program-specific."
+    },
+    {
+     "id": "CI-0053",
+     "parent": "CI-0052",
+     "name": "Antenna, Broadband Blade",
+     "type": "HWCI",
+     "tier": "Company-spec controlled",
+     "oda": "BRAVO Antenna Co. (SCD source)",
+     "cage": "7QRS4",
+     "pin": "ANT-2390-001",
+     "nhpin": "AV-1000-001",
+     "qty": "2",
+     "spec": "See SCD",
+     "scd": "SCD-2390-001",
+     "icd": "",
+     "ssow": "SSOW-231",
+     "mbse": "pp.MIDS.ANT",
+     "ata": "23",
+     "mae": "",
+     "critB": "N",
+     "sci": "N",
+     "sciRef": "",
+     "selRef": "CISEL-0053",
+     "concur": "CIL-SUB-002 / 2026-01-15",
+     "fbl": "N/A (system-level baseline)",
+     "abl": "Internal, 2026-02-15",
+     "ipbl": "Internal, planned CDR",
+     "fpbl": "Planned first production unit delivery",
+     "ser": "N",
+     "lot": "N",
+     "src": "",
+     "life": "None",
+     "sh": "N",
+     "iuid": "N",
+     "notdec": "Y",
+     "status": "Active",
+     "sup": "",
+     "notes": "Same PIN as CI-0051. Separate CIs per Decision Path B: B1 and B2 fire. CSA keys on CI and installed position."
+    },
+    {
+     "id": "CI-0054",
+     "parent": "CI-0052",
+     "name": "MIDS JTRS Terminal",
+     "type": "HWCI",
+     "tier": "GFE",
+     "oda": "Government (GFE)",
+     "cage": "",
+     "pin": "GFE-4000-100",
+     "nhpin": "RK-2205-001",
+     "qty": "1",
+     "spec": "",
+     "scd": "",
+     "icd": "ICD-G-4000 (Government)",
+     "ssow": "",
+     "mbse": "",
+     "ata": "",
+     "mae": "",
+     "critB": "",
+     "sci": "",
+     "sciRef": "",
+     "selRef": "",
+     "concur": "N/A",
+     "fbl": "",
+     "abl": "",
+     "ipbl": "",
+     "fpbl": "",
+     "ser": "",
+     "lot": "",
+     "src": "",
+     "life": "",
+     "sh": "",
+     "iuid": "",
+     "notdec": "",
+     "status": "Active",
+     "sup": "",
+     "notes": "Thin row. The Government holds the definition. The row anchors the hierarchy and the interface boundaries."
+    },
+    {
+     "id": "CI-0060",
+     "parent": "CI-0001",
+     "name": "Main Landing Gear Assembly",
+     "type": "HWCI",
+     "tier": "Acquirer-spec controlled",
+     "oda": "XYZ Landing Systems",
+     "cage": "1ABC2",
+     "pin": "MLG-3210-001",
+     "nhpin": "AV-1000-001",
+     "qty": "2",
+     "spec": "PS-3210",
+     "scd": "",
+     "icd": "",
+     "ssow": "",
+     "mbse": "blk.MLG",
+     "ata": "32-10",
+     "mae": "",
+     "critB": "Y",
+     "sci": "Y",
+     "sciRef": "SSHA-3210; HL-022",
+     "selRef": "CISEL-0060",
+     "concur": "CIL-SUB-002 / 2026-01-15",
+     "fbl": "N/A (system-level baseline)",
+     "abl": "Established 2026-02-02",
+     "ipbl": "Planned CDR",
+     "fpbl": "Planned PCA",
+     "ser": "Y",
+     "lot": "N",
+     "src": "Cycle/usage-controlled life limit; Physical parent of a serialized or lot-recorded item; IUID",
+     "life": "Cycle/usage",
+     "sh": "N",
+     "iuid": "Y",
+     "notdec": "N",
+     "status": "Active",
+     "sup": "",
+     "notes": "Qty 2: left and right main gear, one CI. Three sources stack on one row."
+    },
+    {
+     "id": "CI-0061",
+     "parent": "CI-0060",
+     "name": "Drag Brace, MLG",
+     "type": "HWCI",
+     "tier": "Company-spec controlled",
+     "oda": "XYZ Landing Systems",
+     "cage": "1ABC2",
+     "pin": "DB-3211-003",
+     "nhpin": "MLG-3210-001",
+     "qty": "1",
+     "spec": "None; defined by drawing DB-3211",
+     "scd": "",
+     "icd": "",
+     "ssow": "",
+     "mbse": "",
+     "ata": "32-10",
+     "mae": "Not modeled. Selected on criterion (b) as a safe-life principal structural element below the model's level of detail.",
+     "critB": "Y",
+     "sci": "N",
+     "sciRef": "",
+     "selRef": "CISEL-0061",
+     "concur": "",
+     "fbl": "N/A (system-level baseline)",
+     "abl": "Within CI-0060 ABL",
+     "ipbl": "Internal, planned CDR",
+     "fpbl": "Planned PCA",
+     "ser": "Y",
+     "lot": "N",
+     "src": "Safe-life PSE; Cycle/usage-controlled life limit",
+     "life": "Cycle/usage",
+     "sh": "N",
+     "iuid": "N",
+     "notdec": "N",
+     "status": "Proposed",
+     "sup": "",
+     "notes": "Safe-life PSE with an ALS replacement time. A critical item, not named individually on the SCI list: the hazard analysis names the structural integrity program as the control. Proposed until the Acquirer concurs."
+    }
+   ],
+   "vars": [
+    {
+     "ciId": "CI-0021",
+     "pin": "ACT-2230-002",
+     "desc": "Elevator actuator, baseline build",
+     "callout": "PS-2230 §3.3.1",
+     "ser": "Y",
+     "lot": "Y",
+     "eff": "AV units 1–12",
+     "notes": "Base variant"
+    },
+    {
+     "ciId": "CI-0021",
+     "pin": "ACT-2230-004",
+     "desc": "Elevator actuator, revised connector",
+     "callout": "PS-2230 §3.3.2 (per-variant callout)",
+     "ser": "Y",
+     "lot": "Y",
+     "eff": "AV units 13+",
+     "notes": "Non-interchangeable connector; one CI; no separation trigger fired"
+    }
+   ]
+  }
+ }
+}
