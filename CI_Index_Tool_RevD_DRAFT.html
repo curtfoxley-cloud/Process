@@ -1,0 +1,1833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CI Index</title>
+<style>
+:root{
+  --ink:#1E262E; --ink-2:#2C3841; --slate:#5C6D78; --mute:#8998A2;
+  --paper:#FFFFFF; --surface:#F4F6F7; --surface-2:#EDF0F1; --rule:#D6DCDF;
+  --rust:#A8481F; --rust-soft:#F2E4DD; --rust-ink:#7E340F;
+  --teal:#1F5F5B; --teal-soft:#DFEAE8;
+  --amber:#9A6508; --amber-soft:#F6ECD8;
+  --alert:#8E2F2F; --alert-soft:#F4E2E2;
+  --serif:Georgia,Cambria,"Times New Roman",serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--surface);font-size:15px;line-height:1.55}
+button{font-family:inherit;cursor:pointer}
+input,select,textarea{font-family:inherit;font-size:13.5px;color:inherit}
+.top{background:var(--ink);color:#fff;padding:13px 20px}
+.top b{font-family:var(--serif);font-size:16px;display:block;line-height:1.2}
+.top span{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#93A2AB}
+.wrap{max-width:1280px;margin:0 auto;padding:24px 20px 70px}
+h1{font-family:var(--serif);font-size:27px;font-weight:400;margin:0 0 6px;line-height:1.2}
+.lede{font-size:14px;color:var(--slate);margin:0 0 20px;max-width:72ch}
+.lab{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--rust-ink);font-weight:700;margin-bottom:8px}
+.card{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:16px 18px;margin:0 0 18px}
+.card p{margin:0;font-size:13.5px;color:var(--ink-2)}
+.card p+p{margin-top:9px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.fld label{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--slate);font-weight:700;margin-bottom:4px}
+.fld input,.fld select,.fld textarea{width:100%;padding:7px 9px;border:1px solid var(--rule);border-radius:4px;background:var(--paper);line-height:1.45}
+.fld textarea{resize:vertical}
+.fld input:focus,.fld select:focus,.fld textarea:focus{outline:2px solid var(--rust);outline-offset:1px}
+.small{font-size:12.5px;color:var(--slate);max-width:78ch}
+.pull{font-family:var(--serif);font-size:15px;font-style:italic;color:var(--ink-2);border-left:3px solid var(--rust);padding-left:12px;margin:14px 0;max-width:66ch}
+
+/* action bar */
+.bar{position:sticky;top:0;z-index:30;background:var(--surface);padding:10px 0;margin:0 0 6px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;border-bottom:1px solid var(--rule)}
+.btn{border:1px solid var(--rule);background:var(--paper);color:var(--ink);border-radius:4px;padding:8px 14px;font-size:13px;font-weight:600}
+.btn:hover{background:var(--surface-2)}
+.btn:focus-visible{outline:2px solid var(--rust);outline-offset:2px}
+.btn.pri{background:var(--rust);border-color:var(--rust);color:#fff}
+.btn.pri:hover{background:var(--rust-ink)}
+.btn.gh{background:transparent;color:var(--slate)}
+.btn.sm{padding:5px 10px;font-size:12px}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+#msg{font-size:12.5px;color:var(--slate);flex:1;min-width:200px}
+.dirty{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;padding:3px 7px;border-radius:3px}
+.dirty.y{background:var(--amber-soft);color:var(--amber);border:1px solid #E4D3AF}
+.dirty.n{background:var(--teal-soft);color:var(--teal);border:1px solid #BFD6D2}
+
+.tally{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin:12px 0 12px}
+.chip{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;padding:3px 9px;border-radius:3px;border:1px solid var(--rule);background:var(--surface-2);color:var(--slate);white-space:nowrap}
+.chip.on{background:var(--rust-soft);color:var(--rust-ink);border-color:#E3CCC2}
+.chip.hold{background:var(--amber-soft);color:var(--amber);border-color:#E4D3AF}
+.chip.bad{background:var(--alert-soft);color:var(--alert);border-color:#E0BFBF}
+.chip.ok{background:var(--teal-soft);color:var(--teal);border-color:#BFD6D2}
+.chip.count{background:none;border-color:transparent;color:var(--mute)}
+
+/* tabs */
+.tabs{display:flex;gap:2px;border-bottom:2px solid var(--ink-2);margin:0 0 18px;flex-wrap:wrap}
+.tab{border:0;background:none;padding:9px 13px 8px;font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--slate);border-radius:4px 4px 0 0}
+.tab:hover{background:var(--surface-2);color:var(--ink)}
+.tab.on{background:var(--ink-2);color:#fff}
+.tab .n{display:inline-block;margin-left:6px;padding:0 5px;border-radius:3px;background:var(--alert);color:#fff;font-size:9.5px;letter-spacing:0}
+.tab .n.r{background:var(--amber)}
+.tab:focus-visible{outline:2px solid var(--rust);outline-offset:2px}
+
+/* hierarchy */
+.split{display:grid;grid-template-columns:380px 1fr;gap:18px;align-items:start}
+.treebox{background:var(--paper);border:1px solid var(--rule);border-radius:6px;position:sticky;top:64px;max-height:calc(100vh - 84px);overflow:auto}
+.treehead{padding:9px 12px;border-bottom:1px solid var(--rule);display:flex;gap:12px;align-items:center;flex-wrap:wrap;position:sticky;top:0;background:var(--paper);z-index:2}
+.treehead label{font-size:12px;color:var(--slate);display:flex;gap:5px;align-items:center}
+.tsec{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--alert);font-weight:700;padding:10px 12px 4px;border-top:1px solid var(--rule)}
+.tn{display:flex;align-items:center;gap:6px;padding:5px 10px 5px 0;border-left:3px solid transparent;cursor:pointer;font-size:13px;position:relative}
+.tn:hover{background:var(--surface)}
+.tn:focus-visible{outline:2px solid var(--rust);outline-offset:-2px}
+.tn.sel{background:var(--rust-soft);border-left-color:var(--rust)}
+.tn.ret .tname,.tn.ret .tid{opacity:.5;text-decoration:line-through}
+.tw{width:18px;border:0;background:none;color:var(--mute);font-size:10px;padding:0;flex:none;line-height:1}
+.tw.leaf{visibility:hidden}
+.tid{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--rust-ink);flex:none}
+.tname{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink-2)}
+.bd{font-family:var(--mono);font-size:8.5px;letter-spacing:.05em;font-weight:700;padding:1px 4px;border-radius:3px;border:1px solid var(--rule);color:var(--slate);background:var(--surface-2);flex:none}
+.bd.b{background:var(--rust-soft);color:var(--rust-ink);border-color:#E3CCC2}
+.bd.p{background:var(--amber-soft);color:var(--amber);border-color:#E4D3AF}
+.bd.g{background:var(--teal-soft);color:var(--teal);border-color:#BFD6D2}
+.dot{min-width:17px;height:17px;border-radius:9px;font-size:10px;font-weight:700;color:#fff;display:inline-flex;align-items:center;justify-content:center;padding:0 4px;flex:none}
+.dot.f{background:var(--alert)}
+.dot.r{background:var(--amber)}
+.guide{position:absolute;top:0;bottom:0;width:1px;background:var(--rule)}
+
+.sect{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:15px 17px;margin:0 0 14px}
+.sect.hd{border-left:3px solid var(--rust)}
+.dh{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.dh h2{font-family:var(--serif);font-size:23px;font-weight:400;margin:0;line-height:1.2}
+.dh .cid{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--rust-ink)}
+.dchips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.path{font-size:12px;color:var(--mute);margin-top:6px}
+.path button{border:0;background:none;padding:0;color:var(--slate);font-size:12px;text-decoration:underline;text-underline-offset:2px}
+.acts{display:flex;gap:16px;flex-wrap:wrap;margin:12px 0 0;padding-top:10px;border-top:1px solid var(--surface-2)}
+.lnk{border:0;background:none;padding:2px 0;font-size:13px;font-weight:600;color:var(--slate);text-decoration:underline;text-underline-offset:3px}
+.lnk:hover{color:var(--rust)}
+.lnk[disabled]{color:var(--mute);text-decoration:none;cursor:not-allowed}
+.lnk:focus-visible{outline:2px solid var(--rust);outline-offset:2px;border-radius:3px}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px 16px}
+.fgrid .wide{grid-column:1/-1}
+.help{font-size:11.5px;color:var(--mute);margin-top:4px;line-height:1.45}
+.fm div{font-size:12px;padding:4px 8px;border-radius:3px;margin-top:5px;line-height:1.4}
+.fm .flag,.fl .flag{background:var(--alert-soft);color:var(--alert)}
+.fm .review,.fl .review{background:var(--amber-soft);color:var(--amber)}
+.fm .note,.fl .note{background:var(--surface-2);color:var(--slate)}
+.fld .x-flag{border-color:var(--alert)!important;background:#FBF4F4}
+.fld .x-review{border-color:var(--amber)!important;background:#FCF8EF}
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--paper)}
+.seg button{border:0;background:transparent;padding:6px 16px;font-weight:700;font-size:13px;color:var(--slate)}
+.seg button+button{border-left:1px solid var(--rule)}
+.seg button.on{background:var(--ink-2);color:#fff}
+.seg button:focus-visible{outline:2px solid var(--rust);outline-offset:-2px}
+.srcg{margin-bottom:8px}
+.srcg .gl{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);font-weight:700;margin:6px 0 4px}
+.srcs{display:flex;flex-wrap:wrap;gap:6px;padding:2px;border-radius:5px}
+.sc{border:1px solid var(--rule);background:var(--paper);border-radius:4px;padding:5px 9px;font-size:12.5px;color:var(--ink-2);display:inline-flex;gap:6px;align-items:center}
+.sc:hover{border-color:var(--slate)}
+.sc.on{border-color:var(--rust);background:var(--rust-soft);color:var(--rust-ink);font-weight:600}
+.sc .c1{font-family:var(--mono);font-size:9px;font-weight:700;color:var(--alert);letter-spacing:.04em}
+.sc.off{border-style:dashed;border-color:var(--amber);background:var(--amber-soft);color:var(--amber)}
+.srcs-wrap{border:1px solid transparent;padding:4px 6px}
+.rec{font-size:12.5px;color:var(--ink-2);margin-top:6px}
+.rec b{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--slate)}
+.impl{margin-top:10px;background:var(--surface);border:1px solid var(--rule);border-radius:5px;padding:10px 12px;font-size:12.5px;color:var(--ink-2)}
+.impl .ok{color:var(--teal);font-weight:700}
+.impl .no{color:var(--alert);font-weight:700}
+.impl table{border-collapse:collapse;margin:6px 0 8px}
+.impl td{padding:2px 14px 2px 0;font-size:12.5px}
+.fl{margin-top:12px}
+.fl .it{display:flex;gap:9px;align-items:baseline;padding:6px 9px;border-radius:4px;margin-bottom:4px;font-size:12.5px}
+.fl .it .r{font-family:var(--mono);font-size:10px;font-weight:700;flex:none;min-width:30px}
+.fl .it .c{font-family:var(--mono);font-size:10px;flex:none;opacity:.8}
+.panel{margin-top:12px;background:var(--surface);border:1px solid var(--rule);border-radius:5px;padding:12px 14px}
+.panel p{margin:0 0 9px;font-size:12.5px;color:var(--ink-2)}
+.panel .row2{display:grid;grid-template-columns:160px 1fr;gap:8px;margin-bottom:6px}
+.panel input[type=text]{padding:6px 8px;border:1px solid var(--rule);border-radius:4px;width:100%}
+.cklist{max-height:200px;overflow:auto;border:1px solid var(--rule);border-radius:4px;background:var(--paper);padding:6px 8px;margin-bottom:9px}
+.cklist label{display:flex;gap:7px;font-size:12.5px;padding:2px 0;align-items:center}
+
+/* tables */
+.gridwrap{overflow:auto;max-height:72vh;border:1px solid var(--rule);border-radius:6px;background:var(--paper)}
+table.g{border-collapse:separate;border-spacing:0;font-size:12px}
+table.g th{position:sticky;top:0;background:var(--ink-2);color:#fff;font-family:var(--mono);font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;font-weight:700;text-align:left;padding:7px 8px;vertical-align:bottom;z-index:2;min-width:70px;max-width:180px;white-space:normal;line-height:1.3}
+table.g td{padding:5px 8px;border-bottom:1px solid var(--rule);border-right:1px solid var(--surface-2);vertical-align:top;white-space:nowrap;max-width:260px;overflow:hidden;text-overflow:ellipsis;background:var(--paper);cursor:pointer}
+table.g th.s0,table.g td.s0{position:sticky;left:0;z-index:1;min-width:44px;width:44px}
+table.g th.s1,table.g td.s1{position:sticky;left:44px;z-index:1;min-width:84px;border-right:2px solid var(--rule)}
+table.g th.s0,table.g th.s1{z-index:3}
+table.g td.s1{font-family:var(--mono);font-weight:700;color:var(--rust-ink)}
+table.g tr:hover td{background:var(--surface)}
+table.g td.x-flag{background:var(--alert-soft)!important;color:var(--alert)}
+table.g td.x-review{background:var(--amber-soft)!important}
+table.g tr.ret td{color:var(--mute)}
+.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-bottom:12px}
+.filters .fld{min-width:160px}
+.filters label.ck{display:flex;gap:6px;align-items:center;font-size:12.5px;color:var(--ink-2);padding-bottom:8px}
+table.dt{border-collapse:collapse;width:100%;font-size:13px;background:var(--paper)}
+table.dt th{text-align:left;font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--slate);font-weight:700;padding:8px 10px;border-bottom:2px solid var(--rule);background:var(--surface-2)}
+table.dt td{padding:7px 10px;border-top:1px solid var(--rule);color:var(--ink-2);vertical-align:top}
+table.dt td.k{font-family:var(--mono);font-size:12px;color:var(--rust-ink);font-weight:700;white-space:nowrap}
+table.dt td.m{font-size:12px;color:var(--slate)}
+table.dt input,table.dt select{width:100%;padding:5px 7px;border:1px solid var(--rule);border-radius:4px;background:var(--paper);font-size:12.5px}
+table.dt input:focus,table.dt select:focus{outline:2px solid var(--rust);outline-offset:1px}
+table.dt td.x-flag input,table.dt td.x-flag select{border-color:var(--alert);background:#FBF4F4}
+table.dt td.x-review input,table.dt td.x-review select{border-color:var(--amber);background:#FCF8EF}
+.sev{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;padding:2px 6px;border-radius:3px;white-space:nowrap}
+.sev.flag{background:var(--alert-soft);color:var(--alert)}
+.sev.review{background:var(--amber-soft);color:var(--amber)}
+.sev.note{background:var(--surface-2);color:var(--slate)}
+.cibtn{border:0;background:none;padding:0;font-family:var(--mono);font-size:12px;font-weight:700;color:var(--rust-ink);text-decoration:underline;text-underline-offset:2px}
+
+/* overview */
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.tile{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:14px 16px}
+.tile .v{font-family:var(--serif);font-size:32px;line-height:1.1}
+.tile .t{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--slate);font-weight:700;margin-bottom:4px}
+.tile .s{font-size:12px;color:var(--mute);margin-top:4px}
+.tile.alert{border-left:3px solid var(--alert)}
+.tile.amb{border-left:3px solid var(--amber)}
+.cols2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.todo{margin:0;padding:0;list-style:none}
+.todo li{padding:9px 0;border-top:1px solid var(--surface-2);font-size:13.5px;color:var(--ink-2);display:flex;gap:10px;align-items:baseline}
+.todo li:first-child{border-top:0}
+.todo li .sev{flex:none}
+.sbar{display:flex;height:14px;border-radius:3px;overflow:hidden;background:var(--surface-2);margin:4px 0 2px}
+.sbar span{display:block;height:100%}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--slate);margin:8px 0 0}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.brow{display:grid;grid-template-columns:150px 1fr 40px;gap:10px;align-items:center;font-size:12.5px;color:var(--ink-2);margin:6px 0}
+.brow .n{text-align:right;font-family:var(--mono);font-size:11.5px;color:var(--slate)}
+.empty{text-align:center;padding:40px 20px}
+.empty h2{font-family:var(--serif);font-weight:400;font-size:22px;margin:0 0 6px}
+.empty .btnrow{justify-content:center}
+.btnrow{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:14px}
+.ref h3{font-family:var(--serif);font-size:18px;font-weight:400;margin:22px 0 8px}
+.ref ul{margin:0;padding-left:18px}
+.ref li{font-size:13px;color:var(--ink-2);margin-bottom:6px;max-width:84ch}
+.ref li b{color:var(--ink)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.foot{font-size:12.5px;color:var(--slate);border-top:1px solid var(--rule);padding-top:14px;margin-top:30px}
+.foot p{margin:0 0 7px}
+
+@media(max-width:980px){
+  .split{grid-template-columns:1fr}
+  .treebox{position:static;max-height:46vh}
+  .tiles,.grid4{grid-template-columns:1fr 1fr}
+  .cols2{grid-template-columns:1fr}
+}
+@media(max-width:640px){
+  .fgrid,.tiles,.grid4{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media print{
+  .top,.bar,.tabs,.acts,.treehead,.btnrow{display:none}
+  body{background:#fff;font-size:11pt}
+  .treebox{position:static;max-height:none;overflow:visible}
+  .gridwrap{max-height:none;overflow:visible}
+}
+</style>
+<style>
+.prevbar{background:var(--amber-soft);color:var(--amber);border-bottom:1px solid #E4D3AF;font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;padding:6px 20px}
+.ref .chg td{font-size:12.5px}
+.minlist{margin:0 0 8px;padding-left:20px;font-size:13px;color:var(--ink-2)}
+.minlist li{margin-bottom:4px}
+.cmap code,.sect code{font-family:var(--mono);font-size:11.5px;background:var(--surface-2);padding:0 4px;border-radius:3px}
+.pill{display:inline-block;font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;padding:2px 7px;border-radius:10px;border:1px solid var(--rule);background:var(--surface-2);color:var(--slate);white-space:nowrap}
+.pill.ok{background:var(--teal-soft);color:var(--teal);border-color:#BFD6D2}
+.pill.bad{background:var(--alert-soft);color:var(--alert);border-color:#E0BFBF}
+.pill.hold{background:var(--amber-soft);color:var(--amber);border-color:#E4D3AF}
+.pill.off{background:transparent;color:var(--mute);border-style:dashed}
+table.cmap td{font-size:12.5px}
+table.cmap tr.notdue td{background:var(--surface)}
+.heldbox{background:var(--surface-2);border:1px solid var(--rule);border-radius:5px;padding:9px 12px;font-size:12.5px;color:var(--ink-2);margin:0 0 12px}
+.stagerow{display:flex;gap:12px;align-items:end;flex-wrap:wrap;margin-top:12px}
+.stagerow .fld{min-width:240px}
+</style>
+</head>
+<body>
+<div class="prevbar" id="prevbar" style="display:none">Preview. Files you save here come from the build under test.</div>
+<div class="top"><b id="t-top">CI Index</b><span id="t-sub"></span></div>
+<div class="wrap">
+<h1 id="t-h1"></h1>
+<p class="lede" id="t-lede"></p>
+
+<div class="card">
+  <div class="lab">Index</div>
+  <div class="grid4">
+    <div class="fld"><label for="m-prog">Program</label><input id="m-prog" data-m="prog"></div>
+    <div class="fld"><label for="m-doc">Index document number</label><input id="m-doc" data-m="doc"></div>
+    <div class="fld"><label for="m-rev">Revision</label><input id="m-rev" data-m="rev"></div>
+    <div class="fld"><label for="m-who">Your name, for the edit log</label><input id="m-who" data-m="who"></div>
+  </div>
+  <div class="stagerow" id="stagerow"><div class="fld"><label for="m-stage">Index stage</label><select id="m-stage" data-m="stage"></select></div><p class="small" id="stagehelp" style="flex:1;margin:0 0 6px"></p></div>
+</div>
+
+<div class="bar" id="bar">
+  <button class="btn pri" data-act="save">Save index</button>
+  <button class="btn" data-act="open">Open saved index</button>
+  <button class="btn" data-act="xlsx">Export to Excel</button>
+  <button class="btn" data-act="import">Import Excel workbook</button>
+  <button class="btn gh" data-act="clear">Clear</button>
+  <span class="dirty n" id="dirty">Saved</span>
+  <span id="msg" role="status" aria-live="polite"></span>
+</div>
+<input type="file" id="f-json" accept="application/json,.json" style="display:none">
+<input type="file" id="f-xlsx" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none">
+<input type="file" id="f-cmp" accept="application/json,.json" style="display:none">
+
+<div class="tally" id="tally"></div>
+<div class="tabs" id="tabs" role="tablist"></div>
+<div id="view"></div>
+<div id="dls"></div>
+<datalist id="dl-pin"></datalist>
+
+<div class="foot" id="t-foot"></div>
+</div>
+
+<script>
+/* ===================================================================
+   Build block. The CI Index Builder writes this. Everything the tool
+   shows and checks reads from it.
+   =================================================================== */
+var CONFIG=/*CFG>*/{"schema":1,"build":{"name":"CI Index","rev":"D","changes":[{"rev":"A","date":"2026-10-06","by":"CM","text":"First release. Implements CI Index Template Rev C draft."},{"rev":"B","date":"2026-10-06","by":"CM","text":"Configuration moved into one build block. Editable in the CI Index Builder."},{"rev":"C","date":"2026-10-07","by":"CM","text":"Implements the interface register redesign. The ICD column stays, and its help ties it to the ICD cross-check in the interface coverage check. The Boundaries tab is now Structural floor: each parent and child in different control tiers, and each GFE CI. Sibling pairs are no longer derived. Split and consolidate messages follow the re-mapping rules. Examples: CI-0021 is source-controlled under SCD-2230-001; CI-0031 added; ICD values list every ICD, IRS, and IDD on each CI’s mapped register rows."},{"rev":"D","date":"2026-10-08","by":"CM","text":"Added the Excel columns tab. It shows each column the import reads, the header and save file key it accepts, the minimum to load, the minimum entry for a new CI, what reads each column, and what a blank cell does. The import now finds the header row by CI ID or Parent CI ID. Added Index stage: blank-entry hints for columns that fall due at a later stage are held, so an index filled in stages stays readable. Hints that compare two filled cells always run. The Excel export adds a Column Map sheet and records the stage on the About sheet."}]},"text":{"title":"CI Index","top":"CI Index","sub":"Configuration Management · CI Index Template Rev C draft · Tool rev D draft","h1":"Configuration Item Index","lede":"One record per Configuration Item. The index flags what applies to each CI and points to the record that owns each answer. It does not copy content from those records. The tool checks every row as you work and shows what needs review.","foot":["**Reference.** CI Identification Process Rev I draft, the records and outputs section. CI Index Template Rev C draft.","This tool is a working aid. The index of record is maintained current in the CSA system for the program life.","Nothing is stored in the browser. Save the index to a file before you close the tab. The saved file keeps the edit log. An Excel export does not."],"stem":"CI-Index"},"theme":{"accent":"#A8481F","ink":"#1E262E"},"features":{"tabs":{"overview":true,"table":true,"variants":true,"checks":true,"bound":true,"log":true,"ref":true,"colmap":true},"actions":{"dup":true,"split":true,"cons":true,"dedes":true,"del":true},"sheets":{"about":true,"checks":true,"queue":true,"bound":true,"log":true,"colmap":true},"examples":true},"cols":[{"k":"level","h":"Level","kind":"level","w":6,"help":"Derived from Parent CI ID. 0 is the top-level CI.","group":"","wide":false,"core":true,"req":"","reqGFE":false,"alias":[]},{"k":"id","h":"CI ID","kind":"text","w":11,"help":"Program-unique identifier for the CI. It is not the PIN. Renaming a CI ID updates every parent, variant, and supersession reference to it.","group":"Identification","wide":false,"core":true,"req":"","reqGFE":false,"alias":[],"stage":"cand","reg":true,"blankNote":""},{"k":"parent","h":"Parent CI ID","kind":"parent","w":12,"help":"Every CI except the top-level CI names a parent that exists in the index. The tool derives Level and the name indentation from the parent, so the three forms of hierarchy always agree.","group":"Structure","wide":false,"core":true,"req":"","reqGFE":false,"alias":[],"stage":"cand","reg":true,"blankNote":""},{"k":"name","h":"CI Name / Nomenclature","kind":"text","w":36,"help":"Nomenclature for the CI. Enter it without indentation. The export indents it two spaces per level.","group":"Identification","wide":true,"core":true,"req":"","reqGFE":false,"alias":["CI Name","Nomenclature"],"stage":"cand","reg":true,"blankNote":""},{"k":"type","h":"CI Type","kind":"enum","w":9,"help":"HWCI, CSCI, or Firmware. Computer software is designated as CIs (CSCIs).","group":"Identification","wide":false,"core":false,"req":"","reqGFE":false,"list":"type","alias":[],"stage":"cand","reg":true,"blankNote":""},{"k":"tier","h":"Control Tier","kind":"enum","w":24,"help":"Who baselines and controls the CI’s specification. Acquirer-spec controlled: the CI has its own specification, which the Acquirer baselines and controls. Company-spec controlled: the CI sits below an Acquirer-spec controlled CI. The company baselines and controls its specification, where it has one. A change with Class I effect reaches the Acquirer through the parent CI’s baselines. GFE: government furnished and installed in the product structure. The Government holds its definition.","group":"Structure","wide":false,"core":false,"req":"","reqGFE":false,"list":"tier","alias":["Control"],"stage":"struct","reg":true,"blankNote":""},{"k":"oda","h":"Owning Design Activity","kind":"text","w":26,"help":"The design activity that owns the CI’s design.","group":"Identification","wide":false,"core":false,"req":"","reqGFE":false,"alias":[],"stage":"struct","reg":false,"blankNote":""},{"k":"cage","h":"CAGE","kind":"text","w":8,"help":"CAGE code of the design activity. CAGE and PIN together form the full identification.","group":"Identification","wide":false,"core":false,"req":"","reqGFE":false,"alias":[],"stage":"ident","reg":false,"blankNote":""},{"k":"pin","h":"PIN","kind":"text","w":16,"help":"Part or identifying number per design activity convention. PIN is not unique across rows. One PIN may map to more than one CI. One CI may carry several PIN variants. Keep the base or representative PIN here.","group":"Identification","wide":false,"core":false,"req":"","reqGFE":false,"alias":[],"stage":"ident","reg":true,"blankNote":""},{"k":"nhpin","h":"NH PIN","kind":"text","w":16,"help":"PIN of the next higher assembly the CI installs into. Where the CI trees directly to the end item, enter the end item’s PIN. Enter N/A only where the CI has no higher assembly.","group":"Structure","wide":false,"core":false,"req":"","reqGFE":false,"pins":true,"alias":[],"stage":"ident","reg":false,"blankNote":""},{"k":"qty","h":"Qty per NH","kind":"text","w":8,"help":"Number of instances of this PIN in the next higher assembly, from that assembly’s parts list. Enter N/A where NH PIN is N/A. Above 1, run Decision Path B of the same-CI decision aid.","group":"Structure","wide":false,"core":false,"req":"","reqGFE":false,"alias":[],"stage":"ident","reg":false,"blankNote":""},{"k":"spec","h":"Specification No.","kind":"text","w":18,"help":"The CI’s specification. A vendor item control drawing goes here, not in SCD.","group":"Documentation pointers","wide":false,"core":false,"req":"","reqGFE":false,"alias":[],"stage":"struct","reg":false,"blankNote":""},{"k":"scd","h":"SCD (optional)","kind":"text","w":15,"help":"The source control drawing, for an item whose internals the supplier designs while the company controls form, fit, function, interface, and qualification.","group":"Documentation pointers","wide":false,"core":false,"req":"","reqGFE":false,"alias":[],"stage":"struct","reg":false,"blankNote":""},{"k":"icd","h":"ICD (optional)","kind":"text","w":28,"help":"The interface control documents that define this CI’s interfaces, including interface requirements specifications and interface design descriptions. Separate entries with semicolons. List every one on this CI’s mapped interface register rows. The ICD cross-check in the interface coverage check confirms that the index and the register agree.","group":"Documentation pointers","wide":true,"core":false,"req":"","reqGFE":false,"alias":[],"stage":"struct","reg":true,"blankNote":""},{"k":"ssow","h":"SSOW (optional)","kind":"text","w":12,"help":"The supplier statement of work that flows CM requirements to the supplier. The classification log holds the work type and the designation authorship case.","group":"Documentation pointers","wide":false,"core":false,"req":"","reqGFE":false,"alias":[],"stage":"struct","reg":false,"blankNote":""},{"k":"mbse","h":"MBSE Element ID","kind":"text","w":14,"help":"The model element the CI resolves to, where MBSE is used.","group":"Model alignment","wide":false,"core":false,"req":"","reqGFE":false,"alias":[],"stage":"struct","reg":true,"blankNote":""},{"k":"ata","h":"ATA / SNS Ref","kind":"text","w":10,"help":"The ATA chapter or S1000D SNS reference.","group":"Model alignment","wide":false,"core":false,"req":"","reqGFE":false,"alias":[],"stage":"struct","reg":false,"blankNote":""},{"k":"mae","h":"Model Alignment Exception","kind":"long","w":36,"help":"Leave blank where the CI resolves to a model element. Where the CI structure departs from the model, record the reason Systems Engineering accepted.","group":"Model alignment","wide":true,"core":false,"req":"","reqGFE":false,"alias":[],"stage":"struct","reg":true,"blankNote":""},{"k":"critB","h":"Criterion (b) Met (Y/N)","kind":"yn","w":11,"help":"Criterion (b): failure might result in serious injury, loss of life, or loss of primary system capability. Record the answer from the CI selection criteria checklist. Before recording N, check the SCI sources and the unit record sources. Neither check catches an item whose loss is loss of primary system capability with no injury pathway. Find those items in the program’s own decomposition.","group":"Safety","wide":false,"core":false,"req":"","reqGFE":false,"alias":[],"stage":"sel","reg":true,"blankNote":""},{"k":"sci","h":"SCI (Y/N)","kind":"yn","w":8,"help":"Safety-Critical Item: a hardware or software item that has been determined through analysis to potentially contribute to a hazard with Catastrophic or Critical mishap potential, or that may be implemented to mitigate a hazard with Catastrophic or Critical mishap potential. Before recording N, examine the FMEA or FMECA, the SMS hazard log, and the system safety hazard analysis reports. A FMECA criticality code names a failure mode, not an item.","group":"Safety","wide":false,"core":false,"req":"","reqGFE":false,"alias":[],"stage":"sel","reg":true,"blankNote":""},{"k":"sciRef","h":"SCI Source Ref","kind":"text","w":22,"help":"The FMEA, FMECA, SMS hazard log entry, or system safety hazard analysis report that names the item. Blank where SCI = N.","group":"Safety","wide":false,"core":false,"req":"","reqGFE":false,"alias":[],"stage":"sel","reg":false,"blankNote":""},{"k":"selRef","h":"Selection Assessment Ref","kind":"text","w":14,"help":"The completed CI selection criteria checklist. The rationale lives on that checklist, not in this index.","group":"Selection, concurrence, and status","wide":false,"core":false,"req":"","reqGFE":false,"alias":[],"stage":"sel","reg":false,"blankNote":""},{"k":"concur","h":"Acquirer Concurrence Ref/Date","kind":"text","w":24,"help":"The latest submittal and concurrence that cover this CI. Update it on resubmittal. GFE rows read N/A.","group":"Selection, concurrence, and status","wide":false,"core":false,"req":"","reqGFE":false,"alias":[],"stage":"sel","reg":false,"blankNote":""},{"k":"fbl","h":"FBL Status/Date","kind":"text","w":22,"help":"The FBL is a system-level baseline. Record it on the top-level CI only. Enter N/A (system-level baseline) on every other row.","group":"Baselines","wide":false,"core":false,"req":"","reqGFE":false,"sug":["N/A (system-level baseline)","Planned CDR","Planned PCA","Planned first production unit delivery","Internal, planned CDR","Established YYYY-MM-DD","Internal, YYYY-MM-DD"],"alias":[],"stage":"sel","reg":false,"blankNote":""},{"k":"abl","h":"ABL Status/Date","kind":"text","w":20,"help":"Status or establishment date. For example: Established 2026-03-14, Planned CDR, or Internal, 2026-04-10.","group":"Baselines","wide":false,"core":false,"req":"","reqGFE":false,"sug":["N/A (system-level baseline)","Planned CDR","Planned PCA","Planned first production unit delivery","Internal, planned CDR","Established YYYY-MM-DD","Internal, YYYY-MM-DD"],"alias":[],"stage":"struct","reg":false,"blankNote":""},{"k":"ipbl","h":"Initial PBL Status/Date","kind":"text","w":20,"help":"The initial product baseline is established at completion of CDR.","group":"Baselines","wide":false,"core":false,"req":"","reqGFE":false,"sug":["N/A (system-level baseline)","Planned CDR","Planned PCA","Planned first production unit delivery","Internal, planned CDR","Established YYYY-MM-DD","Internal, YYYY-MM-DD"],"alias":[],"stage":"ident","reg":false,"blankNote":""},{"k":"fpbl","h":"Formalized PBL Status/Date","kind":"text","w":22,"help":"Takes its event from the CI’s Audit Designation Assessment Record. For a CI designated for PCA, the event is PCA completion. Otherwise, it is no later than first production unit delivery.","group":"Baselines","wide":false,"core":false,"req":"","reqGFE":false,"sug":["N/A (system-level baseline)","Planned CDR","Planned PCA","Planned first production unit delivery","Internal, planned CDR","Established YYYY-MM-DD","Internal, YYYY-MM-DD"],"alias":[],"stage":"prod","reg":false,"blankNote":""},{"k":"ser","h":"Serialization Recording Required (Y/N)","kind":"yn","w":13,"help":"Whether the product definition data requires serial number recording. Software CIs read N.","group":"Product unit records","wide":false,"core":false,"req":"","reqGFE":false,"alias":[],"stage":"ident","reg":false,"blankNote":""},{"k":"lot","h":"Lot/Batch Recording Required (Y/N)","kind":"yn","w":13,"help":"Whether the product definition data requires lot or batch recording. Both flags can be Y.","group":"Product unit records","wide":false,"core":false,"req":"","reqGFE":false,"alias":[],"stage":"ident","reg":false,"blankNote":""},{"k":"src","h":"Product Unit Record Requirement Source","kind":"src","w":40,"help":"Every source that drives serial or lot/batch recording. Sources stack. Name the designation, not only the mechanism. A critical safety item gets its serial number through IUID, so pick Critical safety item, and add IUID only where IUID also applies on its own. Leave blank where no unit record is required.","group":"Product unit records","wide":true,"core":false,"req":"","reqGFE":false,"alias":[],"stage":"ident","reg":false,"blankNote":""},{"k":"life","h":"Life Clock","kind":"enum","w":13,"help":"The category of life limit only. The limit value stays in the product definition data. The recording flags come from the sources, not from the clock.","group":"Product unit records","wide":false,"core":false,"req":"","reqGFE":false,"list":"life","alias":[],"stage":"ident","reg":false,"blankNote":""},{"k":"sh","h":"Special Handling (Y/N)","kind":"yn","w":10,"help":"Y where the product definition data imposes controlled handling, packaging, or storage to keep the item conforming. Special handling is not a criticality designation and not a serialization driver.","group":"Product unit records","wide":false,"core":false,"req":"","reqGFE":false,"alias":[],"stage":"ident","reg":false,"blankNote":""},{"k":"iuid","h":"IUID Required (Y/N)","kind":"yn","w":10,"help":"Y where item unique identification applies to the CI. The identifier registers carry the unique item identifiers, not this index.","group":"Product unit records","wide":false,"core":false,"req":"","reqGFE":false,"alias":[],"stage":"ident","reg":false,"blankNote":""},{"k":"notdec","h":"Not Decomposed (supplier-designed unit)","kind":"yn","w":13,"help":"Y where the CI is a supplier-designed item procured as a unit, such as a vendor item or a supplier-designed assembly. The company does not decompose it into further CIs.","group":"Structure","wide":false,"core":false,"req":"","reqGFE":false,"alias":[],"stage":"sel","reg":false,"blankNote":""},{"k":"status","h":"Status","kind":"enum","w":14,"help":"A CI reads Proposed until the Acquirer concurs. Rows are not deleted once concurred. De-designate the CI, or supersede it by a split or a consolidation.","group":"Selection, concurrence, and status","wide":false,"core":true,"req":"","reqGFE":false,"list":"status","alias":[],"stage":"cand","reg":true,"blankNote":""},{"k":"sup","h":"Supersedes / Superseded By","kind":"text","w":18,"help":"For a split or a consolidation. The old row names the new CI IDs. Each new row names the old CI ID. Separate IDs with semicolons.","group":"Selection, concurrence, and status","wide":false,"core":false,"req":"","reqGFE":false,"alias":[],"stage":"","reg":false,"blankNote":""},{"k":"notes","h":"Notes","kind":"long","w":48,"help":"Short notes. Point to the owning record rather than copying its content.","group":"Notes","wide":true,"core":false,"req":"","reqGFE":false,"alias":[],"stage":"","reg":false,"blankNote":""}],"groups":["Identification","Structure","Safety","Product unit records","Selection, concurrence, and status","Baselines","Documentation pointers","Model alignment","Notes"],"vcols":[{"k":"ciId","h":"CI ID","kind":"text","w":11,"core":true,"help":""},{"k":"pin","h":"Variant PIN / Version Identifier","kind":"text","w":20,"core":true,"help":""},{"k":"desc","h":"Variant Description","kind":"long","w":34,"core":false,"help":""},{"k":"callout","h":"Interface Callout (spec/ICD ref)","kind":"text","w":28,"core":false,"help":""},{"k":"ser","h":"Serialization Recording Required (Y/N)","kind":"yn","w":13,"core":true,"help":""},{"k":"lot","h":"Lot/Batch Recording Required (Y/N)","kind":"yn","w":13,"core":true,"help":""},{"k":"eff","h":"Effectivity","kind":"text","w":16,"core":false,"help":""},{"k":"notes","h":"Notes","kind":"long","w":44,"core":false,"help":""}],"lists":{"type":{"name":"CI Type","core":true,"items":[{"v":"HWCI","ab":"HW"},{"v":"CSCI","ab":"CSCI","sw":true},{"v":"Firmware","ab":"FW"}]},"tier":{"name":"Control Tier","core":true,"items":[{"v":"Acquirer-spec controlled","ab":"ACQ","m":"acq"},{"v":"Company-spec controlled","ab":"CO","m":"co"},{"v":"GFE","ab":"GFE","m":"gfe"}]},"status":{"name":"Status","core":true,"items":[{"v":"Active","m":"active"},{"v":"Proposed","m":"proposed"},{"v":"De-designated","m":"dedes","ret":true},{"v":"Superseded (split)","m":"split","ret":true},{"v":"Superseded (consolidated)","m":"cons","ret":true}]},"life":{"name":"Life Clock","core":true,"items":[{"v":"Cycle/usage","m":"cycle"},{"v":"Age/shelf-life","m":"age"},{"v":"Both","m":"both"},{"v":"None","m":"none"}]}},"sources":[{"name":"Cycle/usage-controlled life limit","d":"Serial","c1":false,"role":"cycle"},{"name":"ALI on a discrete part","d":"Serial","c1":false,"role":"cycle"},{"name":"Safe-life PSE","d":"Serial","c1":false,"role":"cycle"},{"name":"IUID","d":"Serial","c1":false,"role":"iuid"},{"name":"Physical parent of a serialized or lot-recorded item","d":"Serial","c1":false,"role":""},{"name":"Premium selection material","d":"Both","c1":false,"role":""},{"name":"Critical safety item","d":"Both","c1":true,"role":"csi"},{"name":"Fracture-critical traceable part","d":"Both","c1":true,"role":""},{"name":"Fracture-critical part","d":"Lot/batch","c1":true,"role":""},{"name":"Age/shelf-life-controlled life limit","d":"Lot/batch","c1":false,"role":"age"},{"name":"ALI expressed against a lot","d":"Lot/batch","c1":false,"role":""},{"name":"Special handling","d":"Lot/batch","c1":false,"role":"sh"},{"name":"Process and batch conditions","d":"Lot/batch","c1":false,"role":""},{"name":"Castings or alternative material design values","d":"Lot/batch","c1":false,"role":""},{"name":"Counterfeit avoidance","d":"Lot/batch","c1":false,"role":""},{"name":"Commercial grade dedication","d":"Lot/batch","c1":false,"role":""},{"name":"Other (state)","d":"Either","c1":false,"role":"other"}],"rules":{"ST1":{"on":true,"sev":"flag","area":"Structure","what":"Every row carries a CI ID.","basis":"Column notes, CI ID","needs":["id"]},"ST2":{"on":true,"sev":"flag","area":"Structure","what":"Each CI ID is unique.","basis":"Column notes, CI ID","needs":["id"]},"ST3":{"on":true,"sev":"flag","area":"Structure","what":"The Parent CI ID exists in the CI ID column.","basis":"How to use, hierarchy","needs":["parent"]},"ST4":{"on":true,"sev":"flag","area":"Structure","what":"The parent chain does not loop back on itself.","basis":"How to use, hierarchy","needs":["parent"]},"ST5":{"on":true,"sev":"flag","area":"Structure","what":"Only one live CI has no parent. That CI is the top-level CI.","basis":"How to use, hierarchy","needs":["parent"]},"ST6":{"on":true,"sev":"review","area":"Structure","what":"A live CI does not sit under a retired parent.","basis":"Process, splits and consolidations","needs":["parent","status"]},"ST7":{"on":true,"sev":"flag","area":"Structure","what":"Control Tier is recorded.","basis":"Process, CI structure and hierarchy","needs":["tier"]},"ST8":{"on":true,"sev":"flag","area":"Structure","what":"A Company-spec controlled CI sits below an Acquirer-spec controlled CI.","basis":"Definitions, Company-spec controlled CI","needs":["tier"]},"ST9":{"on":true,"sev":"flag","area":"Structure","what":"A supplier-designed unit marked Not Decomposed has no child CIs.","basis":"Process, supplier-designed items are not decomposed","needs":["notdec"]},"CO1":{"on":true,"sev":"flag","area":"Concurrence","what":"Status is recorded.","basis":"How to use, Status","needs":["status"]},"CO2":{"on":true,"sev":"flag","area":"Concurrence","what":"A CI reads Active only after the Acquirer concurs.","basis":"How to use; Process, Acquirer review and concurrence","needs":["status","concur"]},"CO3":{"on":true,"sev":"review","area":"Concurrence","what":"A recorded concurrence moves Status from Proposed to Active.","basis":"How to use, Status","needs":["status","concur"]},"CO4":{"on":true,"sev":"review","area":"Concurrence","what":"GFE rows read N/A for Acquirer concurrence.","basis":"How to use, Status","needs":["tier","concur"]},"CO5":{"on":true,"sev":"review","area":"Concurrence","what":"A live CI points to its CI selection criteria checklist.","basis":"Column notes, Selection Assessment Ref","needs":["selRef"]},"SA1":{"on":true,"sev":"flag","area":"Safety","what":"Criterion (b) is answered on every live CI except GFE.","basis":"How to use, Criterion (b) Met","needs":["critB"]},"SA2":{"on":true,"sev":"flag","area":"Safety","what":"SCI = Y requires Criterion (b) Met = Y.","basis":"Highlight checks, safety","needs":["sci","critB"]},"SA3":{"on":true,"sev":"flag","area":"Safety","what":"A Table C-1 source requires Criterion (b) Met = Y.","basis":"Highlight checks, safety; Table C-1","needs":["src","critB"]},"SA4":{"on":true,"sev":"flag","area":"Safety","what":"A critical safety item with SCI = N goes to System Safety review.","basis":"Highlight checks, safety","needs":["src","sci"]},"SA5":{"on":true,"sev":"flag","area":"Safety","what":"SCI = Y names the record that names the item.","basis":"Column notes, SCI Source Ref","needs":["sci","sciRef"]},"SA6":{"on":true,"sev":"review","area":"Safety","what":"SCI Source Ref is blank where SCI = N.","basis":"Column notes, SCI Source Ref","needs":["sci","sciRef"]},"SA7":{"on":true,"sev":"review","area":"Safety","what":"SCI is answered on every live CI except GFE.","basis":"How to use, SCI","needs":["sci"]},"RE1":{"on":true,"sev":"flag","area":"Unit records","what":"Serialization = Y needs a source that drives serial recording.","basis":"Highlight checks, recording","needs":["ser","src"]},"RE2":{"on":true,"sev":"flag","area":"Unit records","what":"A source that drives serial recording needs Serialization = Y.","basis":"Highlight checks, recording","needs":["ser","src"]},"RE3":{"on":true,"sev":"flag","area":"Unit records","what":"Lot/Batch = Y needs a source that drives lot recording.","basis":"Highlight checks, recording","needs":["lot","src"]},"RE4":{"on":true,"sev":"flag","area":"Unit records","what":"A source that drives lot recording needs Lot/Batch = Y.","basis":"Highlight checks, recording","needs":["lot","src"]},"RE5":{"on":true,"sev":"flag","area":"Unit records","what":"Special Handling = Y needs the Special handling source.","basis":"Highlight checks, recording","needs":["sh","src"]},"RE6":{"on":true,"sev":"flag","area":"Unit records","what":"The Special handling source needs Special Handling = Y.","basis":"Highlight checks, recording","needs":["sh","src"]},"RE7":{"on":true,"sev":"flag","area":"Unit records","what":"IUID Required = Y needs IUID or Critical safety item as a source.","basis":"Highlight checks, recording","needs":["iuid","src"]},"RE8":{"on":true,"sev":"flag","area":"Unit records","what":"IUID or Critical safety item as a source needs IUID Required = Y.","basis":"Highlight checks, recording; Process, IUID","needs":["iuid","src"]},"RE9":{"on":true,"sev":"review","area":"Unit records","what":"Each source uses a spelling from the source list.","basis":"Lists sheet","needs":["src"]},"RE10":{"on":true,"sev":"flag","area":"Unit records","what":"Software CIs read N and N for the two recording flags.","basis":"Column notes, recording flags","needs":["type"]},"RE11":{"on":true,"sev":"note","area":"Unit records","what":"The life clock and the named sources tell the same story.","basis":"Process, two clocks, one phrase","needs":["life","src"]},"RE12":{"on":true,"sev":"review","area":"Unit records","what":"The recording flags and the life clock are answered.","basis":"How to use, recording flags","needs":[]},"BA1":{"on":true,"sev":"flag","area":"Baselines","what":"The top-level CI records the FBL.","basis":"How to use, baseline columns","needs":["fbl"]},"BA2":{"on":true,"sev":"flag","area":"Baselines","what":"Every other row reads N/A (system-level baseline) for the FBL.","basis":"How to use, baseline columns","needs":["fbl"]},"QT1":{"on":true,"sev":"review","area":"Quantity","what":"Qty per NH reads N/A where NH PIN is N/A.","basis":"Column notes, Qty per NH","needs":["nhpin","qty"]},"QT2":{"on":true,"sev":"review","area":"Quantity","what":"Qty per NH is recorded where NH PIN is recorded.","basis":"Column notes, Qty per NH","needs":["nhpin","qty"]},"QT3":{"on":true,"sev":"flag","area":"Quantity","what":"Qty per NH is a whole number of 1 or more, or N/A.","basis":"Column notes, Qty per NH","needs":["qty"]},"QT4":{"on":true,"sev":"flag","area":"Quantity","what":"Rows sharing a PIN and NH PIN carry the same Qty per NH.","basis":"Column notes, Qty per NH","needs":["pin","nhpin","qty"]},"QT5":{"on":true,"sev":"flag","area":"Quantity","what":"Rows sharing a PIN and NH PIN number 1, or equal Qty per NH.","basis":"Column notes, Qty per NH","needs":["pin","nhpin","qty"]},"QT6":{"on":true,"sev":"note","area":"Quantity","what":"Qty per NH above 1 means Decision Path B has been run.","basis":"Column notes, Qty per NH","needs":["pin","nhpin","qty"]},"MO1":{"on":true,"sev":"review","area":"Model","what":"Where MBSE is used, each CI carries a model element or a model alignment exception.","basis":"Process, MBSE alignment requirement","needs":["mbse","mae"]},"MO2":{"on":true,"sev":"review","area":"Model","what":"A CI with a model element leaves Model Alignment Exception blank.","basis":"Column notes, Model Alignment Exception","needs":["mbse","mae"]},"SU1":{"on":true,"sev":"flag","area":"Supersession","what":"A superseded row names its new CI ID or IDs.","basis":"How to use, splits and consolidations","needs":["sup"]},"SU2":{"on":true,"sev":"flag","area":"Supersession","what":"Every ID named in Supersedes / Superseded By exists.","basis":"How to use, splits and consolidations","needs":["sup"]},"SU3":{"on":true,"sev":"flag","area":"Supersession","what":"The supersession trace is recorded on both rows.","basis":"How to use, splits and consolidations","needs":["sup"]},"GF1":{"on":true,"sev":"note","area":"GFE","what":"A GFE row is thin. Its other columns stay blank.","basis":"Column notes, Control Tier","needs":["tier"]},"DO1":{"on":true,"sev":"flag","area":"Documentation","what":"Specification No. reading See SCD needs an SCD.","basis":"Column notes, SCD","needs":["spec","scd"]},"VA1":{"on":true,"sev":"flag","area":"PN Variants","what":"Each variant row names a CI ID that exists.","basis":"How to use, PN Variants","needs":[]},"VA2":{"on":true,"sev":"review","area":"PN Variants","what":"A variant flag that differs from its CI says why in Notes.","basis":"How to use, PN Variants","needs":["ser","lot"]},"VA3":{"on":true,"sev":"flag","area":"PN Variants","what":"Software variants read N and N for the two recording flags.","basis":"Column notes, recording flags","needs":["type"]},"VA4":{"on":true,"sev":"flag","area":"PN Variants","what":"Each variant row carries a PIN or version identifier.","basis":"How to use, PN Variants","needs":[]},"VA5":{"on":true,"sev":"note","area":"PN Variants","what":"The CI row keeps the base or representative PIN.","basis":"How to use, PIN","needs":["pin"]},"VA6":{"on":true,"sev":"review","area":"PN Variants","what":"A CI with only one variant row is not a variant family.","basis":"Same-CI decision aid, verdicts","needs":[]},"LS1":{"on":true,"sev":"review","area":"Lists","what":"A dropdown column holds a value from its list.","basis":"Lists sheet","needs":[]},"TY1":{"on":true,"sev":"review","area":"Format","what":"A number or date column holds a number or a date.","basis":"Build settings","needs":[]}},"custom":[],"reference":[{"title":"What this index is","kind":"list","items":["The index holds CIs, and only CIs. Customer equipment outside the product structure goes on the interface register only. CIs that exist only between a sub-supplier and the company stay out. End-item traceability is not an index topic.","The index is the hub for CI status. It flags what applies to each CI and points to the record that owns each answer. It does not copy content from those records.","Each column holds a fixed property of the CI. Timing lives in the baseline columns."]},{"title":"Definitions","kind":"list","items":["**Configuration Item (CI).** Any hardware, software, firmware, or aggregation thereof that satisfies a system end-use function and is designated for separate configuration management. Designation includes establishing the CI’s requirements and verifying that its configuration meets those requirements and that its configuration documentation accurately describes its configuration.","**Part or Identifying Number (PIN).** The identifier that, combined with the design activity CAGE code, uniquely identifies an item and its configuration. The PIN changes when a modification creates a non-interchangeable condition.","**Safety-Critical Item (SCI).** A hardware or software item that has been determined through analysis to potentially contribute to a hazard with Catastrophic or Critical mishap potential, or that may be implemented to mitigate a hazard with Catastrophic or Critical mishap potential.","**Control Tier.** The record of who baselines and controls a CI’s specification. The three tiers are Acquirer-spec controlled, Company-spec controlled, and GFE.","**Product Definition Data (PDD).** The design data that defines an item’s physical and functional attributes: drawings, models, and associated lists such as parts lists."]},{"title":"","kind":"pull","items":["The safety-critical item is not the critical safety item. Different authority, different object, different obligation."]},{"title":"How the tool works","kind":"list","items":["**Hierarchy is entered once.** Pick the parent. The tool derives Level and the indented name. The three forms of hierarchy in the workbook can no longer disagree.","**Checks run as you type.** They mark a cell for review. They never block entry. The Checks tab lists every finding and the rule behind it.","**Sources drive the flags.** Pick each source that drives the unit record. The tool shows what the sources call for, and sets the four flags on request.","**Rows are retired, not deleted.** A CI the Acquirer has concurred in cannot be deleted. De-designate it, or split or consolidate it. The tool keeps the old row and writes the trace on both sides.","**Same PIN, another position.** Decision Path B can return separate CIs against one PIN. This action copies the row under a new CI ID. Key CSA on the CI and the installed position together.","**The index fills in stages.** A row needs one filled cell to import, and a CI needs only its ID, parent, name, type, and status to start. Set Index stage on the Index card. The tool then holds the blank-entry hints for columns that fall due at a later stage. The Excel columns tab shows what the import accepts and when each column falls due.","**Save keeps everything.** The saved file holds the index, the variants, and the edit log. The Excel export is the exchange copy. Import reads a Rev C workbook or a prior export. It reads the CI Index and PN Variants sheets.","**The structural floor.** The Structural floor tab lists each parent and child in different control tiers, and each GFE CI. Each needs at least one Mapped row on the interface register. The tool does not pair sibling CIs. Interfaces reach the register from Systems Engineering’s interface sources."]},{"title":"Rules carried from the template","kind":"list","items":["Every CI goes to the Acquirer for concurrence, including Company-spec controlled CIs. A CI reads Proposed until the Acquirer concurs. Enter the concurrence, then set Status to Active. GFE rows read N/A.","Criterion (b) Met is the umbrella safety column. Criterion (b) is mandatory for safety. Any condition in Table C-1 satisfies criterion (b) on its own. Neither the SCI sources nor Table C-1 catch an item whose loss is loss of primary system capability with no injury pathway. Find those items in the program’s own decomposition.","Influencing parts fail criterion (b) by their own definition but qualify on criterion (a). See the criticality designations appendix.","The FBL is a system-level baseline. Record it on the top-level CI only. The initial product baseline is established at completion of CDR. The formalized PBL takes its event from the Audit Designation Assessment Record. This index does not record audit designation.","Do not copy handling instructions, IUID triggers, unique item identifiers, life limit values, date codes, or heat-lot details into this index.","Where MBSE is used, CI parent-child relationships mirror the model decomposition. A same-CI verdict that mismatches the model is not entered until Systems Engineering dispositions it."]}],"examples":{"cis":[{"id":"CI-0001","parent":"","name":"Air Vehicle System","type":"HWCI","tier":"Acquirer-spec controlled","oda":"XYZ Aerostructures","cage":"1ABC2","pin":"AV-1000-001","nhpin":"N/A","qty":"N/A","spec":"SS-1000","scd":"","icd":"ICD-1000-501","ssow":"","mbse":"blk.AV","ata":"00","mae":"","critB":"Y","sci":"Y","sciRef":"SMS hazard log HL-001","selRef":"CISEL-0001","concur":"CIL-SUB-001 / 2025-08-29","fbl":"Established 2025-09-12","abl":"Established 2026-01-20","ipbl":"Planned CDR","fpbl":"Planned PCA","ser":"Y","lot":"N","src":"IUID; Cycle/usage-controlled life limit","life":"Cycle/usage","sh":"N","iuid":"Y","notdec":"N","status":"Active","sup":"","notes":"Top-level CI; capstone audits apply"},{"id":"CI-0012","parent":"CI-0001","name":"Flight Control System","type":"HWCI","tier":"Acquirer-spec controlled","oda":"XYZ Flight Controls","cage":"1ABC2","pin":"FCS-2200-001","nhpin":"AV-1000-001","qty":"1","spec":"PS-2200","scd":"","icd":"","ssow":"","mbse":"blk.FCS","ata":"27","mae":"","critB":"Y","sci":"Y","sciRef":"SMS hazard log HL-014","selRef":"CISEL-0012","concur":"CIL-SUB-001 / 2025-08-29","fbl":"N/A (system-level baseline)","abl":"Established 2026-02-02","ipbl":"Planned CDR","fpbl":"Planned PCA","ser":"N","lot":"N","src":"","life":"None","sh":"N","iuid":"N","notdec":"N","status":"Active","sup":"","notes":"Implements hazard controls HL-014/-015"},{"id":"CI-0013","parent":"CI-0012","name":"Flight Control Computer","type":"HWCI","tier":"Acquirer-spec controlled","oda":"XYZ Flight Controls","cage":"1ABC2","pin":"FCC-2210-003","nhpin":"RK-2205-001","qty":"1","spec":"PS-2210","scd":"","icd":"ICD-2200-210; ICD-2210-310; IRS-2210-101; IDD-2211-001","ssow":"","mbse":"blk.FCC","ata":"27-10","mae":"","critB":"Y","sci":"Y","sciRef":"SSHA-2210; HL-015","selRef":"CISEL-0013","concur":"CIL-SUB-001 / 2025-08-29","fbl":"N/A (system-level baseline)","abl":"Established 2026-02-02","ipbl":"Planned CDR","fpbl":"Planned PCA","ser":"Y","lot":"Y","src":"IUID; Special handling","life":"None","sh":"Y","iuid":"Y","notdec":"N","status":"Active","sup":"","notes":"NH PIN is the forward avionics rack, which is not a CI. The parent CI is the flight control system."},{"id":"CI-0014","parent":"CI-0013","name":"FCC Operational Flight Program","type":"CSCI","tier":"Acquirer-spec controlled","oda":"XYZ Software","cage":"1ABC2","pin":"OFP-2211-001","nhpin":"FCC-2210-003","qty":"1","spec":"SRS-2211","scd":"","icd":"IRS-2210-101; IDD-2211-001","ssow":"","mbse":"blk.OFP","ata":"27-10","mae":"","critB":"Y","sci":"Y","sciRef":"SSHA-2211; HL-015","selRef":"CISEL-0014","concur":"CIL-SUB-001 / 2025-08-29","fbl":"N/A (system-level baseline)","abl":"Established 2026-02-02","ipbl":"Planned CDR","fpbl":"Planned PCA","ser":"N","lot":"N","src":"","life":"None","sh":"N","iuid":"N","notdec":"N","status":"Active","sup":"","notes":"SCI software; version ID per SVD"},{"id":"CI-0021","parent":"CI-0012","name":"Actuator Assembly, Elevator","type":"HWCI","tier":"Company-spec controlled","oda":"ACME Actuation (SCD source)","cage":"9XYZ8","pin":"ACT-2230-002","nhpin":"FCS-2200-001","qty":"2","spec":"See SCD","scd":"SCD-2230-001","icd":"ICD-2200-210","ssow":"SSOW-114","mbse":"blk.ACT-E","ata":"27-30","mae":"","critB":"Y","sci":"Y","sciRef":"FMECA-2230; HL-014","selRef":"CISEL-0021","concur":"CIL-SUB-001 / 2025-08-29","fbl":"N/A (system-level baseline)","abl":"Internal, 2026-01-30","ipbl":"Internal, 2026-04-10","fpbl":"Planned PCA","ser":"Y","lot":"Y","src":"Critical safety item; Cycle/usage-controlled life limit","life":"Cycle/usage","sh":"N","iuid":"Y","notdec":"Y","status":"Active","sup":"","notes":"Source-controlled (WT02 per SSOW-114): ACME designs the internals under SCD-2230-001, and the company controls form, fit, function, interface, and qualification. Customer-designated critical safety item: serial through IUID, lot through source traceability. Bounds hazard control HL-014-C1 (see IF-0003, IF-0006). Qty 2: left and right elevators, one CI."},{"id":"CI-0030","parent":"CI-0001","name":"Mission Computer","type":"HWCI","tier":"Acquirer-spec controlled","oda":"XYZ Mission Systems","cage":"1ABC2","pin":"MC-3100-001","nhpin":"RK-2205-001","qty":"1","spec":"PS-3100","scd":"","icd":"ICD-2210-310; ICD-4600-100; IRS-3110-101; IDD-3111-001","ssow":"","mbse":"blk.MC","ata":"46","mae":"","critB":"Y","sci":"N","sciRef":"","selRef":"CISEL-0030","concur":"CIL-SUB-002 / 2026-01-15","fbl":"N/A (system-level baseline)","abl":"Established 2026-02-02","ipbl":"Planned CDR","fpbl":"Planned PCA","ser":"Y","lot":"Y","src":"IUID; Special handling","life":"None","sh":"Y","iuid":"Y","notdec":"N","status":"Active","sup":"","notes":"Criterion (b) met on loss of primary system capability. No FMEA, FMECA, SMS hazard log entry, or system safety hazard analysis report names it, so SCI = N."},{"id":"CI-0031","parent":"CI-0030","name":"Mission Computer Operational Software","type":"CSCI","tier":"Company-spec controlled","oda":"ECHO Mission Software (supplier)","cage":"4LMN5","pin":"MCS-3111-001","nhpin":"MC-3100-001","qty":"1","spec":"SRS-3111","scd":"","icd":"IRS-3110-101; IDD-3111-001","ssow":"SSOW-412","mbse":"blk.MCS","ata":"46","mae":"","critB":"Y","sci":"N","sciRef":"","selRef":"CISEL-0031","concur":"CIL-SUB-002 / 2026-01-15","fbl":"N/A (system-level baseline)","abl":"Internal, 2026-02-20","ipbl":"Internal, planned CDR","fpbl":"Planned first production unit delivery","ser":"N","lot":"N","src":"","life":"None","sh":"N","iuid":"N","notdec":"Y","status":"Active","sup":"","notes":"Supplier-developed CSCI (WT06 per SSOW-412). ECHO holds design authority over the software side of its interface with the host, so that interface is allocated (see IF-0014). Criterion (b) met on the same basis as its host. Version ID per SVD."},{"id":"CI-0050","parent":"CI-0001","name":"VHF Communication Subsystem","type":"HWCI","tier":"Acquirer-spec controlled","oda":"XYZ Avionics","cage":"1ABC2","pin":"VHF-2310-001","nhpin":"AV-1000-001","qty":"1","spec":"PS-2310","scd":"","icd":"ICD-4600-100","ssow":"","mbse":"blk.VHF","ata":"23-10","mae":"","critB":"N","sci":"N","sciRef":"","selRef":"CISEL-0050","concur":"CIL-SUB-002 / 2026-01-15","fbl":"N/A (system-level baseline)","abl":"Established 2026-02-02","ipbl":"Planned CDR","fpbl":"Planned PCA","ser":"N","lot":"N","src":"","life":"None","sh":"N","iuid":"N","notdec":"N","status":"Active","sup":"","notes":"Criterion (b) answer is illustrative. Whether loss of VHF is loss of primary system capability is program-specific."},{"id":"CI-0051","parent":"CI-0050","name":"Antenna, Broadband Blade","type":"HWCI","tier":"Company-spec controlled","oda":"BRAVO Antenna Co. (SCD source)","cage":"7QRS4","pin":"ANT-2390-001","nhpin":"AV-1000-001","qty":"2","spec":"See SCD","scd":"SCD-2390-001","icd":"","ssow":"SSOW-231","mbse":"pp.VHF.ANT","ata":"23-10","mae":"","critB":"N","sci":"N","sciRef":"","selRef":"CISEL-0051","concur":"CIL-SUB-002 / 2026-01-15","fbl":"N/A (system-level baseline)","abl":"Internal, 2026-02-15","ipbl":"Internal, planned CDR","fpbl":"Planned first production unit delivery","ser":"N","lot":"N","src":"","life":"None","sh":"N","iuid":"N","notdec":"Y","status":"Active","sup":"","notes":"Same PIN as CI-0053. Separate CIs per Decision Path B: B1 and B2 fire. Two rows share this PIN and NH PIN, matching Qty per NH = 2. Source-controlled (WT02): the company controls form, fit, function, interface, and qualification. Both part properties are typed by blk.ANT in the model."},{"id":"CI-0052","parent":"CI-0001","name":"MIDS JTRS Subsystem","type":"HWCI","tier":"Acquirer-spec controlled","oda":"XYZ Avionics","cage":"1ABC2","pin":"MID-2320-001","nhpin":"AV-1000-001","qty":"1","spec":"PS-2320","scd":"","icd":"ICD-4600-100","ssow":"","mbse":"blk.MIDS","ata":"23","mae":"","critB":"N","sci":"N","sciRef":"","selRef":"CISEL-0052","concur":"CIL-SUB-002 / 2026-01-15","fbl":"N/A (system-level baseline)","abl":"Established 2026-02-02","ipbl":"Planned CDR","fpbl":"Planned PCA","ser":"N","lot":"N","src":"","life":"None","sh":"N","iuid":"N","notdec":"N","status":"Active","sup":"","notes":"Criterion (b) answer is illustrative. Whether loss of Link 16 is loss of primary system capability is program-specific."},{"id":"CI-0053","parent":"CI-0052","name":"Antenna, Broadband Blade","type":"HWCI","tier":"Company-spec controlled","oda":"BRAVO Antenna Co. (SCD source)","cage":"7QRS4","pin":"ANT-2390-001","nhpin":"AV-1000-001","qty":"2","spec":"See SCD","scd":"SCD-2390-001","icd":"ICD-G-4000 (Government)","ssow":"SSOW-231","mbse":"pp.MIDS.ANT","ata":"23","mae":"","critB":"N","sci":"N","sciRef":"","selRef":"CISEL-0053","concur":"CIL-SUB-002 / 2026-01-15","fbl":"N/A (system-level baseline)","abl":"Internal, 2026-02-15","ipbl":"Internal, planned CDR","fpbl":"Planned first production unit delivery","ser":"N","lot":"N","src":"","life":"None","sh":"N","iuid":"N","notdec":"Y","status":"Active","sup":"","notes":"Same PIN as CI-0051. Separate CIs per Decision Path B: B1 and B2 fire. CSA keys on CI and installed position."},{"id":"CI-0054","parent":"CI-0052","name":"MIDS JTRS Terminal","type":"HWCI","tier":"GFE","oda":"Government (GFE)","cage":"","pin":"GFE-4000-100","nhpin":"RK-2205-001","qty":"1","spec":"","scd":"","icd":"ICD-G-4000 (Government)","ssow":"","mbse":"","ata":"","mae":"","critB":"","sci":"","sciRef":"","selRef":"","concur":"N/A","fbl":"","abl":"","ipbl":"","fpbl":"","ser":"","lot":"","src":"","life":"","sh":"","iuid":"","notdec":"","status":"Active","sup":"","notes":"Thin row. The Government holds the definition. The row anchors the hierarchy and the interface mapping."},{"id":"CI-0060","parent":"CI-0001","name":"Main Landing Gear Assembly","type":"HWCI","tier":"Acquirer-spec controlled","oda":"XYZ Landing Systems","cage":"1ABC2","pin":"MLG-3210-001","nhpin":"AV-1000-001","qty":"2","spec":"PS-3210","scd":"","icd":"","ssow":"","mbse":"blk.MLG","ata":"32-10","mae":"","critB":"Y","sci":"Y","sciRef":"SSHA-3210; HL-022","selRef":"CISEL-0060","concur":"CIL-SUB-002 / 2026-01-15","fbl":"N/A (system-level baseline)","abl":"Established 2026-02-02","ipbl":"Planned CDR","fpbl":"Planned PCA","ser":"Y","lot":"N","src":"Cycle/usage-controlled life limit; Physical parent of a serialized or lot-recorded item; IUID","life":"Cycle/usage","sh":"N","iuid":"Y","notdec":"N","status":"Active","sup":"","notes":"Qty 2: left and right main gear, one CI. Three sources stack on one row."},{"id":"CI-0061","parent":"CI-0060","name":"Drag Brace, MLG","type":"HWCI","tier":"Company-spec controlled","oda":"XYZ Landing Systems","cage":"1ABC2","pin":"DB-3211-003","nhpin":"MLG-3210-001","qty":"1","spec":"None; defined by drawing DB-3211","scd":"","icd":"","ssow":"","mbse":"","ata":"32-10","mae":"Not modeled. Selected on criterion (b) as a safe-life principal structural element below the model's level of detail.","critB":"Y","sci":"N","sciRef":"","selRef":"CISEL-0061","concur":"","fbl":"N/A (system-level baseline)","abl":"Within CI-0060 ABL","ipbl":"Internal, planned CDR","fpbl":"Planned PCA","ser":"Y","lot":"N","src":"Safe-life PSE; Cycle/usage-controlled life limit","life":"Cycle/usage","sh":"N","iuid":"N","notdec":"N","status":"Proposed","sup":"","notes":"Safe-life PSE with an ALS replacement time. A critical item, not named individually on the SCI list: the hazard analysis names the structural integrity program as the control. Proposed until the Acquirer concurs."}],"vars":[{"ciId":"CI-0021","pin":"ACT-2230-002","desc":"Elevator actuator, baseline build","callout":"SCD-2230-001 §3.3.1","ser":"Y","lot":"Y","eff":"AV units 1–12","notes":"Base variant"},{"ciId":"CI-0021","pin":"ACT-2230-004","desc":"Elevator actuator, revised connector","callout":"SCD-2230-001 §3.3.2 (per-variant callout)","ser":"Y","lot":"Y","eff":"AV units 13+","notes":"Non-interchangeable connector; one CI; no separation trigger fired"}]},"stages":[{"k":"cand","name":"Candidate","when":"Proposal and concept"},{"k":"sel","name":"Selection","when":"Through SFR"},{"k":"struct","name":"Structure","when":"Through PDR"},{"k":"ident","name":"Identifiers and records","when":"Through CDR"},{"k":"prod","name":"Production","when":"Formalized PBL"}]}/*<CFG*/;
+var PREVIEW=/*PRV>*/null/*<PRV*/;
+var TOOL='ci-index', ENGINE_REV='D';
+var C=CONFIG, FBL_NA='N/A (system-level baseline)';
+
+var COLS=C.cols, COL={}; COLS.forEach(function(c){ COL[c.k]=c; });
+function has(k){ return !!COL[k]; }
+function hd(k){ return COL[k]?COL[k].h:k; }
+var VCOLS=C.vcols, VCOLK={}; VCOLS.forEach(function(c){ VCOLK[c.k]=c; });
+function VC(k){ return VCOLK[k]?VCOLK[k].h:k; }
+var LISTS={yn:['Y','N']}, LITEMS={};
+Object.keys(C.lists).forEach(function(n){ LITEMS[n]=C.lists[n].items; LISTS[n]=C.lists[n].items.map(function(i){ return i.v; }); });
+function lab(n,m){ var it=(LITEMS[n]||[]).filter(function(i){ return i.m===m; })[0]; return it?it.v:null; }
+function abbr(n,v){ var it=(LITEMS[n]||[]).filter(function(i){ return i.v===v; })[0]; return it&&it.ab?it.ab:String(v||'').slice(0,4).toUpperCase(); }
+var ST={active:lab('status','active'),proposed:lab('status','proposed'),dedes:lab('status','dedes'),split:lab('status','split'),cons:lab('status','cons')};
+var RET={}; (LITEMS.status||[]).forEach(function(i){ if(i.ret) RET[i.v]=1; });
+var TIER={acq:lab('tier','acq'),co:lab('tier','co'),gfe:lab('tier','gfe')};
+var SWT={}; (LITEMS.type||[]).forEach(function(i){ if(i.sw) SWT[i.v]=1; });
+var LIFE={cycle:lab('life','cycle'),age:lab('life','age'),both:lab('life','both'),none:lab('life','none')};
+
+var SRC_LIST=C.sources.map(function(s){ return [s.name,s.d,s.c1?1:0,s.role||'']; });
+var SRC={}; SRC_LIST.forEach(function(s){ SRC[s[0].toLowerCase()]={name:s[0],d:s[1],c1:!!s[2],role:s[3]}; });
+function srcInfo(s){ return SRC[String(s||'').trim().toLowerCase()]; }
+function canon(s){ var i=srcInfo(s); return i?i.name:String(s||'').trim(); }
+function drivesSerial(s){ var i=srcInfo(s); return !!i&&(i.d==='Serial'||i.d==='Both'); }
+function drivesLot(s){ var i=srcInfo(s); return !!i&&(i.d==='Lot/batch'||i.d==='Both'); }
+function isC1(s){ var i=srcInfo(s); return !!i&&i.c1; }
+function isRole(s,role){ var i=srcInfo(s); return !!i&&i.role===role; }
+
+var OPS={is:'is',isnot:'is not',blank:'is blank',notblank:'is not blank',contains:'contains',notcontains:'does not contain',oneof:'is one of',always:'always'};
+var THENW={notblank:'must not be blank',blank:'must be blank',is:'must be',isnot:'must not be',contains:'must contain',notcontains:'must not contain',oneof:'must be one of'};
+var RULES=C.rules, CUST={};
+(C.custom||[]).forEach(function(c){ CUST[c.id]={on:c.on,sev:c.sev,area:'Custom',what:c.what||autoWhat(c),basis:c.basis||'Build settings',needs:[c.ifCol,c.thenCol].filter(function(k){ return k&&k!=='*'; })}; });
+var RQ={on:true,sev:'review',area:'Required',what:'A column the build marks as required is filled.',basis:'Build settings',needs:[]};
+function ruleInfo(id){ return RULES[id]||CUST[id]||(id==='RQ'?RQ:null); }
+function ruleOn(id){ var r=ruleInfo(id); return !!r&&!!r.on&&(r.needs||[]).every(has); }
+var FEAT=C.features;
+function autoWhat(c){
+  var h=function(k){ return (C.cols.filter(function(x){ return x.k===k; })[0]||{}).h||k; };
+  return (c.ifOp==='always'?'':'Where '+h(c.ifCol)+' '+OPS[c.ifOp]+(/blank|always/.test(c.ifOp)?'':' '+c.ifVal)+', ')+h(c.thenCol)+' '+THENW[c.thenOp]+(/blank/.test(c.thenOp)?'':' '+c.thenVal)+'.';
+}
+
+/* ===================================================================
+   State
+   =================================================================== */
+var S=fresh();
+function fresh(){
+  return { meta:{prog:'',doc:'',rev:'',who:'',stage:''}, cis:[], vars:[], log:[], cmp:null, imp:null,
+    tab:'overview', sel:null, col:{}, showRet:true,
+    filt:{q:'',status:'',tier:'',only:false}, csev:'', logq:'',
+    panel:null, sp:[{id:'',name:''},{id:'',name:''}], cons:{pick:{},id:'',name:''},
+    dirty:false, focusVal:null };
+}
+var F=[], FI={}, FV={}, T=null, CNT={flag:0,review:0,note:0};
+var $=function(id){ return document.getElementById(id); };
+var UIDN=0;
+function uid(){ UIDN++; return 'u'+Date.now().toString(36)+UIDN.toString(36); }
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function md(s){ return esc(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>'); }
+function tr(s){ return String(s==null?'':s).trim(); }
+function isNA(v){ return /^n\/?a\b/i.test(tr(v)); }
+function splitIds(s){ return String(s||'').split(/[;,]/).map(tr).filter(Boolean); }
+function live(r){ return !RET[r.status]; }
+function isGFE(r){ return !!TIER.gfe&&r.tier===TIER.gfe; }
+function isSW(r){ return !!SWT[r.type]; }
+function isSup(r){ return r.status&&(r.status===ST.split||r.status===ST.cons); }
+function pad(n){ return String(n).padStart(2,'0'); }
+function today(){ var d=new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+function stamp(){ var d=new Date(); return today()+' '+pad(d.getHours())+':'+pad(d.getMinutes()); }
+function slug(s){ return String(s||'program').replace(/[^A-Za-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40)||'program'; }
+function stem(){ return slug(C.text.stem||'CI-Index'); }
+function srcText(r){ return (r.src||[]).join('; '); }
+function val(r,k){ return k==='src'?srcText(r):tr(r[k]); }
+function blankRow(){ var r={uid:uid(),src:[]}; COLS.forEach(function(c){ if(c.kind!=='level'&&c.k!=='src') r[c.k]=''; }); return r; }
+function blankVar(){ var v={uid:uid()}; VCOLS.forEach(function(c){ v[c.k]=''; }); return v; }
+function cur(){ return S.sel&&T&&T.byUid[S.sel]; }
+function msg(t){ $('msg').textContent=t||''; }
+function dirty(){ S.dirty=true; var d=$('dirty'); d.className='dirty y'; d.textContent='Unsaved changes'; }
+function clean(){ S.dirty=false; var d=$('dirty'); d.className='dirty n'; d.textContent='Saved'; }
+function logEdit(ci,k,from,to,act){
+  S.log.push({t:stamp(), who:S.meta.who||'', ci:ci||'', f:k?hd(k):'', from:from==null?'':String(from), to:to==null?'':String(to), act:act||'Edit'});
+}
+
+/* ===================================================================
+   Theme and text
+   =================================================================== */
+function hex(h){ h=String(h||'').replace('#',''); if(h.length===3) h=h.split('').map(function(c){ return c+c; }).join(''); var n=parseInt(h,16); return isNaN(n)?null:[(n>>16)&255,(n>>8)&255,n&255]; }
+function mix(a,b,t){ return '#'+a.map(function(x,i){ return Math.round(x+(b[i]-x)*t).toString(16).padStart(2,'0'); }).join(''); }
+function applyText(){
+  var th=C.theme||{}, a=hex(th.accent), k=hex(th.ink), css=':root{';
+  if(a) css+='--rust:'+mix(a,a,0)+';--rust-ink:'+mix(a,[0,0,0],0.25)+';--rust-soft:'+mix(a,[255,255,255],0.85)+';';
+  if(k) css+='--ink:'+mix(k,k,0)+';--ink-2:'+mix(k,[255,255,255],0.08)+';';
+  var st=document.createElement('style'); st.textContent=css+'}'; document.head.appendChild(st);
+  var t=C.text||{};
+  document.title=t.title||'CI Index';
+  $('t-top').textContent=t.top||''; $('t-sub').textContent=t.sub||'';
+  $('t-h1').textContent=t.h1||''; $('t-lede').textContent=t.lede||'';
+  $('t-foot').innerHTML=(t.foot||[]).map(function(p){ return '<p>'+md(p)+'</p>'; }).join('');
+  if(PREVIEW) $('prevbar').style.display='block';
+}
+
+/* ===================================================================
+   Hierarchy
+   =================================================================== */
+function buildTree(){
+  var ids={}, kids={}, roots=[], byUid={};
+  S.cis.forEach(function(r){ byUid[r.uid]=r; if(r.id) (ids[r.id]=ids[r.id]||[]).push(r); });
+  S.cis.forEach(function(r){
+    if(!r.parent) roots.push(r);
+    else if(ids[r.parent]&&ids[r.parent][0]!==r){ var p=ids[r.parent][0]; (kids[p.uid]=kids[p.uid]||[]).push(r); }
+  });
+  var order=[], lvl={}, seen={};
+  function walk(r,d){ if(seen[r.uid]) return; seen[r.uid]=1; lvl[r.uid]=d; order.push(r); (kids[r.uid]||[]).forEach(function(c){ walk(c,d+1); }); }
+  roots.forEach(function(r){ walk(r,0); });
+  var unplaced=S.cis.filter(function(r){ return !seen[r.uid]; });
+  var cyc={}, orphan={};
+  unplaced.forEach(function(r){
+    if(r.parent&&!ids[r.parent]) { orphan[r.uid]=1; return; }
+    if(r.parent===r.id){ cyc[r.uid]=1; return; }
+    var x=r, hop={}, n=0;
+    while(x&&x.parent&&ids[x.parent]&&n<10000){ if(hop[x.uid]){ cyc[r.uid]=1; break; } hop[x.uid]=1; x=ids[x.parent][0]; n++; }
+  });
+  T={ids:ids,kids:kids,roots:roots,order:order,lvl:lvl,unplaced:unplaced,cyc:cyc,orphan:orphan,byUid:byUid};
+  return T;
+}
+function parentOf(r){ return r.parent&&T.ids[r.parent]?T.ids[r.parent][0]:null; }
+function ancestors(r){ var a=[], x=parentOf(r), n=0; while(x&&n<500){ if(x===r||a.indexOf(x)>=0) break; a.push(x); x=parentOf(x); n++; } return a; }
+function descendants(r){ var out=[], st=(T.kids[r.uid]||[]).slice(); while(st.length){ var x=st.shift(); if(out.indexOf(x)>=0) continue; out.push(x); st=st.concat(T.kids[x.uid]||[]); } return out; }
+function liveKids(r){ return (T.kids[r.uid]||[]).filter(live); }
+function exportOrder(){ return T.order.concat(T.unplaced); }
+
+/* ===================================================================
+   Checks
+   =================================================================== */
+function cond(v,op,x){
+  v=tr(v).toLowerCase(); var s=String(x==null?'':x).trim().toLowerCase();
+  switch(op){
+    case 'always': return true;
+    case 'is': return v===s;
+    case 'isnot': return v!==s;
+    case 'blank': return !v;
+    case 'notblank': return !!v;
+    case 'contains': return v.indexOf(s)>=0;
+    case 'notcontains': return v.indexOf(s)<0;
+    case 'oneof': return s.split(',').map(function(y){ return y.trim(); }).indexOf(v)>=0;
+  }
+  return false;
+}
+function runChecks(){
+  buildTree();
+  F=[]; FI={}; FV={}; CNT={flag:0,review:0,note:0}; HELD=[];
+  function add(rule,r,k,m,v,sev){
+    if(!sev){ if(!ruleOn(rule)) return; sev=ruleInfo(rule).sev; }
+    if(r&&!v&&heldBlank(rule,r,k)){ HELD.push({rule:rule,uid:r.uid,k:k}); return; }
+    var f={rule:rule,sev:sev,uid:r?r.uid:null,vuid:v?v.uid:null,k:k||null,m:m};
+    F.push(f); CNT[f.sev]++;
+    if(r){ var o=FI[r.uid]=FI[r.uid]||{all:[],k:{}}; o.all.push(f); if(k) (o.k[k]=o.k[k]||[]).push(f); }
+    if(v){ var p=FV[v.uid]=FV[v.uid]||{all:[],k:{}}; p.all.push(f); if(k) (p.k[k]=p.k[k]||[]).push(f); }
+  }
+  var usesMBSE=has('mbse')&&S.cis.some(function(r){ return tr(r.mbse); });
+  var liveRoots=T.roots.filter(live);
+  var srcRole=function(src,role){ return src.filter(function(s){ return isRole(s,role); }).map(canon); };
+
+  S.cis.forEach(function(r){
+    var L=live(r), G=isGFE(r), src=r.src||[], par=parentOf(r);
+    var hasOther=srcRole(src,'other').length>0;
+
+    /* columns: required, list, and format */
+    COLS.forEach(function(c){
+      if(c.kind==='level') return;
+      var v=val(r,c.k);
+      if(c.req&&L&&!v&&!(G&&!c.reqGFE)) add('RQ',r,c.k,hd(c.k)+' is required, and it is blank.',null,c.req);
+      if(c.kind==='enum'&&v&&LISTS[c.list]&&LISTS[c.list].indexOf(v)<0) add('LS1',r,c.k,'"'+v+'" is not on the '+(C.lists[c.list]?C.lists[c.list].name:c.list)+' list.');
+      if(c.kind==='yn'&&v&&v!=='Y'&&v!=='N') add('LS1',r,c.k,hd(c.k)+' reads "'+v+'". Enter Y or N.');
+      if(c.kind==='number'&&v&&isNaN(+v)&&!isNA(v)) add('TY1',r,c.k,hd(c.k)+' reads "'+v+'". Enter a number.');
+      if(c.kind==='date'&&v&&!/^\d{4}-\d{2}-\d{2}$/.test(v)) add('TY1',r,c.k,hd(c.k)+' reads "'+v+'". Enter a date as YYYY-MM-DD.');
+    });
+
+    /* custom rules */
+    (C.custom||[]).forEach(function(c){
+      if(!ruleOn(c.id)) return;
+      if(c.scope!=='all'&&!L) return;
+      if(c.skipGFE&&G) return;
+      if(!cond(c.ifCol==='*'?'':val(r,c.ifCol),c.ifOp,c.ifVal)) return;
+      if(cond(val(r,c.thenCol),c.thenOp,c.thenVal)) return;
+      add(c.id,r,c.thenCol,c.msg||CUST[c.id].what,null,c.sev);
+    });
+
+    /* structure */
+    if(!tr(r.id)) add('ST1',r,'id','CI ID is blank. Every CI needs a program-unique identifier.');
+    else if(T.ids[r.id].length>1) add('ST2',r,'id','CI ID '+r.id+' appears on '+T.ids[r.id].length+' rows. Each CI ID must be unique.');
+    if(r.parent&&T.orphan[r.uid]) add('ST3',r,'parent','Parent CI ID '+r.parent+' does not exist in the index.');
+    if(T.cyc[r.uid]) add('ST4',r,'parent','The parent chain loops back to this CI. Break the loop.');
+    if(!r.parent&&L&&liveRoots.length>1&&liveRoots[0]!==r) add('ST5',r,'parent','A second CI has no parent. Only the top-level CI ('+(liveRoots[0].id||'unnamed')+') has no parent.');
+    if(L&&par&&!live(par)) add('ST6',r,'parent','The parent CI '+par.id+' reads '+par.status+'. Reparent this CI or retire it.');
+    if(!tr(r.tier)) add('ST7',r,'tier',hd('tier')+' is blank.');
+    if(TIER.co&&r.tier===TIER.co&&!ancestors(r).some(function(a){ return a.tier===TIER.acq; }))
+      add('ST8',r,'tier','A '+TIER.co+' CI sits below an '+TIER.acq+' CI. No ancestor of this CI is '+TIER.acq+'.');
+    if(r.notdec==='Y'&&liveKids(r).length) add('ST9',r,'notdec','This CI is a supplier-designed unit, yet it has child CIs. Do not decompose a supplier-designed item to identify customer-facing CIs.');
+
+    /* status and concurrence */
+    if(!tr(r.status)) add('CO1',r,'status','Status is blank.');
+    if(!G){
+      if(r.status===ST.active&&!tr(r.concur)) add('CO2',r,'concur','Status reads '+ST.active+', but no Acquirer concurrence is recorded. A CI reads '+ST.proposed+' until the Acquirer concurs.');
+      if(r.status===ST.proposed&&tr(r.concur)&&!isNA(r.concur)) add('CO3',r,'status','An Acquirer concurrence is recorded. Set Status to '+ST.active+'.');
+      if(L&&!tr(r.selRef)) add('CO5',r,'selRef','No CI selection criteria checklist is referenced.');
+    } else if(tr(r.concur)&&!isNA(r.concur)) add('CO4',r,'concur','GFE rows read N/A for Acquirer concurrence.');
+
+    if(/see\s+scd/i.test(r.spec||'')&&!tr(r.scd)) add('DO1',r,'scd',hd('spec')+' reads See SCD, but no SCD is recorded.');
+
+    /* supersession */
+    var sup=splitIds(r.sup);
+    if(isSup(r)&&!sup.length) add('SU1',r,'sup','A superseded row names the new CI ID or IDs.');
+    sup.forEach(function(id){
+      if(!T.ids[id]) { add('SU2',r,'sup',id+' does not exist in the index.'); return; }
+      var t=T.ids[id][0];
+      if(splitIds(t.sup).indexOf(r.id)<0) add('SU3',r,'sup',id+' does not name '+(r.id||'this CI')+' in '+hd('sup')+'. Record the trace on both rows.');
+    });
+
+    if(G){
+      var thin=['spec','scd','ssow','mae','critB','sci','sciRef','selRef','fbl','abl','ipbl','fpbl','ser','lot','life','sh','iuid','notdec'].filter(function(k){ return has(k)&&tr(r[k]); });
+      if(has('src')&&src.length) thin.push('src');
+      if(thin.length) add('GF1',r,null,'A GFE row is thin. These columns usually stay blank: '+thin.map(hd).join(', ')+'.');
+    }
+    if(G||!L) return;
+
+    /* safety */
+    var c1=src.filter(isC1).map(canon), csi=srcRole(src,'csi');
+    if(!r.critB) add('SA1',r,'critB','Criterion (b) is not answered. Record the answer from the CI selection criteria checklist.');
+    if(!r.sci) add('SA7',r,'sci','SCI is not answered.');
+    if(r.sci==='Y'&&r.critB!=='Y') add('SA2',r,'critB','SCI = Y, so '+hd('critB')+' should read Y. A safety-critical item satisfies criterion (b).');
+    if(c1.length&&r.critB!=='Y') add('SA3',r,'critB',c1.join(' and ')+' meets criterion (b) on its own (Table C-1). '+hd('critB')+' should read Y.');
+    if(csi.length&&r.sci!=='Y') add('SA4',r,'sci',csi[0]+' is a source, but SCI is not Y. A critical safety item is expected on the SCI list. Its absence is a gap for System Safety to resolve.');
+    if(r.sci==='Y'&&!tr(r.sciRef)) add('SA5',r,'sciRef','SCI = Y, but no record that names the item is cited.');
+    if(r.sci==='N'&&tr(r.sciRef)) add('SA6',r,'sciRef','SCI = N, so '+hd('sciRef')+' stays blank.');
+
+    /* recording */
+    var serS=src.filter(drivesSerial).map(canon), lotS=src.filter(drivesLot).map(canon);
+    var shS=srcRole(src,'sh'), iuS=srcRole(src,'iuid').concat(csi);
+    if(r.ser==='Y'&&!serS.length&&!hasOther) add('RE1',r,'ser','Serialization = Y, but no source that drives serial recording is named.');
+    if(serS.length&&r.ser!=='Y') add('RE2',r,'ser',serS.join('; ')+' drives serial recording. Serialization should read Y.');
+    if(r.lot==='Y'&&!lotS.length&&!hasOther) add('RE3',r,'lot','Lot/Batch = Y, but no source that drives lot or batch recording is named.');
+    if(lotS.length&&r.lot!=='Y') add('RE4',r,'lot',lotS.join('; ')+' drives lot or batch recording. Lot/Batch should read Y.');
+    if(r.sh==='Y'&&!shS.length&&!hasOther) add('RE5',r,'sh','Special Handling = Y needs a special handling source.');
+    if(shS.length&&r.sh!=='Y') add('RE6',r,'sh',shS[0]+' is a source. Special Handling should read Y.');
+    if(r.iuid==='Y'&&!iuS.length&&!hasOther) add('RE7',r,'iuid','IUID Required = Y needs an IUID or critical safety item source.');
+    if(iuS.length&&r.iuid!=='Y') add('RE8',r,'iuid',iuS.join(' and ')+' brings item unique identification. IUID Required should read Y.');
+    src.forEach(function(s){ if(!srcInfo(s)) add('RE9',r,'src','"'+s+'" is not on the source list. Use a listed spelling, or pick an Other source and say what it is in Notes.'); });
+    if(isSW(r)&&(r.ser==='Y'||r.lot==='Y')) add('RE10',r,r.ser==='Y'?'ser':'lot','Software CIs read N and N. Their identity sits on the loadable part number and the baseline.');
+    var cyS=srcRole(src,'cycle').length>0, agS=srcRole(src,'age').length>0;
+    if(LIFE.cycle&&(r.life===LIFE.cycle||r.life===LIFE.both)&&!cyS) add('RE11',r,'life','The life clock reads '+r.life+', but no cycle, ALI, or safe-life source is named. Confirm which source drives the record.');
+    if(LIFE.age&&(r.life===LIFE.age||r.life===LIFE.both)&&!agS) add('RE11',r,'life','The life clock reads '+r.life+', but no age or shelf-life source is named. Confirm which source drives the record.');
+    if((r.life===LIFE.none||!r.life)&&has('life')&&(cyS||agS)) add('RE11',r,'life','A life-limit source is named, but the life clock reads '+(r.life||'blank')+'.');
+    var blank=['ser','lot','iuid','sh','life'].filter(function(k){ return has(k)&&!r[k]; });
+    blank.filter(notDue).forEach(function(k){ HELD.push({rule:'RE12',uid:r.uid,k:k}); });
+    blank=blank.filter(function(k){ return !notDue(k); });
+    if(blank.length) add('RE12',r,blank[0],'Not answered: '+blank.map(hd).join(', ')+'.');
+
+    /* baselines */
+    if(!r.parent){ if(!tr(r.fbl)||isNA(r.fbl)) add('BA1',r,'fbl','The FBL is a system-level baseline. Record it on the top-level CI.'); }
+    else if(tr(r.fbl)!==FBL_NA) add('BA2',r,'fbl','Enter '+FBL_NA+' on every row except the top-level CI.');
+
+    /* model */
+    if(usesMBSE&&!tr(r.mbse)&&!tr(r.mae)) add('MO1',r,'mbse','No model element and no model alignment exception. Where the CI departs from the model, record the reason Systems Engineering accepted.');
+    if(tr(r.mbse)&&tr(r.mae)) add('MO2',r,'mae','The CI resolves to model element '+r.mbse+'. Leave '+hd('mae')+' blank, or clear the element ID.');
+  });
+
+  /* quantity per next higher assembly */
+  var groups={};
+  S.cis.forEach(function(r){
+    if(!live(r)) return;
+    var nh=tr(r.nhpin), q=tr(r.qty);
+    if(isNA(nh)&&q&&!isNA(q)) add('QT1',r,'qty','NH PIN is N/A, so Qty per NH reads N/A.');
+    if(nh&&!isNA(nh)&&!q) add('QT2',r,'qty','Qty per NH is blank. Take it from the next higher assembly’s parts list.');
+    if(q&&!isNA(q)&&!/^[1-9]\d*$/.test(q)) add('QT3',r,'qty','Qty per NH reads "'+q+'". Enter a whole number of 1 or more, or N/A.');
+    if(tr(r.pin)&&nh&&!isNA(nh)) { var key=tr(r.pin)+'\u0001'+nh; (groups[key]=groups[key]||[]).push(r); }
+  });
+  Object.keys(groups).forEach(function(key){
+    var g=groups[key], qs={};
+    g.forEach(function(r){ if(/^[1-9]\d*$/.test(tr(r.qty))) qs[tr(r.qty)]=1; });
+    var ql=Object.keys(qs), pin=tr(g[0].pin), nh=tr(g[0].nhpin);
+    if(ql.length>1){ g.forEach(function(r){ add('QT4',r,'qty','Rows sharing PIN '+pin+' and NH PIN '+nh+' carry different Qty per NH values ('+ql.join(', ')+').'); }); return; }
+    if(!ql.length) return;
+    var q=+ql[0], n=g.length, ids=g.map(function(r){ return r.id; }).join(', ');
+    if(n!==1&&n!==q) g.forEach(function(r){ add('QT5',r,'qty',n+' rows share PIN '+pin+' and NH PIN '+nh+' ('+ids+'). Qty per NH is '+q+'. '+(q===1?'One row should carry this PIN and NH PIN.':'The count should be 1, where one CI covers every instance, or '+q+', where each instance is its own CI.')); });
+    else if(q>1) g.forEach(function(r){ add('QT6',r,'qty','Qty per NH is '+q+' and '+(n===1?'one CI covers every instance':'each instance is its own CI ('+ids+')')+'. Confirm Decision Path B of the same-CI decision aid has been run.'); });
+  });
+
+  /* PN Variants */
+  if(FEAT.tabs.variants){
+    var vByCi={};
+    S.vars.forEach(function(v){
+      var c=tr(v.ciId), r=c&&T.ids[c]?T.ids[c][0]:null;
+      if(!c) add('VA1',null,'ciId','The variant row names no CI ID.',v);
+      else if(!r) add('VA1',null,'ciId','CI '+c+' does not exist in the index.',v);
+      if(!tr(v.pin)) add('VA4',r,'pin','A variant row carries no PIN or version identifier.',v);
+      if(r){
+        (vByCi[r.uid]=vByCi[r.uid]||[]).push(v);
+        if(isSW(r)&&(v.ser==='Y'||v.lot==='Y')) add('VA3',r,v.ser==='Y'?'ser':'lot','Software variants read N and N.',v);
+        else ['ser','lot'].forEach(function(k){
+          if(v[k]&&r[k]&&v[k]!==r[k]&&!tr(v.notes)) add('VA2',r,k,'Variant '+(v.pin||'')+' reads '+VC(k)+' = '+v[k]+', but CI '+r.id+' reads '+r[k]+'. Variants share the CI’s source. Where this variant’s source differs, say so in its Notes.',v);
+        });
+      }
+    });
+    Object.keys(vByCi).forEach(function(u){
+      var r=T.byUid[u], vs=vByCi[u];
+      if(vs.length===1) add('VA6',r,null,'CI '+r.id+' has one PN Variants row. The sheet records a one-CI, multiple-PIN-variant verdict. One row is not a family.',vs[0]);
+      if(!isSW(r)&&tr(r.pin)&&!vs.some(function(v){ return tr(v.pin)===tr(r.pin); }))
+        add('VA5',r,'pin','The CI row PIN '+r.pin+' does not appear among its variants. Keep the base or representative PIN on the CI row.');
+    });
+  }
+
+  var ordIdx={}; exportOrder().forEach(function(r,i){ ordIdx[r.uid]=i; });
+  var SV={flag:0,review:1,note:2};
+  F.sort(function(a,b){ return (SV[a.sev]-SV[b.sev])||((a.uid?ordIdx[a.uid]:1e9)-(b.uid?ordIdx[b.uid]:1e9)); });
+}
+function worst(list){ if(!list||!list.length) return ''; if(list.some(function(f){ return f.sev==='flag'; })) return 'flag'; if(list.some(function(f){ return f.sev==='review'; })) return 'review'; return 'note'; }
+function rowCounts(u){ var o=FI[u]; if(!o) return {f:0,r:0}; var f=0,r=0; o.all.forEach(function(x){ if(x.sev==='flag') f++; else if(x.sev==='review') r++; }); return {f:f,r:r}; }
+
+/* ===================================================================
+   Rendering: frame
+   =================================================================== */
+var TABS=[['overview','Overview'],['tree','Hierarchy'],['table','Table'],['variants','PN Variants'],['checks','Checks'],['bound','Structural floor'],['colmap','Excel columns'],['log','Edit log'],['ref','Reference']]
+  .filter(function(t){ return t[0]==='tree'||FEAT.tabs[t[0]]; });
+function tabOn(t){ return TABS.some(function(x){ return x[0]===t; }); }
+function tally(){
+  var n=S.cis.length, lv=S.cis.filter(live), a=lv.filter(function(r){ return r.status===ST.active; }).length, p=lv.filter(function(r){ return r.status===ST.proposed; }).length;
+  $('tally').innerHTML=
+    '<span class="chip">'+lv.length+' live CI'+(lv.length===1?'':'s')+'</span>'+
+    '<span class="chip ok">'+a+' '+esc(String(ST.active||'active').toLowerCase())+'</span>'+
+    '<span class="chip'+(p?' hold':'')+'">'+p+' '+esc(String(ST.proposed||'proposed').toLowerCase())+'</span>'+
+    (n-lv.length?'<span class="chip">'+(n-lv.length)+' retired</span>':'')+
+    '<span class="chip'+(CNT.flag?' bad':'')+'">'+CNT.flag+' flag'+(CNT.flag===1?'':'s')+'</span>'+
+    '<span class="chip'+(CNT.review?' hold':'')+'">'+CNT.review+' to review</span>'+
+    (HELD.length?'<span class="chip count" title="Blank-entry hints for columns that fall due at a later stage">'+HELD.length+' held for later stages</span>':'')+
+    (FEAT.tabs.variants?'<span class="chip count">'+S.vars.length+' variant row'+(S.vars.length===1?'':'s')+'</span>':'');
+}
+function tabs(){
+  $('tabs').innerHTML=TABS.map(function(t){
+    var n='';
+    if(t[0]==='checks'&&(CNT.flag||CNT.review)) n=CNT.flag?'<span class="n">'+CNT.flag+'</span>':'<span class="n r">'+CNT.review+'</span>';
+    return '<button class="tab'+(S.tab===t[0]?' on':'')+'" role="tab" aria-selected="'+(S.tab===t[0])+'" data-tab="'+t[0]+'">'+t[1]+n+'</button>';
+  }).join('');
+}
+function render(){
+  if(!tabOn(S.tab)) S.tab=TABS[0][0];
+  runChecks(); tally(); tabs();
+  if(S.sel&&!T.byUid[S.sel]) S.sel=null;
+  if(!S.sel&&S.cis.length) S.sel=exportOrder()[0].uid;
+  var h='';
+  if(!S.cis.length&&S.tab!=='ref'&&S.tab!=='log'&&S.tab!=='colmap') h=emptyHTML();
+  else if(S.tab==='overview') h=overviewHTML();
+  else if(S.tab==='tree') h=treeViewHTML();
+  else if(S.tab==='table') h=tableViewHTML();
+  else if(S.tab==='variants') h=variantsHTML();
+  else if(S.tab==='checks') h=checksHTML();
+  else if(S.tab==='bound') h=floorHTML();
+  else if(S.tab==='colmap') h=colmapHTML();
+  else if(S.tab==='log') h=logHTML();
+  else if(S.tab==='ref') h=refHTML();
+  $('view').innerHTML=h;
+  stageUI();
+  var pins={}; S.cis.forEach(function(r){ if(tr(r.pin)) pins[tr(r.pin)]=1; });
+  $('dl-pin').innerHTML='<option value="N/A"></option>'+Object.keys(pins).sort().map(function(p){ return '<option value="'+esc(p)+'"></option>'; }).join('');
+}
+var RT=null;
+function sched(){ clearTimeout(RT); RT=setTimeout(refresh,140); }
+function refresh(){
+  runChecks(); tally(); tabs();
+  if(S.tab==='tree'&&$('treelist')){
+    $('treelist').innerHTML=treeListHTML();
+    var r=cur(); if(!r) return;
+    $('dhead').innerHTML=dheadHTML(r);
+    $('dfind').innerHTML=dfindHTML(r);
+    COLS.forEach(function(c){
+      var m=$('m-'+c.k); if(!m) return;
+      m.innerHTML=fmsgs(FI[r.uid],c.k);
+      var el=$('f-'+c.k); if(el){ el.classList.remove('x-flag','x-review'); var w=worst(FI[r.uid]&&FI[r.uid].k[c.k]); if(w==='flag'||w==='review') el.classList.add('x-'+w); }
+    });
+    if($('dimpl')) $('dimpl').innerHTML=implHTML(r);
+  } else if(S.tab==='variants'){
+    S.vars.forEach(function(v){
+      var m=$('vm-'+v.uid); if(m) m.innerHTML=vmsgHTML(v);
+      VCOLS.forEach(function(c){ var td=$('vc-'+v.uid+'-'+c.k); if(!td) return; td.classList.remove('x-flag','x-review'); var w=worst(FV[v.uid]&&FV[v.uid].k[c.k]); if(w==='flag'||w==='review') td.classList.add('x-'+w); });
+    });
+  }
+}
+
+/* ===================================================================
+   Empty state and overview
+   =================================================================== */
+function hasEx(){ return FEAT.examples&&C.examples&&C.examples.cis&&C.examples.cis.length; }
+function emptyHTML(){
+  return '<div class="card empty"><h2>The index is empty.</h2>'+
+    '<p class="small" style="margin:0 auto">Start with the top-level CI. Or load the example rows to see how the tool works. Or bring in an index you already keep.</p>'+
+    '<div class="btnrow"><button class="btn pri" data-act="add-root">Add the top-level CI</button>'+
+    (hasEx()?'<button class="btn" data-act="examples">Load the example rows</button>':'')+
+    '<button class="btn" data-act="open">Open saved index</button><button class="btn" data-act="import">Import Excel workbook</button></div>'+(tabOn('colmap')?'<p class="small" style="margin:14px auto 0">Importing a workbook? <button class="lnk" data-tab="colmap">See the Excel columns the import accepts</button>, and the minimum each row needs.</p>':'')+'</div>';
+}
+function baseClass(v){
+  v=tr(v);
+  if(!v) return 'blank';
+  if(/^established/i.test(v)||/^internal,\s*\d{4}-\d{2}-\d{2}/i.test(v)||/^formalized/i.test(v)) return 'est';
+  if(/^within/i.test(v)) return 'within';
+  if(/planned/i.test(v)) return 'plan';
+  if(isNA(v)) return 'na';
+  return 'other';
+}
+var BC={est:['Established','var(--teal)'],within:['Within parent baseline','#7FA9A4'],plan:['Planned','var(--amber)'],other:['Other entry','var(--mute)'],blank:['Blank','var(--rule)']};
+function stackBar(rows,k){
+  var c={est:0,within:0,plan:0,other:0,blank:0,na:0};
+  rows.forEach(function(r){ c[baseClass(r[k])]++; });
+  var tot=rows.length-c.na||1, h='<div class="sbar">';
+  ['est','within','plan','other','blank'].forEach(function(x){ if(c[x]) h+='<span style="width:'+(100*c[x]/tot)+'%;background:'+BC[x][1]+'" title="'+BC[x][0]+': '+c[x]+'"></span>'; });
+  h+='</div><div class="small" style="font-size:11.5px">'+['est','within','plan','other','blank'].filter(function(x){ return c[x]; }).map(function(x){ return c[x]+' '+BC[x][0].toLowerCase(); }).join(' &middot; ')+'</div>';
+  return h;
+}
+function barRows(pairs,total){
+  return pairs.map(function(p){ return '<div class="brow"><span>'+esc(p[0])+'</span><div class="sbar" style="margin:0"><span style="width:'+(total?100*p[1]/total:0)+'%;background:'+(p[2]||'var(--slate)')+'"></span></div><span class="n">'+p[1]+'</span></div>'; }).join('');
+}
+function overviewHTML(){
+  var lv=S.cis.filter(live), ng=lv.filter(function(r){ return !isGFE(r); });
+  var prop=lv.filter(function(r){ return r.status===ST.proposed; });
+  var cb=ng.filter(function(r){ return r.critB==='Y'; }).length, sci=ng.filter(function(r){ return r.sci==='Y'; }).length;
+  var c1=ng.filter(function(r){ return (r.src||[]).some(isC1); }).length;
+  var csi=ng.filter(function(r){ return (r.src||[]).some(function(s){ return isRole(s,'csi'); }); }).length;
+  var h='<div class="tiles">'+
+    '<div class="tile"><div class="t">Live CIs</div><div class="v">'+lv.length+'</div><div class="s">'+(S.cis.length-lv.length)+' retired rows kept for traceability</div></div>'+
+    '<div class="tile'+(prop.length?' amb':'')+'"><div class="t">Awaiting concurrence</div><div class="v">'+prop.length+'</div><div class="s">'+esc(ST.proposed||'Proposed')+' until the Acquirer concurs</div></div>'+
+    (has('critB')?'<div class="tile"><div class="t">Criterion (b) met</div><div class="v">'+cb+'</div><div class="s">'+(has('sci')?sci+' SCI &middot; ':'')+c1+' Table C-1 &middot; '+csi+' critical safety item</div></div>':'<div class="tile"><div class="t">Variant rows</div><div class="v">'+S.vars.length+'</div><div class="s">PN Variants</div></div>')+
+    '<div class="tile'+(CNT.flag?' alert':CNT.review?' amb':'')+'"><div class="t">Findings</div><div class="v">'+CNT.flag+'</div><div class="s">flags &middot; '+CNT.review+' to review &middot; '+CNT.note+' notes</div></div>'+
+  '</div>';
+
+  var todo=[];
+  if(CNT.flag) todo.push(['flag','Resolve '+CNT.flag+' flag'+(CNT.flag>1?'s':'')+'. A flag marks a cell the workbook would highlight, or a record that disagrees with itself.',tabOn('checks')?'<button class="lnk" data-tab="checks">Open checks</button>':'']);
+  if(T.unplaced.length) todo.push(['flag',T.unplaced.length+' row'+(T.unplaced.length>1?'s are':' is')+' not placed in the hierarchy. Fix the Parent CI ID.','<button class="lnk" data-tab="tree">Open hierarchy</button>']);
+  if(prop.length) todo.push(['review','Submit '+prop.length+' '+esc(ST.proposed)+' CI'+(prop.length>1?'s':'')+' for Acquirer concurrence: '+prop.slice(0,8).map(function(r){ return '<button class="cibtn" data-goto="'+r.uid+'">'+esc(r.id||'?')+'</button>'; }).join(', ')+(prop.length>8?', and '+(prop.length-8)+' more':'')+'.'+(FEAT.sheets.queue?' The Excel export carries them on a Concurrence Queue sheet.':''),'']);
+  if(has('selRef')){ var noSel=ng.filter(function(r){ return !tr(r.selRef); });
+    if(noSel.length) todo.push(['review',noSel.length+' live CI'+(noSel.length>1?'s carry':' carries')+' no '+esc(hd('selRef'))+'. The rationale lives on the CI selection criteria checklist.','']); }
+  if(CNT.review) todo.push(['review','Review '+CNT.review+' item'+(CNT.review>1?'s':'')+'. A review item is a likely gap. It may have a good answer.',tabOn('checks')?'<button class="lnk" data-tab="checks">Open checks</button>':'']);
+  if(S.dirty) todo.push(['note','You have unsaved changes. Save the index to a file.','<button class="lnk" data-act="save">Save now</button>']);
+  if(!todo.length) todo.push(['note','No flags and no review items. Save the index and export it for the CSA system.','']);
+
+  h+='<div class="cols2"><div class="sect"><div class="lab">What needs attention</div><ul class="todo">'+
+    todo.map(function(t){ return '<li><span class="sev '+t[0]+'">'+t[0]+'</span><span>'+t[1]+' '+t[2]+'</span></li>'; }).join('')+'</ul></div>';
+
+  var bl=['abl','ipbl','fpbl'].filter(has);
+  h+='<div class="sect"><div class="lab">Baselines across live CIs</div>'+
+    (bl.length?bl.map(function(k,i){ return '<div class="small" style="margin:'+(i?10:6)+'px 0 0"><b>'+esc(hd(k).replace(/ Status\/Date$/,''))+'</b></div>'+stackBar(ng,k); }).join(''):'<p class="small">This build carries no baseline columns.</p>')+
+    (has('fbl')?'<p class="small" style="margin-top:10px">GFE rows and N/A entries are left out. The FBL is a system-level baseline on the top-level CI. It reads '+esc(val(T.roots[0]||{},'fbl')||'blank')+'.</p>':'')+'</div></div>';
+
+  var COLR=['var(--rust)','var(--slate)','var(--teal)','var(--amber)','var(--ink-2)'];
+  var comp='';
+  if(has('tier')) comp+=barRows(LISTS.tier.map(function(t,i){ return [t,lv.filter(function(r){ return r.tier===t; }).length,COLR[i%5]]; }),lv.length)+'<div style="height:8px"></div>';
+  if(has('type')) comp+=barRows(LISTS.type.map(function(t){ return [t,lv.filter(function(r){ return r.type===t; }).length,'var(--ink-2)']; }),lv.length);
+  var recK=[['ser','Serialization = Y','var(--rust)'],['lot','Lot/Batch = Y','var(--rust)'],['iuid','IUID Required = Y','var(--slate)'],['sh','Special Handling = Y','var(--slate)']].filter(function(x){ return has(x[0]); });
+  var rec=recK.map(function(x){ return [x[1],ng.filter(function(r){ return r[x[0]]==='Y'; }).length,x[2]]; });
+  if(has('life')) rec.push(['Life clock set',ng.filter(function(r){ return r.life&&r.life!==LIFE.none; }).length,'var(--amber)']);
+  h+='<div class="cols2"><div class="sect"><div class="lab">Composition</div>'+(comp||'<p class="small">No tier or type columns in this build.</p>')+'</div>'+
+     '<div class="sect"><div class="lab">Product unit records</div>'+(rec.length?barRows(rec,ng.length)+'<p class="small" style="margin-top:10px">Counts flags only. The product definition data defines each obligation.</p>':'<p class="small">No unit record columns in this build.</p>')+'</div></div>';
+  return h;
+}
+
+/* ===================================================================
+   Hierarchy view
+   =================================================================== */
+function treeViewHTML(){
+  return '<div class="split"><div class="treebox"><div class="treehead">'+
+    '<button class="lnk" data-act="expand">Expand all</button><button class="lnk" data-act="collapse">Collapse all</button>'+
+    '<label><input type="checkbox" data-opt="showRet"'+(S.showRet?' checked':'')+'> Show retired</label></div>'+
+    '<div id="treelist">'+treeListHTML()+'</div></div>'+
+    '<div id="detail">'+detailHTML(cur())+'</div></div>';
+}
+function badges(r){
+  var b='';
+  if(r.type) b+='<span class="bd">'+esc(abbr('type',r.type))+'</span>';
+  if(r.tier) b+='<span class="bd'+(isGFE(r)?' g':'')+'" title="'+esc(r.tier)+'">'+esc(abbr('tier',r.tier))+'</span>';
+  if(r.critB==='Y') b+='<span class="bd b" title="Criterion (b) met">(b)</span>';
+  if(r.status===ST.proposed) b+='<span class="bd p">PROP</span>';
+  else if(!live(r)) b+='<span class="bd">'+(r.status===ST.dedes?'DE-DES':isSup(r)?'SUPER':'RET')+'</span>';
+  var c=rowCounts(r.uid);
+  if(c.f) b+='<span class="dot f" title="'+c.f+' flag(s)">'+c.f+'</span>';
+  else if(c.r) b+='<span class="dot r" title="'+c.r+' to review">'+c.r+'</span>';
+  return b;
+}
+function nodeHTML(r,d,unp){
+  var kids=(T.kids[r.uid]||[]).filter(function(k){ return S.showRet||live(k); });
+  var open=!S.col[r.uid];
+  var tw=kids.length?'<button class="tw" data-tog="'+r.uid+'" aria-label="'+(open?'Collapse':'Expand')+'">'+(open?'▾':'▸')+'</button>':'<span class="tw leaf">▸</span>';
+  var g=''; for(var i=0;i<d;i++) g+='<span class="guide" style="left:'+(16+i*18)+'px"></span>';
+  var h='<div class="tn'+(S.sel===r.uid?' sel':'')+(live(r)?'':' ret')+'" tabindex="0" data-sel="'+r.uid+'" style="padding-left:'+(8+d*18)+'px">'+g+tw+
+    '<span class="tid">'+esc(r.id||'(no ID)')+'</span><span class="tname" title="'+esc(r.name)+'">'+esc(r.name||'(unnamed)')+'</span>'+badges(r)+'</div>';
+  if(open&&!unp) kids.forEach(function(k){ h+=nodeHTML(k,d+1); });
+  return h;
+}
+function treeListHTML(){
+  var h='';
+  T.roots.forEach(function(r){ if(S.showRet||live(r)) h+=nodeHTML(r,0); });
+  if(T.unplaced.length){
+    h+='<div class="tsec">Not placed in the hierarchy</div>';
+    T.unplaced.forEach(function(r){ h+=nodeHTML(r,0,true); });
+  }
+  return h||'<p class="small" style="padding:12px">No rows to show.</p>';
+}
+function chipsFor(r){
+  var c=rowCounts(r.uid), lvl=T.lvl[r.uid];
+  return '<div class="dchips">'+
+    '<span class="chip'+(r.status===ST.active?' ok':r.status===ST.proposed?' hold':'')+'">'+esc(r.status||'No status')+'</span>'+
+    (r.tier?'<span class="chip">'+esc(r.tier)+'</span>':'')+
+    (r.type?'<span class="chip">'+esc(r.type)+'</span>':'')+
+    '<span class="chip">Level '+(lvl==null?'unknown':lvl)+'</span>'+
+    (r.critB==='Y'?'<span class="chip on">Criterion (b)</span>':'')+
+    (r.sci==='Y'?'<span class="chip on">SCI</span>':'')+
+    (c.f?'<span class="chip bad">'+c.f+' flag'+(c.f>1?'s':'')+'</span>':'')+
+    (c.r?'<span class="chip hold">'+c.r+' to review</span>':'')+'</div>';
+}
+function dheadHTML(r){
+  var a=ancestors(r).reverse();
+  return '<div class="dh"><span class="cid">'+esc(r.id||'(no CI ID)')+'</span><h2>'+esc(r.name||'(unnamed CI)')+'</h2></div>'+chipsFor(r)+
+    (a.length?'<div class="path">'+a.map(function(x){ return '<button data-sel="'+x.uid+'">'+esc(x.id)+'</button>'; }).join(' / ')+' / '+esc(r.id)+'</div>':'');
+}
+function dfindHTML(r){
+  var o=FI[r.uid]; if(!o||!o.all.length) return '';
+  return '<div class="fl">'+o.all.map(function(f){
+    return '<div class="it '+f.sev+'"><span class="r">'+f.rule+'</span>'+(f.k?'<span class="c">'+esc(f.vuid?VC(f.k):hd(f.k))+'</span>':'')+'<span>'+esc(f.m)+'</span></div>';
+  }).join('')+'</div>';
+}
+function canDelete(r){
+  if(r.status===ST.active||(tr(r.concur)&&!isNA(r.concur))) return 'The Acquirer has concurred in this CI. De-designate it instead. The row stays for traceability.';
+  if(!live(r)) return 'Retired rows stay for traceability.';
+  if((T.kids[r.uid]||[]).length) return 'Reparent or remove its child CIs first.';
+  if(S.vars.some(function(v){ return v.ciId===r.id; })) return 'Remove its PN Variants rows first.';
+  return '';
+}
+function actsHTML(r){
+  var del=canDelete(r), L=live(r), A=FEAT.actions;
+  return '<div class="acts">'+
+    '<button class="lnk" data-act="add-child">Add child CI</button>'+
+    (r.parent?'<button class="lnk" data-act="add-sib">Add sibling CI</button>':'')+
+    (A.dup?'<button class="lnk" data-act="dup" title="Decision Path B: one PIN, separate CIs">Same PIN, another position</button>':'')+
+    (L&&A.split&&ST.split?'<button class="lnk" data-act="p-split">Split</button>':'')+
+    (L&&A.cons&&ST.cons?'<button class="lnk" data-act="p-cons">Consolidate</button>':'')+
+    (L&&A.dedes&&ST.dedes?'<button class="lnk" data-act="dedes">De-designate</button>':'')+
+    (A.del?'<button class="lnk" data-act="del"'+(del?' disabled title="'+esc(del)+'"':'')+'>Delete</button>':'')+'</div>';
+}
+function panelHTML(r){
+  if(S.panel==='split'){
+    var h='<div class="panel"><div class="lab">Split '+esc(r.id)+'</div>'+
+      '<p>One CI today. The same-CI decision aid returned separate CIs. The old row stays and reads '+esc(ST.split)+'. Each new row starts as '+esc(ST.proposed)+', because a split is a selection change and goes to the Acquirer for concurrence.</p>'+
+      '<p>CI identifiers change. PINs move only on a non-interchangeable condition. Product unit identifiers never move.</p>';
+    S.sp.forEach(function(x,i){
+      h+='<div class="row2"><input type="text" data-sp="'+i+'" data-spk="id" value="'+esc(x.id)+'" placeholder="New CI ID" aria-label="New CI ID '+(i+1)+'">'+
+         '<input type="text" data-sp="'+i+'" data-spk="name" value="'+esc(x.name)+'" placeholder="Name (defaults to '+esc(r.name)+')" aria-label="New CI name '+(i+1)+'"></div>';
+    });
+    return h+'<div class="btnrow" style="margin-top:6px"><button class="btn sm" data-act="sp-add">Add another</button><button class="btn sm pri" data-act="do-split">Split the CI</button><button class="btn sm gh" data-act="p-close">Cancel</button></div></div>';
+  }
+  if(S.panel==='cons'){
+    var cand=S.cis.filter(function(x){ return x!==r&&live(x); });
+    cand.sort(function(a,b){ return (a.parent===r.parent?0:1)-(b.parent===r.parent?0:1); });
+    return '<div class="panel"><div class="lab">Consolidate '+esc(r.id)+'</div>'+
+      '<p>Separate CIs today. The same-CI decision aid returned one CI. Pick the CIs to consolidate with this one. The old rows stay and read '+esc(ST.cons)+'. The new CI starts as '+esc(ST.proposed)+'.</p>'+
+      '<p>PINs do not merge. Each variant keeps its own PIN beneath the one CI. Siblings are listed first.</p><div class="cklist">'+
+      (cand.length?cand.map(function(x){ return '<label><input type="checkbox" data-cpick="'+x.uid+'"'+(S.cons.pick[x.uid]?' checked':'')+'> <b style="font-family:var(--mono);font-size:11px">'+esc(x.id)+'</b> '+esc(x.name)+(x.parent===r.parent?' <span class="bd">sibling</span>':'')+'</label>'; }).join(''):'<span class="small">No other live CIs.</span>')+
+      '</div><div class="row2"><input type="text" data-cn="id" value="'+esc(S.cons.id)+'" placeholder="New CI ID" aria-label="New CI ID"><input type="text" data-cn="name" value="'+esc(S.cons.name)+'" placeholder="Name (defaults to '+esc(r.name)+')" aria-label="New CI name"></div>'+
+      '<div class="btnrow" style="margin-top:6px"><button class="btn sm pri" data-act="do-cons">Consolidate</button><button class="btn sm gh" data-act="p-close">Cancel</button></div></div>';
+  }
+  return '';
+}
+function formGroups(){
+  return (C.groups||[]).map(function(g){ return [g,COLS.filter(function(c){ return c.group===g&&c.kind!=='level'; }).map(function(c){ return c.k; })]; })
+    .filter(function(g){ return g[1].length; });
+}
+function detailHTML(r){
+  if(!r) return '<div class="sect"><p class="small">Select a CI in the hierarchy.</p></div>';
+  var h='<div class="sect hd"><div id="dhead">'+dheadHTML(r)+'</div>'+actsHTML(r)+panelHTML(r)+'<div id="dfind">'+dfindHTML(r)+'</div></div>';
+  formGroups().forEach(function(g){
+    h+='<div class="sect"><div class="lab">'+esc(g[0])+'</div><div class="fgrid">';
+    g[1].forEach(function(k){ h+=fieldHTML(r,k); });
+    h+='</div></div>';
+  });
+  if(FEAT.tabs.variants) h+=variantsMini(r);
+  return h;
+}
+function fmsgs(o,k){ var l=o&&o.k[k]; if(!l) return ''; return l.map(function(f){ return '<div class="'+f.sev+'">'+f.rule+'. '+esc(f.m)+'</div>'; }).join(''); }
+function xcls(r,k){ var w=worst(FI[r.uid]&&FI[r.uid].k[k]); return (w==='flag'||w==='review')?' x-'+w:''; }
+function optList(list,v,blankLabel){
+  var o='<option value="">'+(blankLabel||'Not set')+'</option>', seen=false;
+  (list||[]).forEach(function(x){ if(x===v) seen=true; o+='<option'+(x===v?' selected':'')+'>'+esc(x)+'</option>'; });
+  if(v&&!seen) o+='<option selected>'+esc(v)+'</option>';
+  return o;
+}
+function fieldHTML(r,k){
+  var c=COL[k], x=xcls(r,k), ctl, id='f-'+k;
+  if(c.kind==='yn'){
+    ctl='<div class="seg'+x+'" id="'+id+'" role="group" aria-label="'+esc(c.h)+'">'+LISTS.yn.map(function(v){
+      return '<button type="button" data-yn="'+k+'" data-v="'+v+'" class="'+(r[k]===v?'on':'')+'" aria-pressed="'+(r[k]===v)+'">'+v+'</button>'; }).join('')+'</div>';
+    if(r[k]) ctl+=' <button class="lnk" style="font-size:12px;margin-left:8px" data-yn="'+k+'" data-v="">Clear</button>';
+  } else if(c.kind==='enum'){
+    ctl='<select id="'+id+'" data-f="'+k+'" class="'+x+'">'+optList(LISTS[c.list],r[k])+'</select>';
+  } else if(c.kind==='parent'){
+    var bad=descendants(r).concat([r]);
+    var o='<option value="">None. This is the top-level CI.</option>', seen=!r.parent;
+    exportOrder().forEach(function(p){
+      if(bad.indexOf(p)>=0||!p.id) return;
+      if(p.id===r.parent) seen=true;
+      o+='<option value="'+esc(p.id)+'"'+(p.id===r.parent?' selected':'')+'>'+esc(p.id+'  '+(p.name||''))+(live(p)?'':' ('+esc(p.status)+')')+'</option>';
+    });
+    if(!seen) o+='<option value="'+esc(r.parent)+'" selected>'+esc(r.parent)+' (not found)</option>';
+    ctl='<select id="'+id+'" data-f="parent" class="'+x+'">'+o+'</select>';
+  } else if(c.kind==='src'){
+    ctl=srcHTML(r,x);
+  } else if(c.kind==='long'){
+    ctl='<textarea id="'+id+'" data-f="'+k+'" rows="2" class="'+x+'">'+esc(r[k])+'</textarea>';
+  } else {
+    var dl=c.pins?'dl-pin':(c.sug&&c.sug.length?'dl-'+k:'');
+    ctl='<input id="'+id+'" data-f="'+k+'" value="'+esc(r[k])+'" class="'+x+'"'+(dl?' list="'+dl+'"':'')+(c.kind==='date'?' placeholder="YYYY-MM-DD"':'')+' autocomplete="off">';
+  }
+  var lab=c.kind==='yn'||c.kind==='src'?'<label id="lb-'+k+'">'+esc(c.h)+(c.req?' <span class="bd p">REQUIRED</span>':'')+'</label>':'<label for="'+id+'">'+esc(c.h)+(c.req?' <span class="bd p">REQUIRED</span>':'')+'</label>';
+  return '<div class="fld'+(c.wide?' wide':'')+'">'+lab+ctl+
+    (c.kind==='src'?'<div id="dimpl">'+implHTML(r)+'</div>':'')+
+    '<div class="help">'+esc(c.help||'')+'</div><div class="fm" id="m-'+k+'">'+fmsgs(FI[r.uid],k)+'</div></div>';
+}
+function srcHTML(r,x){
+  var sel=(r.src||[]).map(canon), groups=[['Drives serial recording','Serial'],['Drives serial and lot recording','Both'],['Drives lot or batch recording','Lot/batch'],['Satisfies a Y flag, never demands one','Either']];
+  var h='<div class="srcs-wrap'+x+'" id="f-src" style="border-radius:5px">';
+  groups.forEach(function(g){
+    var items=SRC_LIST.filter(function(s){ return s[1]===g[1]; }); if(!items.length) return;
+    h+='<div class="srcg"><div class="gl">'+g[0]+'</div><div class="srcs">';
+    items.forEach(function(s){
+      var on=sel.indexOf(s[0])>=0;
+      h+='<button type="button" class="sc'+(on?' on':'')+'" data-src="'+esc(s[0])+'" aria-pressed="'+on+'">'+esc(s[0])+(s[2]?'<span class="c1" title="Meets criterion (b) on its own (Table C-1)">C-1</span>':'')+'</button>';
+    });
+    h+='</div></div>';
+  });
+  var off=(r.src||[]).filter(function(s){ return !srcInfo(s); });
+  if(off.length) h+='<div class="srcg"><div class="gl">Not on the list</div><div class="srcs">'+off.map(function(s){ return '<button type="button" class="sc off" data-srcrm="'+esc(s)+'" title="Remove">'+esc(s)+' &times;</button>'; }).join('')+'</div></div>';
+  h+='<div class="rec"><b>Recorded as</b> '+(r.src&&r.src.length?esc(srcText(r)):'<span style="color:var(--mute)">No source. No unit record is required.</span>')+'</div></div>';
+  return h;
+}
+function implied(r){
+  var s=r.src||[], other=s.some(function(x){ return isRole(x,'other'); });
+  var dS=s.some(drivesSerial), dL=s.some(drivesLot), dI=s.some(function(x){ return isRole(x,'iuid')||isRole(x,'csi'); }), dH=s.some(function(x){ return isRole(x,'sh'); });
+  function pick(dem,k){ return dem?'Y':(other&&r[k]==='Y'?'Y':'N'); }
+  var o={ser:pick(dS,'ser'),lot:pick(dL,'lot'),iuid:pick(dI,'iuid'),sh:pick(dH,'sh')};
+  if(isSW(r)){ o.ser='N'; o.lot='N'; }
+  return o;
+}
+function implHTML(r){
+  var im=implied(r), keys=['ser','lot','iuid','sh'].filter(has), labs={ser:'Serialization',lot:'Lot/Batch',iuid:'IUID Required',sh:'Special Handling'};
+  if(!keys.length) return '';
+  var mis=keys.filter(function(k){ return r[k]!==im[k]; });
+  return '<div class="impl"><b>What the sources call for.</b> '+(isSW(r)?'This is a software CI. Its recording flags read N and N.':'Each flag must agree with the named sources.')+
+    '<table>'+keys.map(function(k){ var ok=r[k]===im[k]; return '<tr><td>'+labs[k]+'</td><td>'+im[k]+'</td><td>'+(ok?'<span class="ok">matches</span>':'<span class="no">recorded '+(r[k]||'blank')+'</span>')+'</td></tr>'; }).join('')+'</table>'+
+    (mis.length?'<button class="btn sm" data-act="apply-impl">Set the flags to match the sources</button>':'')+'</div>';
+}
+function variantsMini(r){
+  var vs=S.vars.filter(function(v){ return tr(v.ciId)===tr(r.id)&&r.id; });
+  var h='<div class="sect"><div class="lab">PN Variants</div>';
+  if(!vs.length) h+='<p class="small">No variant rows. Add variants only for a one-CI, multiple-PIN-variant verdict from the same-CI decision aid. For a software CI, enter version identifiers for concurrent builds or loads.</p>';
+  else h+='<table class="dt"><thead><tr>'+VCOLS.filter(function(c){ return c.k!=='ciId'&&c.k!=='notes'; }).map(function(c){ return '<th>'+esc(c.h)+'</th>'; }).join('')+'</tr></thead><tbody>'+
+    vs.map(function(v){ return '<tr>'+VCOLS.filter(function(c){ return c.k!=='ciId'&&c.k!=='notes'; }).map(function(c,i){ return '<td class="'+(i?'m':'k')+'">'+esc(v[c.k])+'</td>'; }).join('')+'</tr>'; }).join('')+'</tbody></table>';
+  return h+'<div class="btnrow" style="margin-top:10px"><button class="btn sm" data-act="var-add-ci">Add a variant for this CI</button><button class="lnk" data-tab="variants">Open the PN Variants tab</button></div></div>';
+}
+
+/* ===================================================================
+   Table view
+   =================================================================== */
+function tableViewHTML(){
+  var f=S.filt;
+  return '<div class="filters">'+
+    '<div class="fld" style="flex:1;min-width:220px"><label for="q">Search</label><input id="q" data-filt="q" value="'+esc(f.q)+'" placeholder="CI ID, name, PIN, or any value"></div>'+
+    (has('status')?'<div class="fld"><label for="fs">Status</label><select id="fs" data-filt="status">'+optList(LISTS.status,f.status,'Any status')+'</select></div>':'')+
+    (has('tier')?'<div class="fld"><label for="ft">'+esc(hd('tier'))+'</label><select id="ft" data-filt="tier">'+optList(LISTS.tier,f.tier,'Any')+'</select></div>':'')+
+    '<label class="ck"><input type="checkbox" data-filt="only"'+(f.only?' checked':'')+'> Rows with findings only</label>'+
+    '</div><div id="gridbox">'+gridHTML()+'</div>'+
+    '<p class="small" style="margin-top:10px">Read only. Click a row to edit it in the hierarchy. Shaded cells carry a finding. Hover a cell to read it.</p>';
+}
+function gridHTML(){
+  var f=S.filt, q=f.q.toLowerCase();
+  var rows=exportOrder().filter(function(r){
+    if(f.status&&r.status!==f.status) return false;
+    if(f.tier&&r.tier!==f.tier) return false;
+    if(f.only&&!(FI[r.uid]&&FI[r.uid].all.some(function(x){ return x.sev!=='note'; }))) return false;
+    if(q&&!COLS.some(function(c){ return c.kind!=='level'&&val(r,c.k).toLowerCase().indexOf(q)>=0; })) return false;
+    return true;
+  });
+  var idI=COLS.indexOf(COL.id);
+  var h='<div class="gridwrap"><table class="g"><thead><tr>'+COLS.map(function(c,i){ return '<th class="'+(c.kind==='level'?'s0':c.k==='id'?'s1':'')+'" title="'+esc(c.h)+'">'+esc(c.h)+'</th>'; }).join('')+'</tr></thead><tbody>';
+  rows.forEach(function(r){
+    var lvl=T.lvl[r.uid];
+    h+='<tr data-goto="'+r.uid+'" class="'+(live(r)?'':'ret')+'">';
+    COLS.forEach(function(c){
+      var v=c.kind==='level'?(lvl==null?'?':lvl):c.k==='name'?' '.repeat(2*(lvl||0))+val(r,'name'):val(r,c.k);
+      var l=(FI[r.uid]&&(c.k==='id'?(FI[r.uid].k.id||[]).concat(FI[r.uid].all.filter(function(x){ return !x.k; })):FI[r.uid].k[c.k]))||[];
+      var w=worst(l), tt=l.length?l.map(function(x){ return x.rule+'. '+x.m; }).join('\n'):String(v);
+      var sc=c.kind==='level'?'s0 ':c.k==='id'?'s1 ':'';
+      h+='<td class="'+sc+(w==='flag'||w==='review'?'x-'+w:'')+'" title="'+esc(tt)+'">'+esc(v)+'</td>';
+    });
+    h+='</tr>';
+  });
+  h+='</tbody></table></div><p class="small" style="margin-top:6px">'+rows.length+' of '+S.cis.length+' rows shown.</p>';
+  return h;
+}
+
+/* ===================================================================
+   PN Variants view
+   =================================================================== */
+function vmsgHTML(v){ var o=FV[v.uid]; if(!o) return ''; return o.all.map(function(f){ return '<div class="sev '+f.sev+'" style="display:block;white-space:normal;margin-bottom:3px;letter-spacing:0;text-transform:none;font-family:var(--sans);font-size:11.5px;font-weight:600">'+f.rule+'. '+esc(f.m)+'</div>'; }).join(''); }
+function variantsHTML(){
+  var ids=exportOrder().filter(function(r){ return r.id; });
+  var h='<div class="sect"><div class="lab">PN Variants</div>'+
+    '<p class="small">One row per variant, keyed by CI ID. This sheet records the variant mapping for a one-CI, multiple-PIN-variant verdict from the same-CI decision aid. Record the per-variant interface callout, recording flags, and effectivity. Variants share the CI’s Product Unit Record Requirement Source. Where a variant’s source differs, say so in that variant’s Notes.</p>'+
+    '<p class="small" style="margin-top:6px">Software variants go here too. For a software CI, enter the version identifier in place of the PIN, and the build or load in place of the variant. Use this only for concurrent builds or loads fielded at the same time. Successive versions go in the software version identifier records.</p></div>';
+  h+='<div class="gridwrap" style="max-height:none"><table class="dt"><thead><tr>'+VCOLS.map(function(c){ return '<th title="'+esc(c.help||'')+'">'+esc(c.h)+'</th>'; }).join('')+'<th>Findings</th><th></th></tr></thead><tbody>';
+  if(!S.vars.length) h+='<tr><td colspan="'+(VCOLS.length+2)+'" class="m">No variant rows.</td></tr>';
+  S.vars.forEach(function(v){
+    h+='<tr>';
+    VCOLS.forEach(function(c){
+      var w=worst(FV[v.uid]&&FV[v.uid].k[c.k]), cls=(w==='flag'||w==='review')?' class="x-'+w+'"':'';
+      var ctl;
+      if(c.k==='ciId'){
+        var o='<option value="">Pick a CI</option>', seen=!v.ciId;
+        ids.forEach(function(r){ if(r.id===v.ciId) seen=true; o+='<option value="'+esc(r.id)+'"'+(r.id===v.ciId?' selected':'')+'>'+esc(r.id)+'</option>'; });
+        if(!seen) o+='<option selected value="'+esc(v.ciId)+'">'+esc(v.ciId)+' (not found)</option>';
+        ctl='<select data-vf="ciId" data-vu="'+v.uid+'" aria-label="CI ID">'+o+'</select>';
+      } else if(c.kind==='yn'){
+        ctl='<select data-vf="'+c.k+'" data-vu="'+v.uid+'" aria-label="'+esc(c.h)+'">'+optList(LISTS.yn,v[c.k])+'</select>';
+      } else if(c.kind==='enum'){
+        ctl='<select data-vf="'+c.k+'" data-vu="'+v.uid+'" aria-label="'+esc(c.h)+'">'+optList(LISTS[c.list],v[c.k])+'</select>';
+      } else ctl='<input data-vf="'+c.k+'" data-vu="'+v.uid+'" value="'+esc(v[c.k])+'" aria-label="'+esc(c.h)+'">';
+      h+='<td id="vc-'+v.uid+'-'+c.k+'"'+cls+' style="min-width:'+(c.kind==='yn'?70:c.kind==='long'?200:110)+'px">'+ctl+'</td>';
+    });
+    h+='<td id="vm-'+v.uid+'" style="min-width:220px">'+vmsgHTML(v)+'</td><td><button class="lnk" data-vdel="'+v.uid+'">Remove</button></td></tr>';
+  });
+  h+='</tbody></table></div><div class="btnrow"><button class="btn" data-act="var-add">Add a variant row</button></div>';
+  return h;
+}
+
+/* ===================================================================
+   Checks view
+   =================================================================== */
+function allRuleIds(){ return Object.keys(RULES).concat(Object.keys(CUST)); }
+function checksHTML(){
+  var sv=S.csev;
+  var list=F.filter(function(f){ return !sv||f.sev===sv; });
+  var h=heldHTML()+'<div class="filters" style="align-items:center">'+
+    ['','flag','review','note'].map(function(s){ var n=s?CNT[s]:F.length;
+      return '<button class="btn sm'+(sv===s?' pri':'')+'" data-csev="'+s+'">'+(s?s.charAt(0).toUpperCase()+s.slice(1)+'s':'All')+' ('+n+')</button>'; }).join('')+
+    '<span class="small">A flag marks a cell the workbook would highlight, or a record that disagrees with itself. A review item is a likely gap. A note is a reminder. Checks never block entry.</span></div>';
+  if(!list.length) h+='<div class="sect"><p class="small">Nothing to show. '+(F.length?'Pick another filter.':'Every check passes.')+'</p></div>';
+  else{
+    h+='<table class="dt"><thead><tr><th>Severity</th><th>Rule</th><th>CI</th><th>Column</th><th>Finding</th></tr></thead><tbody>';
+    list.forEach(function(f){
+      var r=f.uid&&T.byUid[f.uid], v=f.vuid&&S.vars.filter(function(x){ return x.uid===f.vuid; })[0];
+      var ci=r?'<button class="cibtn" data-goto="'+r.uid+'">'+esc(r.id||'(no ID)')+'</button>':(v?'<button class="cibtn" data-tab="variants">Variant row</button>':'');
+      var col=f.k?(f.vuid?'PN Variants: '+VC(f.k):hd(f.k)):'';
+      h+='<tr><td><span class="sev '+f.sev+'">'+f.sev+'</span></td><td class="k">'+f.rule+'</td><td>'+ci+'</td><td class="m">'+esc(col)+'</td><td>'+esc(f.m)+'</td></tr>';
+    });
+    h+='</tbody></table>';
+  }
+  h+='<h2 style="font-family:var(--serif);font-weight:400;font-size:19px;margin:30px 0 10px">Rule catalog</h2>'+
+    '<p class="small" style="margin-bottom:10px">Every check this build runs, and the part of the template or the process it comes from. GFE rows are thin, so the safety, recording, baseline, and model checks skip them. Retired rows skip them too. A rule that needs a column this build does not carry is listed as inactive.</p>'+
+    '<table class="dt"><thead><tr><th>Rule</th><th>Severity</th><th>Area</th><th>What it checks</th><th>Basis</th></tr></thead><tbody>'+
+    allRuleIds().map(function(k){ var x=ruleInfo(k), on=ruleOn(k); return '<tr'+(on?'':' style="opacity:.5"')+'><td class="k">'+k+'</td><td>'+(on?'<span class="sev '+x.sev+'">'+x.sev+'</span>':'<span class="sev note">off</span>')+'</td><td class="m">'+esc(x.area)+'</td><td>'+esc(x.what)+'</td><td class="m">'+esc(x.basis)+'</td></tr>'; }).join('')+
+    (COLS.some(function(c){ return c.req; })?'<tr><td class="k">RQ</td><td><span class="sev review">per column</span></td><td class="m">Required</td><td>Required columns: '+esc(COLS.filter(function(c){ return c.req; }).map(function(c){ return c.h; }).join(', '))+'.</td><td class="m">Build settings</td></tr>':'')+
+    '</tbody></table>';
+  return h;
+}
+
+/* ===================================================================
+   Structural floor
+   The part of the interface register's structural floor that the CI
+   index can predict. Sibling CIs are not paired: interfaces reach the
+   register from Systems Engineering's interface sources.
+   =================================================================== */
+function deriveFloor(){
+  var out=[], lv=S.cis.filter(function(r){ return live(r)&&r.id&&T.unplaced.indexOf(r)<0; });
+  lv.forEach(function(r){ var p=parentOf(r); if(p&&live(p)&&p.tier&&r.tier&&p.tier!==r.tier) out.push({basis:'Parent and child, different control tiers',a:p,b:r,need:'At least one Mapped row joining the two CIs'}); });
+  lv.forEach(function(r){ if(isGFE(r)) out.push({basis:'GFE CI',a:r,b:null,need:'At least one Mapped row naming this CI'}); });
+  return out;
+}
+function floorHTML(){
+  var b=deriveFloor(), pc=b.filter(function(x){ return x.b; }).length, g=b.length-pc;
+  var h='<div class="sect"><div class="lab">Structural floor</div>'+
+    '<p class="small">Systems Engineering identifies interfaces and defines them in its interface sources. CM maps each one to the CIs it joins on the interface register. The register is the record. This list is the part of the structural floor the CI index can predict: each parent and child in different control tiers, and each GFE CI. Each one needs at least one Mapped row on the interface register. External items named in the system specification or the contract complete the floor. They are not in the index, so check them on the register directly.</p>'+
+    '<p class="small" style="margin-top:8px">An entry with no Mapped row is a floor gap, and a floor gap is a coverage exception. Systems Engineering dispositions it. Where Systems Engineering confirms that no interface exists, record that confirmation on the coverage log. Nothing is signed in advance. Sibling CIs are not paired here. An interface between siblings, or between CIs in different branches, reaches the register from the interface sources.</p></div>';
+  h+='<p class="small" style="margin:0 0 8px"><b>'+b.length+'</b> floor entr'+(b.length===1?'y':'ies')+' across live CIs: '+pc+' parent-and-child pair'+(pc===1?'':'s')+' and '+g+' GFE CI'+(g===1?'':'s')+'.'+(FEAT.sheets.bound?' The Excel export carries them on a Structural Floor sheet.':'')+'</p>';
+  if(!b.length) return h;
+  h+='<table class="dt"><thead><tr><th>#</th><th>Basis</th><th>CI</th><th>Other CI</th><th>The register needs</th></tr></thead><tbody>'+
+    b.map(function(x,i){ return '<tr><td class="m">'+(i+1)+'</td><td>'+esc(x.basis)+'</td>'+
+      '<td><button class="cibtn" data-goto="'+x.a.uid+'">'+esc(x.a.id)+'</button> <span class="m">'+esc(x.a.name)+'</span></td>'+
+      '<td>'+(x.b?'<button class="cibtn" data-goto="'+x.b.uid+'">'+esc(x.b.id)+'</button> <span class="m">'+esc(x.b.name)+'</span>':'<span class="m">Any CI or external item</span>')+'</td>'+
+      '<td>'+esc(x.need)+'</td></tr>'; }).join('')+'</tbody></table>';
+  return h;
+}
+
+/* ===================================================================
+   Edit log and comparison
+   =================================================================== */
+function logHTML(){
+  var h='<div class="sect"><div class="lab">Compare with a saved index</div>'+
+    '<p class="small">Open an earlier saved file. The tool lists every CI added, removed, or changed since then, field by field. Use it to prepare a CSA report or to check a resubmittal.</p>'+
+    '<div class="btnrow"><button class="btn" data-act="cmp-open">Compare with a saved file</button>'+(S.cmp?'<button class="btn gh" data-act="cmp-clear">Clear the comparison</button>':'')+'</div>'+
+    (S.cmp?cmpHTML():'')+'</div>';
+  h+='<div class="sect"><div class="lab">Edit log</div><p class="small">Every change made in this tool, with who and when. Saved with the index file.'+(FEAT.sheets.log?' Exported to Excel on an Edit Log sheet.':'')+'</p>'+
+    '<div class="filters" style="margin-top:10px"><div class="fld" style="min-width:260px"><label for="lq">Filter</label><input id="lq" data-lq="1" value="'+esc(S.logq)+'" placeholder="CI ID, column, or name"></div></div><div id="logbox">'+logTable()+'</div></div>';
+  return h;
+}
+function logTable(){
+  var q=S.logq.toLowerCase();
+  var L=S.log.slice().reverse().filter(function(e){ return !q||[e.ci,e.f,e.who,e.act,e.from,e.to].join(' ').toLowerCase().indexOf(q)>=0; });
+  if(!L.length) return '<p class="small">No entries.</p>';
+  return '<table class="dt"><thead><tr><th>When</th><th>Who</th><th>Action</th><th>CI</th><th>Column</th><th>From</th><th>To</th></tr></thead><tbody>'+
+    L.slice(0,500).map(function(e){ return '<tr><td class="m" style="white-space:nowrap">'+esc(e.t)+'</td><td class="m">'+esc(e.who)+'</td><td>'+esc(e.act)+'</td><td class="k">'+esc(e.ci)+'</td><td class="m">'+esc(e.f)+'</td><td class="m">'+esc(e.from)+'</td><td>'+esc(e.to)+'</td></tr>'; }).join('')+
+    '</tbody></table>'+(L.length>500?'<p class="small">Showing the latest 500 of '+L.length+'. The saved file carries every entry.</p>':'');
+}
+function diffIndex(old){
+  var out=[], om={}, nm={};
+  (old.cis||[]).forEach(function(r){ if(r.id) om[r.id]=r; });
+  S.cis.forEach(function(r){ if(r.id) nm[r.id]=r; });
+  Object.keys(nm).forEach(function(id){
+    var n=nm[id], o=om[id];
+    if(!o){ out.push({ci:id,ch:'Added',f:'',from:'',to:n.name}); return; }
+    COLS.forEach(function(c){ if(c.kind==='level'||c.k==='id') return; var a=val(o,c.k), b=val(n,c.k); if(a!==b) out.push({ci:id,ch:'Changed',f:c.h,from:a,to:b}); });
+  });
+  Object.keys(om).forEach(function(id){ if(!nm[id]) out.push({ci:id,ch:'Removed',f:'',from:om[id].name,to:''}); });
+  function vk(v){ return tr(v.ciId)+' | '+tr(v.pin); }
+  var ov={}, nv={};
+  (old.vars||[]).forEach(function(v){ ov[vk(v)]=v; }); S.vars.forEach(function(v){ nv[vk(v)]=v; });
+  Object.keys(nv).forEach(function(k){ var n=nv[k], o=ov[k];
+    if(!o){ out.push({ci:tr(n.ciId),ch:'Variant added',f:VC('pin'),from:'',to:n.pin}); return; }
+    VCOLS.forEach(function(c){ if(tr(o[c.k])!==tr(n[c.k])) out.push({ci:tr(n.ciId),ch:'Variant changed',f:n.pin+': '+c.h,from:tr(o[c.k]),to:tr(n[c.k])}); });
+  });
+  Object.keys(ov).forEach(function(k){ if(!nv[k]) out.push({ci:tr(ov[k].ciId),ch:'Variant removed',f:VC('pin'),from:ov[k].pin,to:''}); });
+  return out;
+}
+function cmpHTML(){
+  var d=diffIndex(S.cmp.data);
+  var h='<p class="small" style="margin-top:12px"><b>Compared with '+esc(S.cmp.name)+'</b>, saved '+esc(S.cmp.data.saved||'on an unknown date')+'. '+d.length+' difference'+(d.length===1?'':'s')+'. The Excel export carries them on a Comparison sheet.</p>';
+  if(!d.length) return h+'<p class="small">The two indexes match.</p>';
+  return h+'<table class="dt" style="margin-top:8px"><thead><tr><th>CI</th><th>Change</th><th>Column</th><th>Then</th><th>Now</th></tr></thead><tbody>'+
+    d.map(function(x){ return '<tr><td class="k">'+esc(x.ci)+'</td><td>'+esc(x.ch)+'</td><td class="m">'+esc(x.f)+'</td><td class="m">'+esc(x.from)+'</td><td>'+esc(x.to)+'</td></tr>'; }).join('')+'</tbody></table>';
+}
+
+/* ===================================================================
+   Reference
+   =================================================================== */
+function refHTML(){
+  var h='<div class="sect ref">';
+  (C.reference||[]).forEach(function(s,i){
+    if(s.title) h+=(i?'<h3>':'<div class="lab">')+esc(s.title)+(i?'</h3>':'</div>');
+    if(s.kind==='list') h+='<ul>'+(s.items||[]).map(function(x){ return '<li>'+md(x)+'</li>'; }).join('')+'</ul>';
+    else if(s.kind==='pull') h+=(s.items||[]).map(function(x){ return '<p class="pull">'+md(x)+'</p>'; }).join('');
+    else h+=(s.items||[]).map(function(x){ return '<p class="small" style="margin:0 0 8px">'+md(x)+'</p>'; }).join('');
+  });
+  if(has('src')) h+='<h3>Product Unit Record Requirement Sources</h3>'+
+    '<table class="dt"><thead><tr><th>Source</th><th>Drives</th><th>Meets criterion (b) on its own (Table C-1)</th></tr></thead><tbody>'+
+    SRC_LIST.map(function(s){ return '<tr><td>'+esc(s[0])+'</td><td class="m">'+s[1]+'</td><td>'+(s[2]?'<span class="sev flag">Yes</span>':'<span class="m">No</span>')+'</td></tr>'; }).join('')+'</tbody></table>';
+  var b=C.build||{};
+  h+='<h3>About this build</h3><p class="small">'+esc(b.name||'')+', revision '+esc(b.rev||'')+'. Engine revision '+ENGINE_REV+'. Edit the build in the CI Index Builder.</p>';
+  if(b.changes&&b.changes.length) h+='<table class="dt chg" style="margin-top:8px"><thead><tr><th>Rev</th><th>Date</th><th>By</th><th>Change</th></tr></thead><tbody>'+
+    b.changes.map(function(c){ return '<tr><td class="k">'+esc(c.rev)+'</td><td class="m">'+esc(c.date)+'</td><td class="m">'+esc(c.by)+'</td><td>'+esc(c.text)+'</td></tr>'; }).join('')+'</tbody></table>';
+  return h+'</div>';
+}
+
+/* ===================================================================
+   Excel columns. What the import reads, the header it accepts, the
+   minimum to load, and the stage at which each column falls due.
+   =================================================================== */
+var STAGES=C.stages||[], HELD=[];
+function stageIdx(k){ for(var i=0;i<STAGES.length;i++) if(STAGES[i].k===k) return i; return -1; }
+function stageName(k){ var i=stageIdx(k); return i>=0?STAGES[i].name:'Any time'; }
+function colStage(k){ return COL[k]&&COL[k].stage?stageIdx(COL[k].stage):-1; }
+function notDue(k){ if(!S.meta.stage) return false; var cur=stageIdx(S.meta.stage); return cur>=0&&colStage(k)>cur; }
+/* rules that fire because a cell is blank, and the column they name */
+var BLANKR={ST1:'id',ST5:'parent',ST7:'tier',CO1:'status',CO5:'selRef',SA1:'critB',SA7:'sci',SA5:'sciRef',BA1:'fbl',BA2:'fbl',QT2:'qty',MO1:'mbse'};
+var BLANK_ONLY={BA2:1};
+function heldBlank(rule,r,k){
+  if(!S.meta.stage||!k||!notDue(k)) return false;
+  if(BLANKR[rule]===k){ if(BLANK_ONLY[rule]&&tr(r[k])) return false; return true; }
+  if(rule==='RQ') return true;
+  var cu=(C.custom||[]).filter(function(c){ return c.id===rule; })[0];
+  return !!cu&&cu.thenOp==='notblank'&&cu.thenCol===k;
+}
+function headerKeys(){ return ['id','parent'].filter(has); }
+function blankEffect(c){
+  var out=[], k=c.k;
+  Object.keys(BLANKR).forEach(function(id){ if(BLANKR[id]!==k||!ruleOn(id)) return; var x=ruleInfo(id); out.push(id+' ('+x.sev+'): '+x.what); });
+  if(['ser','lot','iuid','sh','life'].indexOf(k)>=0&&ruleOn('RE12')) out.push('RE12 ('+ruleInfo('RE12').sev+'): '+ruleInfo('RE12').what);
+  if(c.req) out.push('RQ ('+c.req+'): the build marks this column required'+(c.reqGFE?', on GFE rows too':'')+'.');
+  (C.custom||[]).forEach(function(cu){ if(cu.on&&cu.thenOp==='notblank'&&cu.thenCol===k) out.push(cu.id+' ('+cu.sev+'): '+(cu.what||autoWhat(cu))); });
+  if(k==='parent') out.unshift('The CI becomes a top-level CI. Only one live CI may have no parent.');
+  if(k==='id') out.unshift('The row still loads. Nothing can name it as a parent, a variant, or a register side until it has an ID.');
+  var t=out.length?out.join(' '):'No hint fires. The column stays blank.';
+  if(c.blankNote) t+=' '+c.blankNote;
+  return t;
+}
+function readers(c){
+  var r=Object.keys(RULES).filter(function(id){ return (RULES[id].needs||[]).indexOf(c.k)>=0&&ruleOn(id); });
+  var s=r.length?'Rules '+r.join(', ')+'.':'';
+  if(c.k==='parent') s='Level, indentation, and the hierarchy. '+s;
+  if(c.reg) s+=(s?' ':'')+'Also read by the CI Interface Register.';
+  return s||'Kept for the record. No rule reads it.';
+}
+function fillCounts(){
+  if(!S.cis.length) return null;
+  var lv=S.cis.filter(live), ng=lv.filter(function(r){ return !isGFE(r); }), o={n:lv.length,ng:ng.length,f:{}};
+  COLS.forEach(function(c){ if(c.kind==='level') return; var base=c.core?lv:ng; o.f[c.k]={n:base.filter(function(r){ return !!val(r,c.k); }).length,of:base.length}; });
+  return o;
+}
+function heldHTML(){
+  if(!HELD.length) return '';
+  var by={}; HELD.forEach(function(h){ by[h.k]=(by[h.k]||0)+1; });
+  return '<div class="heldbox"><b>'+HELD.length+' blank-entry hint'+(HELD.length===1?' is':'s are')+' held.</b> Index stage reads '+esc(stageName(S.meta.stage))+'. These columns fall due at a later stage: '+
+    Object.keys(by).map(function(k){ return esc(hd(k))+' ('+by[k]+')'; }).join(', ')+'. Set Index stage to a later stage, or to All columns due, to see them. Hints that compare two filled cells are never held.</div>';
+}
+function minLoadHTML(){
+  var hk=headerKeys().map(function(k){ var c=COL[k]; return '<b>'+esc(c.h)+'</b>'+((c.alias||[]).length?' (or '+c.alias.map(esc).join(', ')+')':''); });
+  return '<div class="lab">Minimum to load</div><ol class="minlist">'+
+    '<li><b>A save file</b> from this tool opens by key. Nothing else is needed.</li>'+
+    '<li><b>An Excel workbook</b> needs a sheet named <b>CI Index</b>.</li>'+
+    '<li>Within its first 15 rows, that sheet needs a header row with '+hk.join(' or ')+'. Header matching ignores case, spaces, and punctuation. Older headers listed under Also accepts work too.</li>'+
+    '<li>Every row below the header with at least one filled cell loads. A row with no CI ID still loads. ST1 flags it.</li>'+
+    (FEAT.tabs.variants?'<li>A <b>PN Variants</b> sheet is optional. When present, it needs a header row with <b>'+esc(VC('pin'))+'</b>.</li>':'')+'</ol>'+
+    '<p class="small">That is all the import requires. Every other column is optional. A missing column loads as blank. A blank cell never stops the import and never blocks entry. Level and the indentation of '+esc(hd('name'))+' are not read. The tool derives both from '+esc(hd('parent'))+'.</p>';
+}
+function minEntryHTML(){
+  var first=STAGES[0], cols=first?COLS.filter(function(c){ return c.kind!=='level'&&c.stage===first.k; }):[];
+  if(!cols.length) return '';
+  return '<div class="lab" style="margin-top:16px">Minimum entry for a new CI</div><p class="small">Enter these when a CI first goes on the index: '+
+    cols.map(function(c){ return '<b>'+esc(c.h)+'</b>'+(c.k==='parent'?' (blank on the top-level CI only)':c.k==='status'?' ('+esc(ST.proposed||'Proposed')+' until the Acquirer concurs)':''); }).join(', ')+
+    '. The rest follow stage by stage. Set Index stage on the Index card, and the tool holds the blank-entry hints for columns that fall due later.</p>';
+}
+function stagesHTML(){
+  if(!STAGES.length) return '';
+  var cur=stageIdx(S.meta.stage);
+  return '<div class="lab" style="margin-top:16px">Stages</div><table class="dt"><thead><tr><th>Stage</th><th>When</th><th>Columns that fall due</th></tr></thead><tbody>'+
+    STAGES.map(function(s,i){ var cs=COLS.filter(function(c){ return c.kind!=='level'&&c.stage===s.k; });
+      return '<tr'+(cur>=0&&i>cur?' style="opacity:.6"':'')+'><td class="k">'+esc(s.name)+(i===cur?' <span class="pill ok">Current</span>':'')+'</td><td class="m">'+esc(s.when||'')+'</td><td class="m">'+esc(cs.map(function(c){ return c.h; }).join(', ')||'None')+'</td></tr>'; }).join('')+
+    '<tr><td class="k">Any time</td><td class="m">As the need arises</td><td class="m">'+esc(COLS.filter(function(c){ return c.kind!=='level'&&!c.stage; }).map(function(c){ return c.h; }).join(', ')||'None')+'</td></tr></tbody></table>'+
+    '<p class="small" style="margin-top:8px">'+(S.meta.stage?'Index stage reads '+esc(stageName(S.meta.stage))+'. Blank-entry hints for later columns are held.':'Index stage reads All columns due. Every hint runs.')+' A hint that compares two filled cells always runs, whatever the stage.</p>';
+}
+function importRepHTML(){
+  var p=S.imp; if(!p) return '';
+  var miss=(p.missing||[]).map(hd);
+  return '<div class="lab" style="margin-top:16px">Last import</div><p class="small">'+esc(p.file)+', '+esc(p.at)+'. Read the CI Index sheet, header on row '+p.headerRow+'. '+p.rows+' row'+(p.rows===1?'':'s')+' loaded'+(p.noId?', '+p.noId+' with no CI ID (flagged)':'')+'. '+
+    (p.vars!=null?p.vars+' PN Variants row'+(p.vars===1?'':'s')+'. ':'')+(miss.length?'<b>Columns not found:</b> '+esc(miss.join(', '))+'. They loaded as blank.':'Every column was found.')+'</p>';
+}
+function colmapTable(){
+  var fc=fillCounts(), p=S.imp;
+  var h='<table class="dt cmap"><thead><tr><th>Column</th><th>Save file key</th><th>Needed to load</th><th>Fill by</th><th>What reads it</th><th>If the cell is blank</th>'+(fc?'<th>This index</th>':'')+'</tr></thead><tbody>';
+  COLS.forEach(function(c){
+    var needed=c.kind==='level'?'<span class="pill off">Not read</span>':headerKeys().indexOf(c.k)>=0?'<span class="pill hold">Locates the header</span>':'<span class="pill off">No</span>';
+    var fill='';
+    if(fc&&c.kind!=='level'){ var x=fc.f[c.k]; fill='<span class="pill '+(x.n===x.of?'ok':notDue(c.k)?'off':'hold')+'">'+x.n+' of '+x.of+'</span>'+(c.core?'':'<div class="small">Live non-GFE rows</div>'); }
+    if(p&&(p.missing||[]).indexOf(c.k)>=0) fill='<span class="pill bad">Not in last import</span> '+fill;
+    var st=c.kind==='level'?'Derived':stageName(c.stage);
+    h+='<tr'+(notDue(c.k)?' class="notdue"':'')+'><td><b>'+esc(c.h)+'</b>'+((c.alias||[]).length?'<div class="small" style="margin-top:3px">Also accepts: '+c.alias.map(esc).join(', ')+'</div>':'')+(c.core?' <span class="bd">core</span>':'')+'</td>'+
+      '<td class="m"><code>'+esc(c.k)+'</code></td><td>'+needed+'</td><td class="m">'+esc(st)+(notDue(c.k)?'<div class="small">Not yet due</div>':'')+'</td>'+
+      '<td class="m">'+esc(c.kind==='level'?'Derived from '+hd('parent')+'. Ignored on import.':readers(c))+'</td><td class="m">'+esc(c.kind==='level'?'Nothing. The tool computes it.':blankEffect(c))+'</td>'+(fc?'<td>'+fill+'</td>':'')+'</tr>';
+  });
+  return h+'</tbody></table>';
+}
+function vcolTable(){
+  if(!FEAT.tabs.variants) return '';
+  return '<div class="lab" style="margin-top:16px">PN Variants sheet</div><table class="dt"><thead><tr><th>Column</th><th>Save file key</th><th>Needed to load</th><th>Note</th></tr></thead><tbody>'+
+    VCOLS.map(function(c){ return '<tr><td><b>'+esc(c.h)+'</b>'+(c.core?' <span class="bd">core</span>':'')+'</td><td class="m"><code>'+esc(c.k)+'</code></td><td>'+(c.k==='pin'?'<span class="pill hold">Locates the header</span>':'<span class="pill off">No</span>')+'</td><td class="m">'+esc(c.k==='ciId'?'Names a CI ID on the CI Index sheet. VA1 flags one that does not exist.':c.k==='pin'?'VA4 flags a row with none.':c.help||'')+'</td></tr>'; }).join('')+'</tbody></table>';
+}
+function colmapHTML(){
+  return '<div class="sect">'+minLoadHTML()+minEntryHTML()+importRepHTML()+'</div>'+
+    '<div class="sect"><div class="lab">Column map</div><p class="small" style="margin-bottom:10px">Each column the import reads, in export order. The Excel export carries the same map on its Column Map sheet.</p>'+colmapTable()+vcolTable()+stagesHTML()+'</div>';
+}
+function colmapSheet(){
+  var fc=fillCounts(), rows=[[{v:'Column Map',s:X.title}],
+    [{v:'What the import reads from the CI Index sheet. The sheet needs a header row with '+headerKeys().map(hd).join(' or ')+' in its first 15 rows. Every row with one filled cell loads. Every other column is optional, and a blank cell never stops the import.',s:X.muted}],[],
+    H(['Column','Also Accepted','Save File Key','Needed to Load','Fill By','What Reads It','If the Cell Is Blank'].concat(fc?['Filled']:[]))];
+  COLS.forEach(function(c){
+    var lvl=c.kind==='level';
+    rows.push([c.h,(c.alias||[]).join('; '),c.k,lvl?'Not read':headerKeys().indexOf(c.k)>=0?'Locates the header':'No',lvl?'Derived':stageName(c.stage),lvl?'Derived from '+hd('parent')+'.':readers(c),lvl?'Nothing. The tool computes it.':blankEffect(c)].concat(fc?[lvl?'':fc.f[c.k].n+' of '+fc.f[c.k].of]:[]).map(function(v){ return {v:v,s:X.body}; }));
+  });
+  rows.push([]); rows.push([{v:'Index stage at export: '+(S.meta.stage?stageName(S.meta.stage):'All columns due')+'.',s:X.muted}]);
+  return {name:'Column Map',rows:rows,widths:[28,22,10,16,18,48,60,10].slice(0,fc?8:7),freeze:{r:4,c:1},heights:{1:30}};
+}
+
+function stageUI(){
+  var row=$('stagerow'); if(!row) return;
+  if(!STAGES.length){ row.style.display='none'; return; }
+  var sel=$('m-stage');
+  sel.innerHTML='<option value="">All columns due</option>'+STAGES.map(function(x){ return '<option value="'+esc(x.k)+'"'+(S.meta.stage===x.k?' selected':'')+'>'+esc(x.name)+(x.when?' ('+esc(x.when)+')':'')+'</option>'; }).join('');
+  sel.value=S.meta.stage||'';
+  $('stagehelp').innerHTML=S.meta.stage?'Blank-entry hints for columns that fall due after '+esc(stageName(S.meta.stage))+' are held. '+(HELD.length?HELD.length+' held now. ':'')+(tabOn('colmap')?'<button class="lnk" data-tab="colmap">See which columns fall due when</button>':''):'Every hint runs. Pick a stage to hold the blank-entry hints for columns that fall due later. The index is rarely filled in one sitting.'+(tabOn('colmap')?' <button class="lnk" data-tab="colmap">See the stages</button>':'');
+}
+
+/* ===================================================================
+   Actions
+   =================================================================== */
+function nextId(extra){
+  var max=0, pre='CI-', w=4, taken={};
+  S.cis.forEach(function(r){ if(r.id) taken[r.id]=1; var m=/^(.*?)(\d+)$/.exec(r.id||''); if(m){ var n=parseInt(m[2],10); if(n>=max){ max=n; pre=m[1]; w=m[2].length; } } });
+  (extra||[]).forEach(function(x){ taken[x]=1; });
+  var n=max+1, s;
+  do{ s=pre+String(n).padStart(w,'0'); n++; } while(taken[s]);
+  return s;
+}
+function copyRow(r){ var n=JSON.parse(JSON.stringify(r)); n.uid=uid(); n.src=(r.src||[]).slice(); return n; }
+function expandTo(r){ ancestors(r).forEach(function(a){ delete S.col[a.uid]; }); }
+function addRow(r,how){
+  S.cis.push(r); logEdit(r.id,null,'',r.name||r.id,how||'Add');
+  buildTree(); expandTo(r); S.sel=r.uid; S.panel=null; S.tab='tree'; dirty(); render();
+  var n=$('f-name'); if(n) n.focus();
+}
+function newRow(p){
+  var r=blankRow(); r.id=nextId(); r.status=ST.proposed||''; if(has('type')) r.type=LISTS.type[0]||'';
+  if(p){ r.parent=p.id; if(has('cage')) r.cage=p.cage; if(has('nhpin')) r.nhpin=p.pin; if(has('qty')) r.qty='1'; if(has('fbl')) r.fbl=FBL_NA; }
+  return r;
+}
+function setYN(r,k,v){ var old=r[k]; if(old===v) return; r[k]=v; logEdit(r.id,k,old,v); dirty(); }
+function clearNew(n){ ['concur','selRef','mbse','notes'].forEach(function(k){ if(has(k)) n[k]=''; }); }
+function doSplit(r){
+  var rows=S.sp.filter(function(x){ return tr(x.id); }), ids=rows.map(function(x){ return tr(x.id); });
+  if(rows.length<2){ msg('Name at least two new CIs.'); return; }
+  var dup=ids.filter(function(id,i){ return ids.indexOf(id)!==i||T.ids[id]; });
+  if(dup.length){ msg(dup[0]+' is already in use. Pick another CI ID.'); return; }
+  var news=rows.map(function(x){ var n=copyRow(r); n.id=tr(x.id); n.name=tr(x.name)||r.name; n.status=ST.proposed; clearNew(n); n.sup=r.id; return n; });
+  news.forEach(function(n){ S.cis.push(n); logEdit(n.id,null,r.id,n.name,'Add (split from '+r.id+')'); });
+  var os=r.status; r.status=ST.split; r.sup=ids.join('; ');
+  logEdit(r.id,'status',os,r.status,'Split'); logEdit(r.id,'sup','',r.sup,'Split');
+  S.panel=null; S.sel=news[0].uid; dirty(); render();
+  msg('Split '+r.id+' into '+ids.join(' and ')+'. Reparent its child CIs. On the interface register, re-map every row that landed on '+r.id+', and its Internal rows too. Ask Systems Engineering whether the new CIs exchange anything no interface source yet defines. Submit the new CIs for Acquirer concurrence.');
+}
+function doCons(r){
+  var others=S.cis.filter(function(x){ return S.cons.pick[x.uid]&&x!==r&&live(x); });
+  var id=tr(S.cons.id);
+  if(!others.length){ msg('Pick at least one CI to consolidate with '+r.id+'.'); return; }
+  if(!id){ msg('Name the new CI ID.'); return; }
+  if(T.ids[id]){ msg(id+' is already in use. Pick another CI ID.'); return; }
+  var olds=[r].concat(others);
+  var n=copyRow(r); n.id=id; n.name=tr(S.cons.name)||r.name; n.status=ST.proposed; clearNew(n);
+  n.sup=olds.map(function(o){ return o.id; }).join('; ');
+  S.cis.push(n); logEdit(n.id,null,n.sup,n.name,'Add (consolidated from '+n.sup+')');
+  olds.forEach(function(o){ var os=o.status; o.status=ST.cons; o.sup=id; logEdit(o.id,'status',os,o.status,'Consolidate'); });
+  S.panel=null; S.cons={pick:{},id:'',name:''}; S.sel=n.uid; dirty(); render();
+  msg('Consolidated '+n.sup+' into '+id+'. On the interface register, supersede each row between the old CIs with an Internal row and record why. Do not delete rows. Re-map the other rows to '+id+'. Reparent any child CIs. Submit the new CI for Acquirer concurrence.');
+}
+function renameId(r,old,nw){
+  if(!old||!nw||old===nw) return;
+  if(S.cis.some(function(x){ return x!==r&&x.id===old; })) return;
+  var n=0;
+  S.cis.forEach(function(x){
+    if(x!==r&&x.parent===old){ x.parent=nw; n++; }
+    var t=splitIds(x.sup); if(t.indexOf(old)>=0){ x.sup=t.map(function(y){ return y===old?nw:y; }).join('; '); n++; }
+  });
+  S.vars.forEach(function(v){ if(v.ciId===old){ v.ciId=nw; n++; } });
+  if(n){ logEdit(nw,null,old,nw,'Rename ('+n+' reference'+(n>1?'s':'')+' updated)'); msg('Renamed '+old+' to '+nw+'. Updated '+n+' reference'+(n>1?'s':'')+'.'); }
+}
+
+/* ===================================================================
+   Persistence: JSON
+   =================================================================== */
+function dl(bytes,name,mime){
+  var u=URL.createObjectURL(new Blob([bytes],{type:mime}));
+  var a=document.createElement('a'); a.href=u; a.download=name; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(u); },4000);
+}
+function snapshot(){
+  return {tool:TOOL, engine:ENGINE_REV, build:{name:C.build.name,rev:C.build.rev}, saved:stamp(), meta:S.meta,
+    cis:S.cis.map(function(r){ var o={}; COLS.forEach(function(c){ if(c.kind!=='level') o[c.k]=c.k==='src'?(r.src||[]).slice():(r[c.k]||''); }); return o; }),
+    vars:S.vars.map(function(v){ var o={}; VCOLS.forEach(function(c){ o[c.k]=v[c.k]||''; }); return o; }),
+    log:S.log};
+}
+function doSave(){
+  dl(new TextEncoder().encode(JSON.stringify(snapshot(),null,1)),stem()+'_'+slug(S.meta.prog)+'_'+today()+'.json','application/json');
+  clean(); msg('Index saved. Reopen it with Open saved index.');
+  if(S.tab==='overview') render();
+}
+function normYN(x){ x=tr(x).toUpperCase(); if(x==='YES') return 'Y'; if(x==='NO') return 'N'; return x; }
+function normRow(o){
+  var r=blankRow();
+  COLS.forEach(function(c){
+    if(c.kind==='level') return;
+    var v=o[c.k];
+    if(c.kind==='src') r.src=(Array.isArray(v)?v:String(v||'').split(';')).map(tr).filter(Boolean).map(canon);
+    else r[c.k]=c.kind==='yn'?normYN(v):tr(v);
+  });
+  return r;
+}
+function normVar(o){ var v=blankVar(); VCOLS.forEach(function(c){ v[c.k]=c.kind==='yn'?normYN(o[c.k]):tr(o[c.k]); }); return v; }
+function loadData(o,how){
+  var m=o.meta||{};
+  S=fresh();
+  S.meta={prog:tr(m.prog),doc:tr(m.doc),rev:tr(m.rev),who:$('m-who').value||tr(m.who),stage:stageIdx(tr(m.stage))>=0?tr(m.stage):''};
+  S.cis=(o.cis||[]).map(normRow);
+  S.vars=(o.vars||[]).map(normVar);
+  S.log=Array.isArray(o.log)?o.log.filter(function(e){ return e&&typeof e==='object'; }):[];
+  ['prog','doc','rev','who'].forEach(function(k){ $('m-'+k).value=S.meta[k]; });
+  if(how) logEdit('',null,'',how,'Load');
+}
+function readJSON(file,cb){
+  var rd=new FileReader();
+  rd.onload=function(){ try{ var o=JSON.parse(rd.result); if(o.tool!==TOOL) throw new Error('this is not a CI Index file'); cb(o); } catch(e){ msg('Could not read that file: '+e.message); } };
+  rd.readAsText(file);
+}
+
+/* ===================================================================
+   Excel export: a .xlsx is a ZIP of XML parts, stored uncompressed
+   =================================================================== */
+var CRC=(function(){ var t=new Uint32Array(256),c,n,k; for(n=0;n<256;n++){ c=n; for(k=0;k<8;k++) c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1); t[n]=c>>>0; } return t; })();
+function crc32(b){ var c=0xFFFFFFFF; for(var i=0;i<b.length;i++) c=CRC[(c^b[i])&0xFF]^(c>>>8); return (c^0xFFFFFFFF)>>>0; }
+function utf8(s){ return new TextEncoder().encode(s); }
+function makeZip(files){
+  var parts=[],cen=[],off=0;
+  function u16(v){ return [v&255,(v>>8)&255]; } function u32(v){ return [v&255,(v>>8)&255,(v>>16)&255,(v>>>24)&255]; }
+  var d=new Date(), dt=((d.getFullYear()-1980)<<9)|((d.getMonth()+1)<<5)|d.getDate(), tm=(d.getHours()<<11)|(d.getMinutes()<<5)|(d.getSeconds()>>1);
+  files.forEach(function(f){
+    var nm=utf8(f.name), dd=utf8(f.data), c=crc32(dd);
+    var lo=[].concat(u32(0x04034b50),u16(20),u16(0x0800),u16(0),u16(tm),u16(dt),u32(c),u32(dd.length),u32(dd.length),u16(nm.length),u16(0));
+    parts.push(new Uint8Array(lo),nm,dd);
+    var ce=[].concat(u32(0x02014b50),u16(20),u16(20),u16(0x0800),u16(0),u16(tm),u16(dt),u32(c),u32(dd.length),u32(dd.length),u16(nm.length),u16(0),u16(0),u16(0),u16(0),u32(0),u32(off));
+    ce.nm=nm; cen.push(ce); off+=lo.length+nm.length+dd.length;
+  });
+  var cd=[],cl=0; cen.forEach(function(c){ cd.push(new Uint8Array(c),c.nm); cl+=c.length+c.nm.length; });
+  var end=new Uint8Array([].concat(u32(0x06054b50),u16(0),u16(0),u16(files.length),u16(files.length),u32(cl),u32(off),u16(0)));
+  var all=parts.concat(cd,[end]), tot=all.reduce(function(n,a){ return n+a.length; },0), out=new Uint8Array(tot), p=0;
+  all.forEach(function(a){ out.set(a,p); p+=a.length; });
+  return out;
+}
+function xq(s){ return String(s==null?'':s).replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function colL(i){ var s=''; i++; while(i>0){ var m=(i-1)%26; s=String.fromCharCode(65+m)+s; i=Math.floor((i-1)/26); } return s; }
+var X={def:0,hdr:1,body:2,flag:3,rev:4,title:5,label:6,muted:7,note:8};
+function cellXml(ref,c){
+  if(c==null) return '';
+  if(typeof c!=='object') c={v:c};
+  var s=c.s!=null?' s="'+c.s+'"':'';
+  if(c.v===''||c.v==null) return c.s!=null?'<c r="'+ref+'"'+s+'/>':'';
+  if(typeof c.v==='number') return '<c r="'+ref+'"'+s+'><v>'+c.v+'</v></c>';
+  return '<c r="'+ref+'"'+s+' t="inlineStr"><is><t xml:space="preserve">'+xq(c.v)+'</t></is></c>';
+}
+function sheetXml(sh,sel){
+  var rows=sh.rows, nc=1; rows.forEach(function(r){ if(r.length>nc) nc=r.length; });
+  var x='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">';
+  x+='<dimension ref="A1:'+colL(nc-1)+Math.max(rows.length,1)+'"/><sheetViews><sheetView workbookViewId="0"'+(sel?' tabSelected="1"':'')+'>';
+  if(sh.freeze){
+    var fr=sh.freeze.r||0, fc=sh.freeze.c||0, pane=fr&&fc?'bottomRight':fr?'bottomLeft':'topRight';
+    x+='<pane'+(fc?' xSplit="'+fc+'"':'')+(fr?' ySplit="'+fr+'"':'')+' topLeftCell="'+colL(fc)+(fr+1)+'" activePane="'+pane+'" state="frozen"/><selection pane="'+pane+'"/>';
+  }
+  x+='</sheetView></sheetViews><sheetFormatPr defaultRowHeight="15"/>';
+  if(sh.widths) x+='<cols>'+sh.widths.map(function(w,i){ return '<col min="'+(i+1)+'" max="'+(i+1)+'" width="'+w+'" customWidth="1"/>'; }).join('')+'</cols>';
+  x+='<sheetData>';
+  rows.forEach(function(r,i){
+    var ht=sh.heights&&sh.heights[i];
+    x+='<row r="'+(i+1)+'"'+(ht?' ht="'+ht+'" customHeight="1"':'')+'>';
+    r.forEach(function(c,j){ x+=cellXml(colL(j)+(i+1),c); });
+    x+='</row>';
+  });
+  x+='</sheetData>';
+  if(sh.filter&&rows.length>1) x+='<autoFilter ref="A1:'+colL(nc-1)+rows.length+'"/>';
+  if(sh.dv&&sh.dv.length) x+='<dataValidations count="'+sh.dv.length+'">'+sh.dv.map(function(d){
+    return '<dataValidation type="list" errorStyle="warning" allowBlank="1" showErrorMessage="1" errorTitle="Not on the list" error="This value is not on the list. Keep it or change it." sqref="'+d.sqref+'"><formula1>'+xq(d.f)+'</formula1></dataValidation>'; }).join('')+'</dataValidations>';
+  x+='<pageMargins left="0.5" right="0.5" top="0.75" bottom="0.75" header="0.3" footer="0.3"/></worksheet>';
+  return x;
+}
+function stylesXml(){
+  var b='<left style="thin"><color rgb="FFD6DCDF"/></left><right style="thin"><color rgb="FFD6DCDF"/></right><top style="thin"><color rgb="FFD6DCDF"/></top><bottom style="thin"><color rgb="FFD6DCDF"/></bottom><diagonal/>';
+  function fill(c){ return '<fill><patternFill patternType="solid"><fgColor rgb="FF'+c+'"/><bgColor indexed="64"/></patternFill></fill>'; }
+  var al='<alignment vertical="top" wrapText="1"/>', ink=(hex((C.theme||{}).ink)?mix(hex(C.theme.ink),[255,255,255],0.08):'#2C3841').slice(1).toUpperCase();
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'+
+   '<fonts count="5"><font><sz val="10"/><name val="Calibri"/><family val="2"/></font><font><b/><sz val="10"/><color rgb="FFFFFFFF"/><name val="Calibri"/><family val="2"/></font><font><b/><sz val="10"/><name val="Calibri"/><family val="2"/></font><font><b/><sz val="14"/><name val="Calibri"/><family val="2"/></font><font><i/><sz val="10"/><color rgb="FF5C6D78"/><name val="Calibri"/><family val="2"/></font></fonts>'+
+   '<fills count="6"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>'+fill(ink)+fill('F4E2E2')+fill('F6ECD8')+fill('EDF0F1')+'</fills>'+
+   '<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border>'+b+'</border></borders>'+
+   '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'+
+   '<cellXfs count="9">'+
+   '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'+
+   '<xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1">'+al+'</xf>'+
+   '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1">'+al+'</xf>'+
+   '<xf numFmtId="0" fontId="0" fillId="3" borderId="1" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1">'+al+'</xf>'+
+   '<xf numFmtId="0" fontId="0" fillId="4" borderId="1" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1">'+al+'</xf>'+
+   '<xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1"/>'+
+   '<xf numFmtId="0" fontId="2" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1">'+al+'</xf>'+
+   '<xf numFmtId="0" fontId="4" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1">'+al+'</xf>'+
+   '<xf numFmtId="0" fontId="0" fillId="5" borderId="1" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1">'+al+'</xf>'+
+   '</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
+}
+function buildXlsx(sheets,active){
+  var ns='http://schemas.openxmlformats.org/', f=[];
+  f.push({name:'[Content_Types].xml',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="'+ns+'package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'+
+    sheets.map(function(s,i){ return '<Override PartName="/xl/worksheets/sheet'+(i+1)+'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'; }).join('')+
+    '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/></Types>'});
+  f.push({name:'_rels/.rels',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="'+ns+'package/2006/relationships"><Relationship Id="rId1" Type="'+ns+'officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/><Relationship Id="rId2" Type="'+ns+'package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/></Relationships>'});
+  f.push({name:'docProps/core.xml',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><cp:coreProperties xmlns:cp="'+ns+'package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>'+xq((C.text.top||'CI Index')+': '+(S.meta.prog||''))+'</dc:title><dc:creator>'+xq(S.meta.who)+'</dc:creator></cp:coreProperties>'});
+  var dn=[];
+  sheets.forEach(function(s,i){ if(s.filter&&s.rows.length>1){ var nc=0; s.rows.forEach(function(r){ if(r.length>nc) nc=r.length; }); dn.push('<definedName name="_xlnm._FilterDatabase" localSheetId="'+i+'" hidden="1">\''+xq(s.name)+'\'!$A$1:$'+colL(nc-1)+'$'+s.rows.length+'</definedName>'); } });
+  f.push({name:'xl/workbook.xml',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="'+ns+'spreadsheetml/2006/main" xmlns:r="'+ns+'officeDocument/2006/relationships"><bookViews><workbookView activeTab="'+active+'"/></bookViews><sheets>'+
+    sheets.map(function(s,i){ return '<sheet name="'+xq(s.name)+'" sheetId="'+(i+1)+'" r:id="rId'+(i+1)+'"/>'; }).join('')+'</sheets>'+(dn.length?'<definedNames>'+dn.join('')+'</definedNames>':'')+'</workbook>'});
+  f.push({name:'xl/_rels/workbook.xml.rels',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="'+ns+'package/2006/relationships">'+
+    sheets.map(function(s,i){ return '<Relationship Id="rId'+(i+1)+'" Type="'+ns+'officeDocument/2006/relationships/worksheet" Target="worksheets/sheet'+(i+1)+'.xml"/>'; }).join('')+
+    '<Relationship Id="rId'+(sheets.length+1)+'" Type="'+ns+'officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>'});
+  f.push({name:'xl/styles.xml',data:stylesXml()});
+  sheets.forEach(function(s,i){ f.push({name:'xl/worksheets/sheet'+(i+1)+'.xml',data:sheetXml(s,i===active)}); });
+  return makeZip(f);
+}
+function H(list){ return list.map(function(h){ return {v:h,s:X.hdr}; }); }
+function doExport(){
+  runChecks();
+  var order=exportOrder(), rowOf={}, sheets=[], SH=FEAT.sheets;
+  order.forEach(function(r,i){ rowOf[r.uid]=i+2; });
+  function sty(list){ var w=worst(list); return w==='flag'?X.flag:w==='review'?X.rev:X.body; }
+
+  /* Lists sheet layout, built first so the dropdowns can point at it */
+  var LN=['yn'].concat(Object.keys(C.lists)), LCOL={};
+  LN.forEach(function(n,i){ LCOL[n]=colL(i); });
+  function lref(n){ return 'Lists!$'+LCOL[n]+'$2:$'+LCOL[n]+'$'+(LISTS[n].length+1); }
+
+  if(SH.about){
+    var ab=[[{v:C.text.top||'CI Index',s:X.title}],[],
+      [{v:'Program',s:X.label},{v:S.meta.prog,s:X.body}],[{v:'Index document number',s:X.label},{v:S.meta.doc,s:X.body}],
+      [{v:'Revision',s:X.label},{v:S.meta.rev,s:X.body}],[{v:'Index stage',s:X.label},{v:S.meta.stage?stageName(S.meta.stage):'All columns due',s:X.body}],[{v:'Exported',s:X.label},{v:stamp(),s:X.body}],
+      [{v:'Exported by',s:X.label},{v:S.meta.who,s:X.body}],[{v:'Tool build',s:X.label},{v:(C.build.name||'')+', rev '+(C.build.rev||''),s:X.body}],[],
+      [{v:'Live CIs',s:X.label},{v:S.cis.filter(live).length,s:X.body}],[{v:'Retired rows',s:X.label},{v:S.cis.filter(function(r){ return !live(r); }).length,s:X.body}],
+      [{v:'Flags',s:X.label},{v:CNT.flag,s:X.body}],[{v:'Review items',s:X.label},{v:CNT.review,s:X.body}],[{v:'Notes',s:X.label},{v:CNT.note,s:X.body}],[],
+      [{v:'How to read this workbook',s:X.label}],
+      [{v:'The CI Index tool produced this workbook. It is the exchange copy. The saved index file is the working copy, and it keeps the edit log.',s:X.muted}],
+      [{v:'A cell shaded red carries a flag. A cell shaded amber carries a review item.'+(SH.checks?' The Checks sheet lists every finding, its rule, and its cell.':''),s:X.muted}],
+      [{v:'Level and the indentation of CI Name follow from Parent CI ID. Change the parent, and the tool recomputes both on the next import.',s:X.muted}],
+      [{v:'Coded columns carry dropdowns from the Lists sheet. A value not on the list raises a warning. You can keep it or change it.',s:X.muted}]];
+    sheets.push({name:'About',rows:ab,widths:[26,110]});
+  }
+
+  var ci=[H(COLS.map(function(c){ return c.h; }))];
+  order.forEach(function(r){
+    var lvl=T.lvl[r.uid], o=FI[r.uid];
+    ci.push(COLS.map(function(c){
+      var v=c.kind==='level'?(lvl==null?'':lvl):c.k==='name'?(new Array(2*(lvl||0)+1).join(' '))+val(r,'name'):val(r,c.k);
+      if((c.k==='qty'||c.kind==='number')&&/^-?\d+(\.\d+)?$/.test(v)) v=+v;
+      var l=o?(c.k==='id'?(o.k.id||[]).concat(o.all.filter(function(x){ return !x.k; })):o.k[c.k]):null;
+      return {v:v,s:sty(l)};
+    }));
+  });
+  var n=Math.max(ci.length,2)+200, dv=[];
+  COLS.forEach(function(c,i){
+    var L=c.kind==='yn'?'yn':c.kind==='enum'&&LISTS[c.list]?c.list:null;
+    if(L) dv.push({sqref:colL(i)+'2:'+colL(i)+n,f:lref(L)});
+  });
+  var ciSheet=sheets.length;
+  sheets.push({name:'CI Index',rows:ci,widths:COLS.map(function(c){ return c.w||14; }),freeze:{r:1,c:Math.min(4,COLS.indexOf(COL.name)+1||4)},filter:true,dv:dv,heights:{0:54}});
+
+  var vrow={};
+  if(FEAT.tabs.variants){
+    var vr=[H(VCOLS.map(function(c){ return c.h; }))];
+    S.vars.forEach(function(v,i){ vrow[v.uid]=i+2; vr.push(VCOLS.map(function(c){ return {v:tr(v[c.k]),s:sty(FV[v.uid]&&FV[v.uid].k[c.k])}; })); });
+    var vn=Math.max(vr.length,2)+100, vdv=[];
+    VCOLS.forEach(function(c,i){ var L=c.kind==='yn'?'yn':c.kind==='enum'&&LISTS[c.list]?c.list:null; if(L) vdv.push({sqref:colL(i)+'2:'+colL(i)+vn,f:lref(L)}); });
+    sheets.push({name:'PN Variants',rows:vr,widths:VCOLS.map(function(c){ return c.w||14; }),freeze:{r:1},filter:true,heights:{0:42},dv:vdv});
+  }
+
+  if(SH.checks){
+    var ck=[H(['Severity','Rule','CI ID','Sheet','Column','Cell','Finding','Basis'])];
+    F.forEach(function(f){
+      var r=f.uid&&T.byUid[f.uid], v=f.vuid&&S.vars.filter(function(x){ return x.uid===f.vuid; })[0], sheet, col='', cell='';
+      if(v){ sheet='PN Variants'; var vi=VCOLS.indexOf(VCOLK[f.k]); col=vi>=0?VCOLS[vi].h:''; cell=vi>=0?colL(vi)+vrow[v.uid]:''; }
+      else { sheet='CI Index'; var ki=COLS.indexOf(COL[f.k||'id']); col=f.k?hd(f.k):''; cell=r&&ki>=0?colL(ki)+rowOf[r.uid]:''; }
+      var s=f.sev==='flag'?X.flag:f.sev==='review'?X.rev:X.note, info=ruleInfo(f.rule)||{};
+      ck.push([{v:f.sev.toUpperCase(),s:s},{v:f.rule,s:X.body},{v:r?r.id:(v?v.ciId:''),s:X.body},{v:sheet,s:X.body},{v:col,s:X.body},{v:cell,s:X.body},{v:f.m,s:X.body},{v:info.basis||'',s:X.body}]);
+    });
+    sheets.push({name:'Checks',rows:ck,widths:[10,7,11,13,26,8,90,34],freeze:{r:1},filter:true});
+  }
+
+  if(SH.queue){
+    var qk=['id','name','parent','tier','type','pin','critB','sci','selRef','sup','notes'].filter(has);
+    var cq=[H(qk.map(hd))];
+    order.filter(function(r){ return r.status===ST.proposed; }).forEach(function(r){ cq.push(qk.map(function(k){ return {v:val(r,k),s:X.body}; })); });
+    sheets.push({name:'Concurrence Queue',rows:cq,widths:qk.map(function(k){ return COL[k].w||14; }),freeze:{r:1},filter:true,heights:{0:30}});
+  }
+
+  if(SH.bound&&FEAT.tabs.bound){
+    var bd=[H(['#','Basis','CI','CI Name','CI Control Tier','Other CI','Other CI Name','Other CI Control Tier','The Register Needs'])];
+    deriveFloor().forEach(function(b,i){
+      bd.push([{v:i+1,s:X.body},{v:b.basis,s:X.body},{v:b.a.id,s:X.body},{v:b.a.name,s:X.body},{v:b.a.tier,s:X.body},{v:b.b?b.b.id:'Any CI or external item',s:X.body},{v:b.b?b.b.name:'',s:X.body},{v:b.b?b.b.tier:'',s:X.body},{v:b.need,s:X.rev}]);
+    });
+    sheets.push({name:'Structural Floor',rows:bd,widths:[5,34,11,30,22,22,30,22,40],freeze:{r:1},filter:true,heights:{0:30}});
+  }
+
+  if(SH.colmap&&tabOn('colmap')) sheets.push(colmapSheet());
+  if(SH.log){
+    var lg=[H(['When','Who','Action','CI ID','Column','From','To'])];
+    S.log.forEach(function(e){ lg.push([e.t,e.who,e.act,e.ci,e.f,e.from,e.to].map(function(v){ return {v:v,s:X.body}; })); });
+    sheets.push({name:'Edit Log',rows:lg,widths:[17,18,26,11,28,40,40],freeze:{r:1},filter:true});
+  }
+
+  if(S.cmp){
+    var cm=[H(['CI ID','Change','Column','Then','Now'])];
+    diffIndex(S.cmp.data).forEach(function(d){ cm.push([d.ci,d.ch,d.f,d.from,d.to].map(function(v){ return {v:v,s:X.body}; })); });
+    cm.push([]); cm.push([{v:'Compared with '+S.cmp.name+', saved '+(S.cmp.data.saved||'on an unknown date')+'.',s:X.muted}]);
+    sheets.push({name:'Comparison',rows:cm,widths:[11,16,34,40,40],freeze:{r:1}});
+  }
+
+  var mx=Math.max.apply(null,LN.map(function(n){ return LISTS[n].length; }).concat([C.sources.length]));
+  var ls=[H(LN.map(function(n){ return n==='yn'?'Y/N':C.lists[n].name; }).concat(['','Product Unit Record Requirement Source','Drives','Table C-1 (meets criterion (b) on its own)']))];
+  for(var i=0;i<mx;i++){
+    var s=SRC_LIST[i];
+    ls.push(LN.map(function(n){ return LISTS[n][i]||''; }).concat(['',s?s[0]:'',s?s[1]:'',s?(s[2]?'Y':'N'):'']).map(function(v){ return {v:v,s:v?X.body:null}; }));
+  }
+  sheets.push({name:'Lists',rows:ls,widths:LN.map(function(){ return 22; }).concat([3,46,11,16]),heights:{0:42}});
+
+  try{
+    dl(buildXlsx(sheets,ciSheet),stem()+'_'+slug(S.meta.prog)+'_'+today()+'.xlsx','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    msg('Excel workbook exported. '+(CNT.flag?CNT.flag+' flag'+(CNT.flag>1?'s are':' is')+' shaded red. ':'')+(SH.checks?'The Checks sheet lists every finding.':''));
+  }catch(e){ msg('Export failed: '+e.message); }
+}
+
+/* ===================================================================
+   Excel import
+   =================================================================== */
+function unzip(buf){
+  var u8=new Uint8Array(buf), dv=new DataView(buf), eocd=-1;
+  for(var i=u8.length-22;i>=Math.max(0,u8.length-65557);i--){ if(dv.getUint32(i,true)===0x06054b50){ eocd=i; break; } }
+  if(eocd<0) throw new Error('the file is not an .xlsx workbook');
+  var cnt=dv.getUint16(eocd+10,true), off=dv.getUint32(eocd+16,true), out={}, td=new TextDecoder();
+  for(var k=0;k<cnt;k++){
+    if(dv.getUint32(off,true)!==0x02014b50) throw new Error('the workbook structure is damaged');
+    var method=dv.getUint16(off+10,true), csize=dv.getUint32(off+20,true), nlen=dv.getUint16(off+28,true), elen=dv.getUint16(off+30,true), clen=dv.getUint16(off+32,true), lho=dv.getUint32(off+42,true);
+    var name=td.decode(u8.subarray(off+46,off+46+nlen));
+    var ln=dv.getUint16(lho+26,true), le=dv.getUint16(lho+28,true), st=lho+30+ln+le;
+    out[name]={method:method,data:u8.subarray(st,st+csize)};
+    off+=46+nlen+elen+clen;
+  }
+  return out;
+}
+function inflate(e){
+  if(e.method===0) return Promise.resolve(e.data);
+  if(e.method!==8) return Promise.reject(new Error('unsupported compression'));
+  if(typeof DecompressionStream==='undefined') return Promise.reject(new Error('this browser cannot read compressed workbooks. Use a current Edge, Chrome, Firefox, or Safari'));
+  var s=new Blob([e.data]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+  return new Response(s).arrayBuffer().then(function(b){ return new Uint8Array(b); });
+}
+function readPart(z,name){ var e=z[name]; if(!e) return Promise.resolve(null); return inflate(e).then(function(b){ return new DOMParser().parseFromString(new TextDecoder().decode(b),'application/xml'); }); }
+function tags(n,t){ return Array.prototype.slice.call(n.getElementsByTagNameNS('*',t)); }
+function txt(n){ return tags(n,'t').map(function(t){ return t.textContent; }).join(''); }
+function colIdx(ref){ var m=/^([A-Z]+)/.exec(ref||''), n=0; if(!m) return -1; for(var i=0;i<m[1].length;i++) n=n*26+(m[1].charCodeAt(i)-64); return n-1; }
+function sheetRows(doc,ss){
+  var out=[];
+  tags(doc,'row').forEach(function(rw){
+    var arr=[], ri=parseInt(rw.getAttribute('r'),10)-1;
+    tags(rw,'c').forEach(function(c,j){
+      var ci=c.getAttribute('r')?colIdx(c.getAttribute('r')):j, t=c.getAttribute('t'), v;
+      var vn=tags(c,'v')[0];
+      if(t==='s') v=ss[parseInt(vn&&vn.textContent,10)]||'';
+      else if(t==='inlineStr') v=txt(c);
+      else v=vn?vn.textContent:'';
+      arr[ci]=v;
+    });
+    arr._r=isNaN(ri)?out.length+1:ri+1; out[isNaN(ri)?out.length:ri]=arr;
+  });
+  return out.filter(Boolean);
+}
+function normH(h){ return String(h||'').toLowerCase().replace(/[^a-z0-9]/g,''); }
+function mapRows(rows,cols,must){
+  var hi=-1, mu=(Array.isArray(must)?must:[must]).map(normH);
+  for(var i=0;i<Math.min(rows.length,15);i++){ if((rows[i]||[]).some(function(c){ return mu.indexOf(normH(c))>=0; })){ hi=i; break; } }
+  if(hi<0) return null;
+  var hm={}; (rows[hi]||[]).forEach(function(h,j){ hm[normH(h)]=j; });
+  var map=cols.map(function(c){ var j=hm[normH(c.h)]; if(j==null) (c.alias||[]).forEach(function(a){ if(j==null&&hm[normH(a)]!=null) j=hm[normH(a)]; }); return j; });
+  var out=[];
+  rows.slice(hi+1).forEach(function(r){
+    if(!r) return;
+    var o={}, any=false;
+    cols.forEach(function(c,i){ var j=map[i]; var v=j==null?'':tr(r[j]); if(v) any=true; o[c.k]=v; });
+    if(any) out.push(o);
+  });
+  return {rows:out,headerRow:(rows[hi]&&rows[hi]._r)||hi+1,missingKeys:cols.filter(function(c,i){ return map[i]==null&&c.kind!=='level'; }).map(function(c){ return c.k; }),missing:cols.filter(function(c,i){ return map[i]==null&&c.kind!=='level'; }).map(function(c){ return c.h; })};
+}
+function doImport(file){
+  var rd=new FileReader();
+  rd.onload=function(){
+    var z; try{ z=unzip(rd.result); }catch(e){ msg('Could not read that workbook: '+e.message); return; }
+    var ss=[], wb, names={};
+    readPart(z,'xl/sharedStrings.xml').then(function(d){ if(d) ss=tags(d,'si').map(txt); return readPart(z,'xl/workbook.xml'); })
+    .then(function(d){ wb=d; return readPart(z,'xl/_rels/workbook.xml.rels'); })
+    .then(function(d){
+      var rels={}; tags(d,'Relationship').forEach(function(r){ var t=r.getAttribute('Target'); rels[r.getAttribute('Id')]=t.charAt(0)==='/'?t.slice(1):'xl/'+t.replace(/^\.\//,''); });
+      tags(wb,'sheet').forEach(function(s){ var id=s.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships','id')||s.getAttribute('r:id'); names[s.getAttribute('name')]=rels[id]; });
+      function find(n){ var k=Object.keys(names).filter(function(x){ return x.trim().toLowerCase()===n; })[0]; return k?names[k]:null; }
+      var ciP=find('ci index'), vP=find('pn variants'), aP=find('about');
+      if(!ciP) throw new Error('no sheet named CI Index. The Excel columns tab lists what the import accepts');
+      return Promise.all([readPart(z,ciP),vP?readPart(z,vP):null,aP?readPart(z,aP):null]);
+    })
+    .then(function(docs){
+      var hn=[]; headerKeys().forEach(function(k){ hn.push(COL[k].h); (COL[k].alias||[]).forEach(function(a){ hn.push(a); }); });
+      var ci=mapRows(sheetRows(docs[0],ss),COLS,hn);
+      if(!ci) throw new Error('the CI Index sheet has no header row with '+headerKeys().map(hd).join(' or ')+' in its first 15 rows. The Excel columns tab lists what the import accepts');
+      var vv=docs[1]?mapRows(sheetRows(docs[1],ss),VCOLS,VC('pin')):null;
+      var meta={prog:S.meta.prog,doc:S.meta.doc,rev:S.meta.rev,stage:S.meta.stage};
+      if(docs[2]) sheetRows(docs[2],ss).forEach(function(r){ var k=normH(r[0]); if(k==='program') meta.prog=r[1]||''; if(k==='indexdocumentnumber') meta.doc=r[1]||''; if(k==='revision') meta.rev=r[1]||''; if(k==='indexstage'){ var sv=STAGES.filter(function(x){ return normH(x.name)===normH(r[1]); })[0]; meta.stage=sv?sv.k:''; } });
+      if(S.cis.length&&!confirm('Replace the current index with '+ci.rows.length+' rows from '+file.name+'? Save first if you want to keep the current one.')) return;
+      var keepLog=S.log;
+      loadData({meta:meta,cis:ci.rows,vars:vv?vv.rows:[]},null);
+      S.imp={file:file.name,at:stamp(),headerRow:ci.headerRow,rows:ci.rows.length,noId:ci.rows.filter(function(x){ return !x.id; }).length,missing:ci.missingKeys,vars:vv?vv.rows.length:null};
+      S.log=keepLog; logEdit('',null,'','Imported '+ci.rows.length+' CI rows and '+(vv?vv.rows.length:0)+' variant rows from '+file.name,'Import');
+      dirty(); render();
+      msg('Imported '+ci.rows.length+' CI rows and '+(vv?vv.rows.length:0)+' variant rows. Level and indentation were recomputed from '+hd('parent')+'.'+(ci.missing.length?(ci.missing.length>6?' '+ci.missing.length+' columns not found':' Columns not found: '+ci.missing.join(', '))+'. They loaded as blank. The Excel columns tab lists them and shows the effect.':''));
+    })
+    .catch(function(e){ msg('Could not import that workbook: '+e.message+'.'); });
+  };
+  rd.readAsArrayBuffer(file);
+}
+
+/* ===================================================================
+   Events
+   =================================================================== */
+document.addEventListener('click',function(e){
+  var t=e.target.closest('button,[data-sel],[data-goto]'); if(!t) return;
+  var d=t.dataset, r=cur();
+  if(d.tog){ e.stopPropagation(); S.col[d.tog]=!S.col[d.tog]; $('treelist').innerHTML=treeListHTML(); return; }
+  if(d.tab){ S.tab=d.tab; S.panel=null; render(); if(window.scrollY>$('tabs').offsetTop-60) window.scrollTo(0,$('tabs').offsetTop-60); return; }
+  if(d.goto){ var g=T.byUid[d.goto]; if(!g) return; S.sel=g.uid; S.tab='tree'; S.panel=null; expandTo(g); render(); window.scrollTo(0,$('tabs').offsetTop-60); return; }
+  if(d.sel){ S.sel=d.sel; S.panel=null; render(); var nn=document.querySelector('.tn.sel'); if(nn&&nn.scrollIntoView) nn.scrollIntoView({block:'nearest'}); return; }
+  if(d.yn&&r){ setYN(r,d.yn,d.v); render(); return; }
+  if(d.src&&r){
+    var i=(r.src||[]).map(canon).indexOf(d.src), old=srcText(r);
+    if(i>=0) r.src.splice(i,1); else r.src.push(d.src);
+    logEdit(r.id,'src',old,srcText(r)); dirty(); render(); return;
+  }
+  if(d.srcrm&&r){ var o2=srcText(r); r.src=r.src.filter(function(s){ return s!==d.srcrm; }); logEdit(r.id,'src',o2,srcText(r)); dirty(); render(); return; }
+  if(d.csev!=null){ S.csev=d.csev; render(); return; }
+  if(d.vdel){ var v=S.vars.filter(function(x){ return x.uid===d.vdel; })[0]; if(!v) return; if(!confirm('Remove the variant row '+(v.pin||'')+' for '+(v.ciId||'')+'?')) return;
+    S.vars=S.vars.filter(function(x){ return x!==v; }); logEdit(v.ciId,null,v.pin,'','Remove variant'); dirty(); render(); return; }
+  var a=d.act; if(!a) return;
+  switch(a){
+    case 'save': doSave(); break;
+    case 'open': $('f-json').click(); break;
+    case 'import': $('f-xlsx').click(); break;
+    case 'xlsx': if(!S.cis.length){ msg('The index is empty. There is nothing to export.'); break; } doExport(); break;
+    case 'clear':
+      if(!confirm('Clear the index? Save first if you want to keep it.')) break;
+      var who=S.meta.who; S=fresh(); S.meta.who=who; ['prog','doc','rev'].forEach(function(k){ $('m-'+k).value=''; }); clean(); render(); msg('Cleared.'); break;
+    case 'examples':
+      loadData({meta:{prog:'Example program'},cis:C.examples.cis,vars:C.examples.vars||[]},'Loaded the example rows');
+      dirty(); render(); msg('Loaded '+C.examples.cis.length+' example CIs and '+(C.examples.vars||[]).length+' variant rows. Replace them with real data.'); break;
+    case 'add-root': addRow(newRow(null)); break;
+    case 'add-child': if(r) addRow(newRow(r)); break;
+    case 'add-sib': if(r) addRow(newRow(parentOf(r))); break;
+    case 'dup':
+      if(!r) break;
+      var n=copyRow(r); n.id=nextId(); n.status=ST.proposed; clearNew(n); n.sup='';
+      if(has('notes')) n.notes='Same PIN as '+r.id+'. Separate CIs per Decision Path B. Cite the triggers that fired.';
+      addRow(n,'Add (same PIN as '+r.id+')'); msg('Copied '+r.id+' as '+n.id+'. Set its parent and model element. Key CSA on the CI and the installed position together.'); break;
+    case 'p-split': S.panel='split'; var ids=[]; S.sp=[0,1].map(function(){ var x=nextId(ids); ids.push(x); return {id:x,name:''}; }); render(); break;
+    case 'sp-add': var ex=S.sp.map(function(x){ return x.id; }); S.sp.push({id:nextId(ex),name:''}); render(); break;
+    case 'p-cons': S.panel='cons'; S.cons={pick:{},id:nextId(),name:''}; render(); break;
+    case 'p-close': S.panel=null; render(); break;
+    case 'do-split': if(r) doSplit(r); break;
+    case 'do-cons': if(r) doCons(r); break;
+    case 'dedes':
+      if(!r||!confirm('De-designate '+r.id+'? The row stays for traceability. Submit the de-designation to the Acquirer for concurrence.')) break;
+      var os=r.status; r.status=ST.dedes; logEdit(r.id,'status',os,r.status,'De-designate'); dirty(); render();
+      msg(r.id+' is de-designated. Its row stays in the index.'); break;
+    case 'del':
+      if(!r||canDelete(r)) break;
+      if(!confirm('Delete '+(r.id||'this row')+'? Use delete only for a row entered in error.')) break;
+      S.cis=S.cis.filter(function(x){ return x!==r; }); logEdit(r.id,null,r.name,'','Delete'); S.sel=null; dirty(); render(); msg('Deleted.'); break;
+    case 'apply-impl':
+      if(!r) break; var im=implied(r); ['ser','lot','iuid','sh'].filter(has).forEach(function(k){ setYN(r,k,im[k]); }); render(); msg('Flags set to match the sources.'); break;
+    case 'expand': S.col={}; $('treelist').innerHTML=treeListHTML(); break;
+    case 'collapse': S.cis.forEach(function(x){ if((T.kids[x.uid]||[]).length) S.col[x.uid]=true; }); $('treelist').innerHTML=treeListHTML(); break;
+    case 'var-add': case 'var-add-ci':
+      var v2=blankVar(); if(a==='var-add-ci'&&r){ v2.ciId=r.id; v2.ser=r.ser||''; v2.lot=r.lot||''; } S.vars.push(v2); logEdit(v2.ciId,null,'','new row','Add variant'); dirty(); S.tab='variants'; render(); break;
+    case 'cmp-open': $('f-cmp').click(); break;
+    case 'cmp-clear': S.cmp=null; render(); break;
+  }
+});
+document.addEventListener('keydown',function(e){
+  if((e.key==='Enter'||e.key===' ')&&e.target.classList&&e.target.classList.contains('tn')){ e.preventDefault(); e.target.click(); }
+});
+document.addEventListener('focusin',function(e){ var t=e.target; if(t.dataset&&(t.dataset.f||t.dataset.vf)) S.focusVal=t.value; });
+document.addEventListener('input',function(e){
+  var t=e.target, d=t.dataset; if(!d) return;
+  if(d.m){ var om=S.meta[d.m]; S.meta[d.m]=t.value; if(d.m!=='who') dirty(); if(d.m==='stage'){ logEdit('',null,stageName(om)||'All columns due',t.value?stageName(t.value):'All columns due','Index stage'); render(); } return; }
+  if(d.f&&t.tagName!=='SELECT'){ var r=cur(); if(!r) return; r[d.f]=d.f==='name'?t.value.replace(/^\s+/,''):t.value; dirty(); sched(); return; }
+  if(d.vf&&t.tagName!=='SELECT'){ var v=S.vars.filter(function(x){ return x.uid===d.vu; })[0]; if(!v) return; v[d.vf]=t.value; dirty(); sched(); return; }
+  if(d.filt==='q'){ S.filt.q=t.value; $('gridbox').innerHTML=gridHTML(); return; }
+  if(d.lq){ S.logq=t.value; $('logbox').innerHTML=logTable(); return; }
+  if(d.sp!=null){ S.sp[+d.sp][d.spk]=t.value; return; }
+  if(d.cn){ S.cons[d.cn]=t.value; return; }
+});
+document.addEventListener('change',function(e){
+  var t=e.target, d=t.dataset; if(!d) return;
+  if(d.f){
+    var r=cur(); if(!r) return;
+    if(t.tagName==='SELECT'){ var o=r[d.f]; r[d.f]=t.value; logEdit(r.id,d.f,o,t.value); dirty(); render(); return; }
+    var from=S.focusVal, to=r[d.f]=tr(r[d.f]);
+    if(from!=null&&tr(from)!==to){ logEdit(d.f==='id'?to:r.id,d.f,tr(from),to); if(d.f==='id') renameId(r,tr(from),to); }
+    S.focusVal=t.value; sched(); return;
+  }
+  if(d.vf){
+    var v=S.vars.filter(function(x){ return x.uid===d.vu; })[0]; if(!v) return;
+    if(t.tagName==='SELECT'){ var ov=v[d.vf]; v[d.vf]=t.value; logEdit(v.ciId,null,ov,t.value,'Variant '+VC(d.vf)); dirty(); render(); return; }
+    var vf=S.focusVal; v[d.vf]=tr(v[d.vf]);
+    if(vf!=null&&tr(vf)!==v[d.vf]) logEdit(v.ciId,null,tr(vf),v[d.vf],'Variant '+VC(d.vf));
+    S.focusVal=t.value; return;
+  }
+  if(d.filt&&d.filt!=='q'){ S.filt[d.filt]=t.type==='checkbox'?t.checked:t.value; $('gridbox').innerHTML=gridHTML(); return; }
+  if(d.opt){ S[d.opt]=t.checked; $('treelist').innerHTML=treeListHTML(); return; }
+  if(d.cpick){ S.cons.pick[d.cpick]=t.checked; return; }
+});
+$('f-json').addEventListener('change',function(e){
+  var f=e.target.files&&e.target.files[0]; e.target.value=''; if(!f) return;
+  if(S.dirty&&!confirm('You have unsaved changes. Open '+f.name+' anyway?')) return;
+  readJSON(f,function(o){
+    var other=o.build&&o.build.name&&o.build.name!==C.build.name;
+    loadData(o,null); clean(); render();
+    msg('Opened '+f.name+(o.saved?', saved '+o.saved:'')+'. '+S.cis.length+' CI rows, '+S.vars.length+' variant rows, '+S.log.length+' log entries.'+(other?' It was saved by the build "'+o.build.name+'". Columns this build does not carry were dropped.':''));
+  });
+});
+$('f-xlsx').addEventListener('change',function(e){ var f=e.target.files&&e.target.files[0]; e.target.value=''; if(f) doImport(f); });
+$('f-cmp').addEventListener('change',function(e){
+  var f=e.target.files&&e.target.files[0]; e.target.value=''; if(!f) return;
+  readJSON(f,function(o){ S.cmp={name:f.name,data:{cis:(o.cis||[]).map(normRow),vars:(o.vars||[]).map(normVar),saved:o.saved}}; render(); msg('Comparing with '+f.name+'.'); });
+});
+window.addEventListener('beforeunload',function(e){ if(S.dirty&&!PREVIEW){ e.preventDefault(); e.returnValue=''; } });
+
+/* Builder preview link. The builder asks for the working data before it reloads the preview. */
+window.addEventListener('message',function(e){
+  if(!PREVIEW||!e.data||e.data.ciReq!=='snapshot') return;
+  var r=cur();
+  parent.postMessage({ciSnap:snapshot(),tab:S.tab,sel:r?r.id:'',sy:window.scrollY},'*');
+});
+
+/* SC columns get their own datalists */
+$('dls').innerHTML=COLS.filter(function(c){ return c.sug&&c.sug.length&&!c.pins; }).map(function(c){ return '<datalist id="dl-'+c.k+'">'+c.sug.map(function(s){ return '<option value="'+esc(s)+'"></option>'; }).join('')+'</datalist>'; }).join('');
+applyText();
+if(PREVIEW){
+  if(PREVIEW.data) loadData(PREVIEW.data,null);
+  else if(PREVIEW.mode==='examples'&&hasEx()) loadData({meta:{prog:'Example program'},cis:C.examples.cis,vars:C.examples.vars||[]},null);
+  if(PREVIEW.tab) S.tab=PREVIEW.tab;
+  buildTree();
+  if(PREVIEW.sel&&T.ids[PREVIEW.sel]) S.sel=T.ids[PREVIEW.sel][0].uid;
+}
+render();
+if(PREVIEW&&PREVIEW.sy) window.scrollTo(0,PREVIEW.sy);
+</script>
+</body>
+</html>

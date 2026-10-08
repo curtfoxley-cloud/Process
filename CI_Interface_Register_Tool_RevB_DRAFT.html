@@ -2262,7 +2262,7 @@ function sheetRows(doc,ss){
       else v=vn?vn.textContent:'';
       arr[ci]=v;
     });
-    out[isNaN(ri)?out.length:ri]=arr;
+    arr._r=isNaN(ri)?out.length+1:ri+1; out[isNaN(ri)?out.length:ri]=arr;
   });
   return out.filter(Boolean);
 }
@@ -2281,7 +2281,7 @@ function mapRowsX(rows,cols,must,minFilled){
     if(any>=(minFilled||1)) out.push(o);
   });
   var found={}; cols.forEach(function(c,i){ if(map[i]!=null) found[c.k]=tr(rows[hi][map[i]]); });
-  return {rows:out,headerRow:hi+1,found:found,missingKeys:cols.filter(function(c,i){ return map[i]==null; }).map(function(c){ return c.k; }),missing:cols.filter(function(c,i){ return map[i]==null; }).map(function(c){ return c.h; })};
+  return {rows:out,headerRow:(rows[hi]&&rows[hi]._r)||hi+1,found:found,missingKeys:cols.filter(function(c,i){ return map[i]==null; }).map(function(c){ return c.k; }),missing:cols.filter(function(c,i){ return map[i]==null; }).map(function(c){ return c.h; })};
 }
 function openWorkbook(file,cb){
   var rd=new FileReader();
