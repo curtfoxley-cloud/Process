@@ -143,6 +143,13 @@
   .deckopt input:disabled+span{opacity:.55}
   #btnPpt.soft-off{opacity:.5}
   .win .star{color:#B8860B;margin-right:3px}
+  .pickpill{font-size:11px;color:var(--accent);border:1px solid var(--accent);border-radius:9px;padding:0 6px;margin-left:8px;white-space:nowrap;vertical-align:1px}
+  .picklist{max-height:210px;overflow:auto;border:1px solid var(--rule);border-radius:var(--radius);padding:4px 8px;margin:2px 0 6px 26px}
+  .picklist label{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--ink);margin:0;padding:5px 0;border-bottom:1px solid var(--rule)}
+  .picklist label:last-child{border-bottom:0}
+  .picklist input{margin-top:3px;width:auto}
+  .picklist .d{color:var(--muted);white-space:nowrap;margin-left:auto;padding-left:8px}
+  .picklist input:disabled~span{opacity:.5}
   button.wstar{font-size:15px;line-height:1;padding:2px 6px}
   button.wstar.on{color:#B8860B}
   .ptime{margin:4px 0 6px}
@@ -361,6 +368,7 @@
           <option value="date-asc">Oldest first</option>
           <option value="tag">Group by tag</option>
           <option value="project">Group by project</option>
+          <option value="week">Group by week</option>
         </select>
       </div>
       <p class="note no-print">What went well. Link a win to a project if it belongs to one. Wins print with the report in the order shown.</p>
@@ -1186,10 +1194,20 @@ function defaultWinDate(){
   return (today>=r[0]&&today<=r[1]) ? today : r[1]<today ? r[1] : r[0];
 }
 function winTag(w){ var p=w.projectId?projById(w.projectId):null; return p&&p.tag?p.tag:""; }
-function sortedWins(r,modeArg){
-  var ws=winsIn(r).slice(), mode=modeArg||state.settings.winSort||"date";
+function sortedWins(r,modeArg,keep){
+  var ws=winsIn(r).filter(keep||function(){ return true; }), mode=modeArg||state.settings.winSort||"date";
   var byDateDesc=function(a,b){ return a.date<b.date?1:a.date>b.date?-1:0; };
   if(mode==="date-asc") return {groups:null,list:ws.sort(function(a,b){ return -byDateDesc(a,b); })};
+  if(mode==="week"){
+    /* One group per work week, oldest week first, so a month reads in order. */
+    var wk={};
+    ws.forEach(function(w){ var k=iso(startOfWeek(parseISO(w.date))); (wk[k]=wk[k]||[]).push(w); });
+    return {groups:Object.keys(wk).sort().map(function(k){
+      var a=parseISO(k);
+      return {label:"Week of "+DOW[a.getDay()]+" "+a.getDate()+" "+MON[a.getMonth()],color:"#1F5D50",week:true,
+              list:wk[k].sort(function(x,y){ return -byDateDesc(x,y); })};
+    }),list:null};
+  }
   if(mode==="tag"||mode==="project"){
     var keyOf = mode==="tag"
       ? function(w){ return winTag(w); }
@@ -1213,11 +1231,12 @@ function winRow(w,showProject){
   var p=w.projectId?projById(w.projectId):null;
   return '<div class="win">'+
     '<span class="swatch" style="margin-top:6px;background:'+(p?projColor(p.id):"#C8D0CA")+'"></span>'+
-    '<div class="body"><div class="txt">'+(w.star?'<span class="star" title="Highlight">\u2605</span>':'')+esc(w.text)+'</div>'+
+    '<div class="body"><div class="txt">'+(w.star?'<span class="star" title="Weekly highlight">\u2605</span>':'')+esc(w.text)+
+      (w.star&&w.pick&&view==="month"?'<span class="pickpill">Top of month</span>':'')+'</div>'+
       '<div class="tag">'+(p&&showProject?esc(p.name)+' · ':'')+esc(prettyDate(w.date))+
         (p&&p.tag&&state.settings.winSort!=="tag"?' '+tagChip(p.tag):'')+'</div></div>'+
     '<div class="rowacts no-print">'+
-      '<button class="quiet wstar'+(w.star?" on":"")+'" data-id="'+w.id+'" aria-pressed="'+!!w.star+'" title="'+(w.star?"Remove from":"Add to")+' the Highlights slide">'+(w.star?"\u2605":"\u2606")+'</button>'+
+      '<button class="quiet wstar'+(w.star?" on":"")+'" data-id="'+w.id+'" aria-pressed="'+!!w.star+'" title="'+(w.star?"Remove weekly highlight":"Mark as a weekly highlight")+'">'+(w.star?"\u2605":"\u2606")+'</button>'+
       '<button class="quiet we" data-id="'+w.id+'">Edit</button>'+
       '<button class="quiet danger wd" data-id="'+w.id+'">Delete</button></div>'+
   '</div>';
@@ -1329,7 +1348,7 @@ function loadFile(text){
     return {id:e.id||uid(),projectId:e.projectId||e.taskId,date:e.date,hours:+e.hours,note:e.note||""};
   });
   state.wins=Array.isArray(d.wins)?d.wins.map(function(w){
-    return {id:w.id||uid(),date:w.date||iso(new Date()),text:w.text||"",projectId:w.projectId||"",star:!!w.star};
+    return {id:w.id||uid(),date:w.date||iso(new Date()),text:w.text||"",projectId:w.projectId||"",star:!!w.star,pick:!!w.pick};
   }).filter(function(w){ return w.text; }):[];
   var ds=d.settings||{};
   state.settings={
@@ -1338,7 +1357,7 @@ function loadFile(text){
     periodHours: (typeof ds.periodHours==="number")?ds.periodHours:80,
     periodDays: (typeof ds.periodDays==="number")?ds.periodDays:14,
     periodAnchor: ds.periodAnchor||iso(startOfWeek(new Date())),
-    winSort: ["date","date-asc","tag","project"].indexOf(ds.winSort)>=0?ds.winSort:"date",
+    winSort: ["date","date-asc","tag","project","week"].indexOf(ds.winSort)>=0?ds.winSort:"date",
     /* Long reports list hundreds of entries, so the year view leaves them out unless asked. */
     printEntries: (ds.printEntries&&typeof ds.printEntries==="object")
       ? {day:ds.printEntries.day!==false,week:ds.printEntries.week!==false,month:ds.printEntries.month!==false,year:ds.printEntries.year===true}
@@ -1535,7 +1554,11 @@ function helpModal(){
     '<p>Save PDF prints the view on screen. A weekly PDF shows the week pie only. A monthly PDF shows the month pie only and leaves out the pay period. A yearly PDF works the same way. The Entries panel has an Include in PDF box. Each view remembers its own choice. The year view starts with it off, because a year of entries runs many pages.</p>'+
     '<h3>PowerPoint</h3>'+
     '<p>In the Week or Month view, click Save PowerPoint. You choose which slides to include, and the dialog shows the slide count before you download. The charts stay editable in PowerPoint.</p>'+
-    '<p>A month of wins does not fit on one slide. Star your best wins with the \u2606 button in the wins list. Up to 6 starred wins get their own Highlights slide. The full list follows, grouped by tag or project and split across as many slides as it needs.</p>'+
+    '<p>A star marks a weekly highlight. Star your best wins each week with the \u2606 button in the wins list, and leave them starred.</p>'+
+    '<ul><li><strong>Weekly deck:</strong> that week\u2019s starred wins go on a Highlights slide, up to 6.</li>'+
+    '<li><strong>Monthly deck:</strong> every starred win from the month is listed under Weekly highlights, grouped by week. You never need to unstar anything.</li>'+
+    '<li><strong>Top of the month:</strong> optional. The monthly export dialog lists the month\u2019s starred wins. Tick up to 6 for a card slide at the front. Your picks save with your file and show as Top of month in the Month view.</li></ul>'+
+    '<p>After the highlights, the deck can list every win, grouped by tag, project, or date.</p>'+
     '<h3>Tags</h3>'+
     '<p>Add, rename, or remove tags in Settings. You can have up to '+TAG_PALETTE.length+'. Renaming a tag updates every project that uses it.</p>'+
     '<h3>Saving</h3>'+
@@ -1885,7 +1908,12 @@ document.addEventListener("change",function(ev){
   if(ev.target.id==="fHours"){ filters.hours=ev.target.checked; renderBoard(range()); }
   if(ev.target.id==="fSort"){ filters.sort=ev.target.value; renderBoard(range()); }
   if(ev.target.id==="wSort"){ state.settings.winSort=ev.target.value; markDirty(); renderWins(range()); }
-  if(/^d(Daily|High|Wins|Group|Notes|Detail)$/.test(ev.target.id||"")){ updateDeckCount(); }
+  if(/^d(Daily|High|Top|Weekly|Wins|Group|Notes|Detail)$/.test(ev.target.id||"")){ updateDeckCount(); }
+  if(ev.target.classList&&ev.target.classList.contains("dpick")){
+    var pw=state.wins.filter(function(x){ return x.id===ev.target.dataset.id; })[0];
+    if(pw){ pw.pick=ev.target.checked; markDirty(); renderWins(range()); }
+    updateDeckCount();
+  }
   if(ev.target.id==="printEntries"){ state.settings.printEntries[view]=ev.target.checked; markDirty(); render(); }
 });
 $("#scrim").addEventListener("click",function(ev){ if(ev.target===$("#scrim")) closeModal(); });
@@ -1960,7 +1988,7 @@ setInterval(function(){
    then drawn, so the export dialog can show the slide count before you download. */
 var DK={W:13.333,X:0.6,CW:12.133,TOP:1.45,BOTTOM:6.75,
         INK:"14231F",MUTED:"5E6E68",SOFT:"B9D3C9",RULE:"D2DAD4",TINT:"F1F4F2",FONT:"Calibri"};
-var deckOpts={highlights:true,wins:true,winGroup:"tag",daily:true,notes:true,detail:true};
+var deckOpts={highlights:true,top:true,weekly:true,wins:true,winGroup:"tag",daily:true,notes:true,detail:true};
 try{ var _dk=JSON.parse(localStorage.getItem("ledger.deckOpts")||"null"); if(_dk) for(var _k in _dk) if(_k in deckOpts) deckOpts[_k]=_dk[_k]; }catch(e){}
 function saveDeckOpts(){ try{ localStorage.setItem("ledger.deckOpts",JSON.stringify(deckOpts)); }catch(e){} }
 
@@ -1983,17 +2011,19 @@ function winCaption(w,showProject,showTag){
 function perLineAt(widthIn,pt){ return Math.max(8,Math.floor(widthIn/(pt*0.0064))); }
 function textHeight(text,widthIn,pt){ return deckLines(text,perLineAt(widthIn,pt))*pt*1.22/72; }
 var WIN_W=11.78, WIN_CAPTION=0.22, WIN_GAP=0.15, GROUP_HEAD=0.5;
-function winHeight(w){ return textHeight((w.star?"★ ":"")+w.text,WIN_W,14)+WIN_CAPTION+WIN_GAP; }
+function winHeight(w,noStar){ return textHeight((w.star&&!noStar?"★ ":"")+w.text,WIN_W,14)+WIN_CAPTION+WIN_GAP; }
 
-function winPages(r,mode){
-  var s=sortedWins(r,mode), blocks=[];
+/* keep: optional filter (weekly highlights pass starred wins only).
+   titles: {first, cont, section}. */
+function winPages(r,mode,keep,titles){
+  var s=sortedWins(r,mode,keep), blocks=[], noStar=!!keep;
   if(s.groups){
     s.groups.forEach(function(g){
       blocks.push({head:true,label:g.label,color:g.color,count:g.list.length});
-      g.list.forEach(function(w){ blocks.push({win:w,showProject:mode!=="project",showTag:false,group:g}); });
+      g.list.forEach(function(w){ blocks.push({win:w,showProject:mode!=="project",showTag:!!g.week,group:g,noStar:noStar}); });
     });
   } else {
-    s.list.forEach(function(w){ blocks.push({win:w,showProject:true,showTag:true}); });
+    s.list.forEach(function(w){ blocks.push({win:w,showProject:true,showTag:true,noStar:noStar}); });
   }
   var budget=DK.BOTTOM-DK.TOP, pages=[], cur=[], used=0, lastHead=null;
   for(var i=0;i<blocks.length;i++){
@@ -2001,11 +2031,11 @@ function winPages(r,mode){
     if(b.head){
       lastHead=b;
       /* Keep a heading with its first win. */
-      var need=GROUP_HEAD+(blocks[i+1]&&!blocks[i+1].head?winHeight(blocks[i+1].win):0);
+      var need=GROUP_HEAD+(blocks[i+1]&&!blocks[i+1].head?winHeight(blocks[i+1].win,blocks[i+1].noStar):0);
       if(cur.length&&used+need>budget){ pages.push(cur); cur=[]; used=0; }
       cur.push(b); used+=GROUP_HEAD; continue;
     }
-    var h=winHeight(b.win);
+    var h=winHeight(b.win,b.noStar);
     if(cur.length&&used+h>budget){
       pages.push(cur); cur=[]; used=0;
       if(lastHead&&b.group){ cur.push({head:true,label:lastHead.label,color:lastHead.color,count:lastHead.count,cont:true}); used+=GROUP_HEAD; }
@@ -2013,8 +2043,11 @@ function winPages(r,mode){
     cur.push(b); used+=h;
   }
   if(cur.length) pages.push(cur);
-  var n=winsIn(r).length;
-  return pages.map(function(items,i){ return {kind:"wins",items:items,page:i+1,pages:pages.length,total:n}; });
+  var n=sortedWins(r,"date",keep).list.length, nm=deckPeriodName();
+  var t=titles||{first:n+" win"+(n===1?"":"s")+" this "+nm,cont:"Wins this "+nm+", continued",section:"all"};
+  return pages.map(function(items,i){
+    return {kind:"wins",items:items,page:i+1,pages:pages.length,total:n,title:i===0?t.first:t.cont,section:t.section};
+  });
 }
 
 /* Card grids for 1 to 6 highlights. Each card's text gets the largest size that fits. */
@@ -2044,11 +2077,20 @@ function deckPlan(o){
   var r=range(), list=entriesIn(r), plan=[{kind:"title"},{kind:"glance"}];
   if(list.length){ plan.push({kind:"tags"}); plan.push({kind:"projects"}); }
   if(o.daily&&list.length) plan.push({kind:"daily"});
-  var ws=winsIn(r);
-  if(o.highlights){
-    var st=ws.filter(function(w){ return w.star; }).sort(function(a,b){ return a.date<b.date?1:-1; });
-    var hp=highlightPages(st.slice(0,6));
-    hp.forEach(function(pg,i){ plan.push({kind:"highlights",wins:pg.wins,layout:pg.layout,page:i+1,pages:hp.length,extra:i===0?Math.max(0,st.length-6):0}); });
+  var ws=winsIn(r), newest=function(a,b){ return a.date<b.date?1:-1; };
+  var st=ws.filter(function(w){ return w.star; }).sort(newest);
+  var cards=function(list,title,extra){
+    var hp=highlightPages(list);
+    hp.forEach(function(pg,i){ plan.push({kind:"highlights",title:title,wins:pg.wins,layout:pg.layout,page:i+1,pages:hp.length,extra:i===0?extra:0}); });
+  };
+  if(view==="month"){
+    /* Stars are weekly highlights. The month deck lists them by week, and you can
+       pick up to 6 of them for a "Top of the month" slide. */
+    if(o.top){ var picks=st.filter(function(w){ return w.pick; }); cards(picks.slice(0,6),"Top of the month",0); }
+    if(o.weekly&&st.length) plan=plan.concat(winPages(r,"week",function(w){ return w.star; },
+      {first:"Weekly highlights",cont:"Weekly highlights, continued",section:"weekly"}));
+  } else if(o.highlights){
+    cards(st.slice(0,6),"Highlights",Math.max(0,st.length-6));
   }
   if(o.wins&&ws.length) plan=plan.concat(winPages(r,o.winGroup));
   if(o.notes&&(state.reportNote||"").trim()) plan.push({kind:"notes"});
@@ -2215,7 +2257,7 @@ function buildDeck(o){
       return;
     }
     if(p.kind==="highlights"){
-      s=slide("Wins","Highlights"+(p.pages>1?" ("+p.page+" of "+p.pages+")":""));
+      s=slide("Wins",(p.title||"Highlights")+(p.pages>1?" ("+p.page+" of "+p.pages+")":""));
       var L=p.layout, B=hlCardBox(L);
       p.wins.forEach(function(w,i){
         var cx=DK.X+(i%L.cols)*(B.cw+B.gap), cy=1.5+Math.floor(i/L.cols)*(L.h+0.3), pr=w.projectId?projById(w.projectId):null;
@@ -2230,8 +2272,7 @@ function buildDeck(o){
       return;
     }
     if(p.kind==="wins"){
-      var title=p.page===1 ? p.total+" win"+(p.total===1?"":"s")+" this "+name : "Wins this "+name+", continued";
-      s=slide("Wins",title);
+      s=slide("Wins",p.title);
       if(p.pages>1) txt(s,p.page+" of "+p.pages,{x:10.73,y:0.6,w:2.0,h:0.4,fontSize:14,color:DK.MUTED,align:"right",valign:"middle"});
       var y=DK.TOP;
       p.items.forEach(function(b){
@@ -2242,9 +2283,9 @@ function buildDeck(o){
             {x:DK.X+0.35,y:y+0.02,w:11.5,h:0.4,fontSize:17,valign:"middle"});
           y+=GROUP_HEAD; return;
         }
-        var h=winHeight(b.win);
+        var h=winHeight(b.win,b.noStar);
         if(b.showTag){ var wp=b.win.projectId?projById(b.win.projectId):null; chip(s,DK.X,y+0.06,0.16,wp?projColor(wp.id):UNTAGGED_COLOR); }
-        txt(s,[{text:(b.win.star?"★ ":"")+b.win.text,options:{fontSize:14,color:DK.INK,breakLine:true}},
+        txt(s,[{text:(b.win.star&&!b.noStar?"★ ":"")+b.win.text,options:{fontSize:14,color:DK.INK,breakLine:true}},
                {text:winCaption(b.win,b.showProject,b.showTag),options:{fontSize:11,color:DK.MUTED}}],
           {x:DK.X+0.35,y:y,w:11.78,h:h-WIN_GAP,valign:"top",paraSpaceAfter:2});
         y+=h;
@@ -2297,9 +2338,16 @@ function deckModal(){
       '. The charts stay editable in PowerPoint.</p>'+
     '<p style="font-size:13px;margin:0 0 6px">Always included: a title slide, an at-a-glance slide, and time by tag and by project.</p>'+
     cb("dDaily","daily","Hours by day chart","",false)+
-    cb("dHigh","highlights","Highlights slide",
-       stars ? stars+" starred win"+(stars>1?"s":"")+(stars>6?". The slide fits 6, so it shows the 6 most recent.":".")
-             : "Star wins with the ☆ button in the wins list to feature up to 6 here.", !stars)+
+    (view==="week"
+      ? cb("dHigh","highlights","Highlights slide",
+          stars ? stars+" starred win"+(stars>1?"s":"")+(stars>6?". The slide fits 6, so it shows the 6 most recent.":".")
+                : "Star wins with the ☆ button in the wins list to feature up to 6 here.", !stars)
+      : cb("dTop","top","Top of the month slide",
+          stars ? "Pick up to 6 of this month’s starred wins. The picks save with your file."
+                : "Star wins in the wins list first. Stars mark your weekly highlights.", !stars)+
+        (stars ? '<div class="picklist" id="dPicks">'+pickRows(r)+'</div><p id="dPickCount" style="font-size:12px;color:var(--muted);margin:0 0 8px 26px"></p>' : '')+
+        cb("dWeekly","weekly","Weekly highlights",
+          stars ? stars+" starred win"+(stars>1?"s":"")+", grouped by week." : "No starred wins this month.", !stars))+
     cb("dWins","wins","All wins ("+ws.length+")","",!ws.length)+
     '<div style="margin:-2px 0 8px 26px"><select id="dGroup" aria-label="Group wins by">'+
       '<option value="tag"'+(deckOpts.winGroup==="tag"?" selected":"")+'>Grouped by tag</option>'+
@@ -2312,20 +2360,41 @@ function deckModal(){
       '<button class="primary" id="dGo">Download PowerPoint</button></div>');
   updateDeckCount();
 }
+function pickRows(r){
+  return winsIn(r).filter(function(w){ return w.star; }).sort(function(a,b){ return a.date<b.date?-1:1; }).map(function(w){
+    var p=w.projectId?projById(w.projectId):null;
+    return '<label><input type="checkbox" class="dpick" data-id="'+w.id+'"'+(w.pick?" checked":"")+'>'+
+      '<span class="swatch" style="margin-top:5px;background:'+(p?projColor(p.id):"#C8D0CA")+'"></span>'+
+      '<span>'+esc(clip(w.text,110))+'</span><span class="d">'+esc(prettyDate(w.date))+'</span></label>';
+  }).join("");
+}
+function updatePicks(){
+  var boxes=document.querySelectorAll("#dPicks .dpick"); if(!boxes.length) return;
+  var on=Array.prototype.filter.call(boxes,function(b){ return b.checked; }).length;
+  Array.prototype.forEach.call(boxes,function(b){ b.disabled=!b.checked&&on>=6; });
+  var top=$("#dTop"), pc=$("#dPickCount");
+  if(pc) pc.textContent=on+" of 6 picked."+(on>=6?" Uncheck one to pick another.":"")+(top&&top.checked&&!on?" The slide is skipped until you pick one.":"");
+}
 function readDeckOpts(){
   var g=function(id){ var el=$("#"+id); return !!(el&&el.checked); };
-  return {daily:g("dDaily"),highlights:g("dHigh"),wins:g("dWins"),winGroup:$("#dGroup").value,notes:g("dNotes"),detail:g("dDetail")};
+  return {daily:g("dDaily"),highlights:g("dHigh"),top:g("dTop"),weekly:g("dWeekly"),wins:g("dWins"),
+          winGroup:$("#dGroup").value,notes:g("dNotes"),detail:g("dDetail")};
 }
 function updateDeckCount(){
-  var o=readDeckOpts(), plan=deckPlan(o), wp=plan.filter(function(p){ return p.kind==="wins"; }).length;
-  $("#dCount").textContent=plan.length+" slides"+(wp?", including "+wp+" for wins.":".");
+  var o=readDeckOpts(), plan=deckPlan(o);
+  var wk=plan.filter(function(p){ return p.kind==="wins"&&p.section==="weekly"; }).length;
+  var al=plan.filter(function(p){ return p.kind==="wins"&&p.section==="all"; }).length;
+  var parts=[]; if(wk) parts.push(wk+" for weekly highlights"); if(al) parts.push(al+" for all wins");
+  $("#dCount").textContent=plan.length+" slides"+(parts.length?", including "+parts.join(" and ")+".":".");
   $("#dGroup").disabled=!o.wins;
+  updatePicks();
 }
 function exportDeck(){
   var o=readDeckOpts(), keep={};
   /* Remember choices, but not ones forced off because there was nothing to show. */
   ["daily","detail"].forEach(function(k){ deckOpts[k]=o[k]; });
-  if(!$("#dHigh").disabled) deckOpts.highlights=o.highlights;
+  var remember=function(id,key){ var el=document.getElementById(id); if(el&&!el.disabled) deckOpts[key]=el.checked; };
+  remember("dHigh","highlights"); remember("dTop","top"); remember("dWeekly","weekly");
   if(!$("#dWins").disabled) deckOpts.wins=o.wins;
   if(!$("#dNotes").disabled) deckOpts.notes=o.notes;
   deckOpts.winGroup=o.winGroup; saveDeckOpts();
