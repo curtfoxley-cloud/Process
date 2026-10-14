@@ -64,6 +64,13 @@
   .grouphead:first-child{margin-top:0}
   .grouphead .rule{flex:1;height:1px;background:var(--rule)}
   .grouphead .n{font-weight:400}
+  button.grouphead{width:100%;background:none;border:0;border-radius:var(--radius);padding:4px 2px;font:inherit;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;text-align:left}
+  button.grouphead:hover{color:var(--ink);background:rgba(20,35,31,.04);border-color:transparent}
+  button.grouphead .chev{display:inline-block;width:10px;transition:transform .15s;flex:none}
+  button.grouphead[aria-expanded="false"] .chev{transform:rotate(-90deg)}
+  .groupnote{font-size:12px;color:var(--muted);margin:-4px 0 6px 20px}
+  #fFold{display:none}
+  #fFold.on{display:inline-block}
   .fig.name{flex:1 1 230px;min-width:190px;max-width:330px}
   .fig.name .v{font-size:16px;line-height:1.3;white-space:normal;overflow-wrap:anywhere;padding-top:5px}
   .sortbtn{background:none;border:0;padding:0;font:inherit;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer}
@@ -131,6 +138,13 @@
   .tagrow input{flex:1}
   .tagrow .swatch{width:14px;height:14px;border-radius:3px}
   .modal.wide{width:min(680px,100%)}
+  .ptime{margin:4px 0 6px}
+  .ptime td{vertical-align:middle;padding-top:4px;padding-bottom:4px}
+  .ptime input.ph{width:76px;text-align:right;padding:3px 6px}
+  .ptime input.ph.bad{border-color:var(--warn);outline:1px solid var(--warn)}
+  .ptime .pnote{color:var(--muted);font-size:12.5px}
+  .ptime tr.removing td:not(:last-child){text-decoration:line-through;opacity:.45}
+  .modal h3{font-size:13px;margin:16px 0 2px}
   .legend{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:4px 16px}
   .legend li{display:flex;align-items:baseline;gap:6px;font-size:12.5px}
   .legend li .swatch{transform:translateY(1px)}
@@ -273,6 +287,7 @@
         <option value="tag">Group by tag</option>
         <option value="name">Sort by name</option>
       </select>
+      <button class="quiet" id="fFold">Collapse all</button>
       <label class="chk"><input type="checkbox" id="fHours"> Only projects with hours</label>
       <button class="quiet" id="fClear">Clear</button>
     </div>
@@ -299,7 +314,7 @@
       <div class="f">
         <button class="primary" id="eAdd">Log time</button>
       </div>
-      <div class="hint">For backdating or adding detail. Accepts 1.5, 90m, 1:30, or 1h30. To change an entry, click Edit in the Entries list, or History on a project card.</div>
+      <div class="hint">For backdating or adding detail. Accepts 1.5, 90m, 1:30, or 1h30. To change an amount, click Edit on the project card.</div>
     </div>
   </div>
 
@@ -442,6 +457,11 @@ var state={
 syncTags();
 var view="week", anchor=new Date(), editingWin=null, timer=null, dirty=false, winRangeKey="";
 var filters={text:"",tag:"",hours:false,sort:"hours"};
+/* Which tag groups are collapsed. A view preference, so it lives in this browser
+   rather than in your saved ledger file. */
+var collapsedTags={};
+try{ collapsedTags=JSON.parse(localStorage.getItem("ledger.collapsedTags")||"{}")||{}; }catch(e){ collapsedTags={}; }
+function saveCollapsed(){ try{ localStorage.setItem("ledger.collapsedTags",JSON.stringify(collapsedTags)); }catch(e){} }
 var summarySort={key:"hours",dir:-1};
 
 /* ---------- utils ---------- */
@@ -940,10 +960,14 @@ function renderBoard(r){
       if(!inTag.length) return "";
       var label=t||"Untagged", col=t?TAG_COLORS[t]:TAG_COLORS.Untagged;
       var hrsIn=inTag.reduce(function(s,p){ return s+(hrs[p.id]?hrs[p.id][0]:0); },0);
-      return '<div class="grouphead"><span class="swatch" style="background:'+col+'"></span>'+
+      var open=!collapsedTags[label];
+      var timing=!open&&timer&&inTag.some(function(p){ return p.id===timer.projectId; });
+      return '<button class="grouphead" data-group="'+esc(label)+'" aria-expanded="'+open+'">'+
+        '<span class="chev" aria-hidden="true">\u25BE</span>'+
+        '<span class="swatch" style="background:'+col+'"></span>'+
         esc(label)+' <span class="n">'+inTag.length+' project'+(inTag.length>1?"s":"")+
-        (hrsIn>0?' · '+fmt(hrsIn)+' h':'')+'</span><span class="rule"></span></div>'+
-        '<div class="board">'+inTag.map(function(p){ return card(p,r); }).join("")+'</div>';
+        (hrsIn>0?' · '+fmt(hrsIn)+' h':'')+(timing?' · timer running':'')+'</span><span class="rule"></span></button>'+
+        (open?'<div class="board">'+inTag.map(function(p){ return card(p,r); }).join("")+'</div>':'');
     }).join("");
   } else {
     html='<div class="board">'+active.map(function(p){ return card(p,r); }).join("")+'</div>';
@@ -964,6 +988,17 @@ function renderBoard(r){
     '<option value="__none">Untagged</option>';
   sel.value=cur||"";
   $("#fSort").value=filters.sort;
+  var fold=$("#fFold"), grouped=filters.sort==="tag"&&active.length;
+  fold.classList.toggle("on",!!grouped);
+  if(grouped){
+    var labels=TAGS.concat(["Untagged"]).filter(function(l){
+      return active.some(function(p){ return (p.tag||"Untagged")===l; });
+    });
+    var allClosed=labels.every(function(l){ return collapsedTags[l]; });
+    fold.textContent=allClosed?"Expand all":"Collapse all";
+    fold.dataset.labels=JSON.stringify(labels);
+    fold.dataset.closed=allClosed?"1":"";
+  }
 }
 
 function renderSummary(list,total,r){
@@ -1372,13 +1407,16 @@ function helpModal(){
       '<tr><td><strong>Undo</strong></td><td>Click Reopen.</td><td>Click Reopen.</td></tr>'+
     '</tbody></table>'+
     '<p>You can still log time to a completed or archived project. Pick it in the entry bar under the board.</p>'+
+    '<h3>Grouping the board</h3>'+
+    '<p>Pick Group by tag to sort the cards under tag headings. Click a heading to collapse or expand that group. Collapse all and Expand all act on every group at once. The page remembers your choice in this browser.</p>'+
     '<h3>Delete</h3>'+
     '<p>Delete removes a project and all of its hours. You cannot undo it. Use Archive if you want to keep the history.</p>'+
     '<h3>Logging and editing time</h3>'+
     '<ul><li>+15m, +30m, and +1 hour log time to today. Each one shows an Undo button for a few seconds.</li>'+
     '<li>Timer logs the elapsed time to today when you stop it.</li>'+
     '<li>The entry bar logs time on any date.</li>'+
-    '<li>To change an entry, click Edit in the Entries list. To reach older entries, click History on the project card.</li></ul>'+
+    '<li>To change an amount, click Edit on the project card. Its recent entries are listed there. Change the hours and click Save changes.</li>'+
+    '<li>To change a date or note, or to reach older entries, click History on the card. The Entries panel also has an Edit button on each row.</li></ul>'+
     '<h3>Wins</h3>'+
     '<p>Each win has a date. The date decides which week, month, and year it shows in. Click Edit on a win to change its text, project, or date.</p>'+
     '<h3>Views and PDFs</h3>'+
@@ -1393,6 +1431,29 @@ function helpModal(){
 function knownPeople(){
   var m={}; state.projects.forEach(function(p){ (p.people||[]).forEach(function(n){ if(n) m[n]=1; }); });
   return Object.keys(m);
+}
+/* The project's recent entries, editable in place. Changes apply when you click Save changes. */
+var PTIME_ROWS=8;
+function projectTimeSection(p){
+  var list=state.entries.filter(function(e){ return e.projectId===p.id; })
+    .sort(function(a,b){ return a.date<b.date?1:a.date>b.date?-1:0; });
+  var thisYear=String(new Date().getFullYear());
+  var head='<h3>Logged time</h3><p class="note" style="font-size:12px;color:var(--muted);margin:0 0 6px">'+
+    fmt(totalOf(list))+' h all time'+(p.created?' · started '+esc(prettyDate(p.created)):'')+'.'+
+    (list.length?' Change any amount below, then click Save changes.':'')+'</p>';
+  if(!list.length) return head+'<p style="font-size:13px;color:var(--muted);margin:0">No time logged on this project yet.</p>';
+  var shown=list.slice(0,PTIME_ROWS);
+  return head+'<table class="ptime"><thead><tr><th>Date</th><th class="r">Hours</th><th>Detail</th><th class="r"></th></tr></thead><tbody>'+
+    shown.map(function(e){
+      var yr=e.date.slice(0,4);
+      return '<tr data-id="'+e.id+'"><td class="num" style="white-space:nowrap">'+esc(prettyDate(e.date))+(yr!==thisYear?' '+yr:'')+'</td>'+
+        '<td class="r"><input class="ph num" type="text" inputmode="decimal" data-id="'+e.id+'" value="'+fmt(e.hours)+'" aria-label="Hours on '+esc(prettyDate(e.date))+'"></td>'+
+        '<td class="pnote">'+esc(e.note||"")+'</td>'+
+        '<td class="r"><button class="quiet danger prm" data-id="'+e.id+'">Remove</button></td></tr>';
+    }).join("")+'</tbody></table>'+
+    '<p style="font-size:12px;color:var(--muted);margin:0">'+
+      (list.length>shown.length?'Showing the '+shown.length+' most recent of '+list.length+' entries. ':'')+
+      'To change a date or note, open <button class="quiet hist" data-p="'+p.id+'" style="padding:0;margin:0;font-size:12px;text-decoration:underline">History</button></p>';
 }
 function projectModal(id){
   var p=id?projById(id):null;
@@ -1412,8 +1473,7 @@ function projectModal(id){
         ['active','complete','archived'].map(function(s){
           return '<option value="'+s+'"'+(p.status===s?' selected':'')+'>'+s.charAt(0).toUpperCase()+s.slice(1)+'</option>';
         }).join("")+'</select></div></div>':'')+
-    (p?'<p class="note" style="font-size:12px;color:var(--muted)">Logged '+fmt(allTimeHours(p.id))+' h all time'+
-        (p.created?' · started '+esc(prettyDate(p.created)):'')+'.</p>':'')+
+    (p?projectTimeSection(p):'')+
     '<div style="display:flex;justify-content:space-between;gap:8px;margin-top:14px">'+
       (p?'<button class="danger pdel" data-p="'+p.id+'">Delete project</button>':'<span></span>')+
       '<span><button id="mClose">Cancel</button> <button class="primary" id="pSave">'+(p?"Save changes":"Create project")+'</button></span>'+
@@ -1486,6 +1546,12 @@ function applyTagDraft(){
     else p.tag="";
   });
   if(filters.tag&&filters.tag!=="__none") filters.tag = keptOrig[filters.tag]||"";
+  var nextCollapsed={};
+  Object.keys(collapsedTags).forEach(function(k){
+    if(k==="Untagged") nextCollapsed[k]=true;
+    else if(k in keptOrig) nextCollapsed[keptOrig[k]]=true;
+  });
+  collapsedTags=nextCollapsed; saveCollapsed();
   state.tags=clean.map(function(t){ return {id:t.id,name:t.name,color:t.color}; });
   syncTags();
   return true;
@@ -1515,6 +1581,18 @@ document.addEventListener("click",function(ev){
     else summarySort={key:key,dir:(key==="name"||key==="tag"||key==="status")?1:-1};
     renderSummary(entriesIn(range()),totalOf(entriesIn(range())),range());
     return;
+  }
+  if(el.classList.contains("grouphead")&&el.dataset.group){
+    var gl=el.dataset.group;
+    if(collapsedTags[gl]) delete collapsedTags[gl]; else collapsedTags[gl]=true;
+    saveCollapsed(); renderBoard(range());
+    var again=document.querySelector('button.grouphead[data-group="'+gl.replace(/"/g,'\\"')+'"]'); if(again) again.focus();
+    return;
+  }
+  if(el.id==="fFold"){
+    var ls=JSON.parse(el.dataset.labels||"[]"), expand=el.dataset.closed==="1";
+    ls.forEach(function(l){ if(expand) delete collapsedTags[l]; else collapsedTags[l]=true; });
+    saveCollapsed(); renderBoard(range()); return;
   }
   if(el.id==="fClear"){
     filters={text:"",tag:"",hours:false,sort:filters.sort};
@@ -1550,6 +1628,13 @@ document.addEventListener("click",function(ev){
   }
   if(el.classList.contains("tm")){ toggleTimer(el.dataset.p); return; }
   if(el.classList.contains("ep")){ projectModal(el.dataset.p); return; }
+  if(el.classList.contains("prm")){
+    var row=el.closest("tr"), on=!row.classList.contains("removing");
+    row.classList.toggle("removing",on);
+    el.textContent=on?"Keep":"Remove";
+    var inp=row.querySelector(".ph"); if(inp){ inp.disabled=on; inp.classList.remove("bad"); }
+    return;
+  }
   if(el.classList.contains("hist")){ historyModal(el.dataset.p); return; }
   if(el.classList.contains("he")){ entryModal(el.dataset.id,el.dataset.p); return; }
   if(el.classList.contains("hlog")){
@@ -1628,12 +1713,40 @@ function saveProjectModal(){
     .filter(Boolean).slice(0,3);
   if(id){
     var p=projById(id);
+    /* Check every hours box before changing anything. */
+    var edits=[], removals=[], bad=null;
+    Array.prototype.forEach.call($("#modal").querySelectorAll(".ptime tr[data-id]"),function(row){
+      var eid=row.getAttribute("data-id");
+      if(row.classList.contains("removing")){ removals.push(eid); return; }
+      var inp=row.querySelector(".ph"), h=parseHours(inp.value);
+      inp.classList.remove("bad");
+      if(!(h>0)){ inp.classList.add("bad"); if(!bad) bad=inp; return; }
+      edits.push({id:eid,hours:Math.round(h*1000)/1000});
+    });
+    if(bad){ toast("Enter time as 1.5, 90m, or 1:30. To drop an entry, click Remove."); bad.focus(); return; }
     if(p){
       p.name=name; p.tag=$("#pTag").value; p.people=people;
-      var st=$("#pStatus"); if(st){ p.status=st.value; if(p.status==="complete"&&!p.completedOn) p.completedOn=iso(new Date()); }
-      markDirty();
+      var st=$("#pStatus");
+      if(st){
+        p.status=st.value;
+        if(p.status==="complete"){ if(!p.completedOn) p.completedOn=iso(new Date()); }
+        else p.completedOn=null;
+      }
     }
-    closeModal(); render(); toast("Project updated"); return;
+    var changed=0;
+    edits.forEach(function(x){
+      var e=state.entries.filter(function(y){ return y.id===x.id; })[0];
+      if(e&&e.hours!==x.hours){ e.hours=x.hours; changed++; }
+    });
+    var removed=state.entries.filter(function(e){ return removals.indexOf(e.id)>=0; });
+    state.entries=state.entries.filter(function(e){ return removals.indexOf(e.id)<0; });
+    markDirty(); closeModal(); render();
+    var parts=[];
+    if(changed) parts.push(changed+" entr"+(changed===1?"y":"ies")+" changed");
+    if(removed.length) parts.push(removed.length+" removed");
+    var msg="Project updated"+(parts.length?". "+parts.join(", ").replace(/^./,function(c){ return c.toUpperCase(); })+".":"");
+    toast(msg, removed.length ? function(){ state.entries=state.entries.concat(removed); markDirty(); render(); toast("Removed entries restored"); } : null);
+    return;
   }
   addProject(name,$("#pTag").value,people);
   closeModal(); render(); toast("Project created");
@@ -1657,7 +1770,7 @@ document.addEventListener("keydown",function(ev){
   if(ev.key==="Escape"&&$("#scrim").classList.contains("open")) closeModal();
   if(ev.key==="Enter"&&(ev.target.id==="eHours"||ev.target.id==="eNote")) submitEntry();
   if(ev.key==="Enter"&&(ev.target.id==="xHours"||ev.target.id==="xNote")){ ev.preventDefault(); saveEntryModal(); }
-  if(ev.key==="Enter"&&ev.target.id==="pName"){ ev.preventDefault(); saveProjectModal(); }
+  if(ev.key==="Enter"&&(ev.target.id==="pName"||(ev.target.classList&&ev.target.classList.contains("ph")))){ ev.preventDefault(); saveProjectModal(); }
   if(ev.key==="Enter"&&(ev.metaKey||ev.ctrlKey)&&ev.target.id==="wText") submitWin();
 });
 $("#fileInput").addEventListener("change",function(){
