@@ -1485,7 +1485,7 @@ function decHtml(s){
         h+="<div class='dbin' data-dec='"+esc(id)+"' data-drop='bin'><span class='dtl'>🗑 "+esc(d.bin||"Not part of this product")+"</span>"+binned.map(function(i){ return "<span class='dchip' draggable='true' data-dec='"+esc(id)+"' data-bi='"+i+"'>"+fmt(all[i].n)+"</span>"; }).join("")+"</div>"; }
       h+="<details class='dlist'><summary>Place blocks with lists instead of dragging</summary><div class='dgrid'>";
       decMovable(s, all).forEach(function(i){
-        var opts="<option value='"+DEC_NONE+"'>— not placed —</option>";
+        var opts="<option value='"+DEC_NONE+"'>Not placed</option>";
         all.forEach(function(b,j){ if(j===i || !inTree(j) || decInDesc(arr, i, j)) return; opts+="<option value='"+j+"'"+(arr[i]===j?" selected":"")+">under "+esc(plain(b.n))+"</option>"; });
         if(hasDecoys) opts+="<option value='"+DEC_BIN+"'"+(arr[i]===DEC_BIN?" selected":"")+">"+esc(d.bin||"Not part of this product")+"</option>";
         h+="<label><span>"+fmt(all[i].n)+"</span><select data-dsel='"+esc(id)+"' data-bi='"+i+"'>"+opts.replace("value='"+DEC_NONE+"'>","value='"+DEC_NONE+"'"+(arr[i]===DEC_NONE?" selected":"")+">")+"</select></label>";
@@ -1519,7 +1519,7 @@ function decHtml(s){
       var b=all[i];
       if(b.given) return decBoxHtml(b.n, (i===0?"root ":"")+"given", "<span class='dlab'>"+esc(labs[+b.lab]||"")+"</span>");
       if(!locked){
-        var o="<option value='-1'>— label —</option>"+labs.map(function(l,k){ return "<option value='"+k+"'"+(arr[i]===k?" selected":"")+">"+esc(l)+"</option>"; }).join("");
+        var o="<option value='-1'>Choose a label</option>"+labs.map(function(l,k){ return "<option value='"+k+"'"+(arr[i]===k?" selected":"")+">"+esc(l)+"</option>"; }).join("");
         return decBoxHtml(b.n, (i===0?"root":""), "<select class='dls' data-dlab='"+esc(id)+"' data-bi='"+i+"'>"+o+"</select>");
       }
       var ok=arr[i]===+b.lab;
@@ -3285,7 +3285,7 @@ function noteEditor(b){
   const out=[];
   if(P.notes.length) out.push(h("div",{class:"fld"}, h("label",null,"Pick from the note text library"),
     h("select",{onchange:e=>{ const n=P.notes.find(x=>x.k===e.target.value); if(n){ b.x=n.t; commit(true); } }},
-      h("option",{value:""},"— choose —"), P.notes.map(n=>h("option",{value:n.k, selected:n.t===b.x?"selected":null}, n.k+": "+n.t.slice(0,70)+(n.t.length>70?"…":""))))));
+      h("option",{value:""},"Choose a note"), P.notes.map(n=>h("option",{value:n.k, selected:n.t===b.x?"selected":null}, n.k+": "+n.t.slice(0,70)+(n.t.length>70?"…":""))))));
   out.push(fArea("Note text", b, "x", {rows:3, mono:true, ph:"CODE – TEXT OF THE NOTE", help:"Shown in a code font. Anything before “ – ” (space, en dash, space) shows as a dark tag."}));
   return out;
 }
@@ -3411,7 +3411,7 @@ function decEditor(c, typeSel, tog){
     }
     if(d.mode==="label"){
       ctl.push(h("label",{class:"dec-l"},"Label", h("select",{onchange:e=>{ b.lab=e.target.value===""?"":+e.target.value; commit(true); }},
-        h("option",{value:""},"— choose —"), d.labels.map((l,k)=>h("option",{value:k, selected:(b.lab!==""&&b.lab!=null&&+b.lab===k)?"selected":null}, l||"(blank)")))));
+        h("option",{value:""},"Choose a label"), d.labels.map((l,k)=>h("option",{value:k, selected:(b.lab!==""&&b.lab!=null&&+b.lab===k)?"selected":null}, l||"(blank)")))));
     }
     if((d.mode==="build" && i>0) || d.mode==="label"){
       ctl.push(h("label",{class:"dec-l ck"}, h("input",{type:"checkbox", checked:!!b.given, onchange:e=>{ b.given=e.target.checked; commit(true); }}), "Given"));
@@ -4676,7 +4676,7 @@ function blockText(b){
   if(t==="stmt") return String(b.x||"")+(b.sub?"\n"+b.sub:"");
   if(t==="cards"||t==="steps") return (b.x||[]).map((c,i)=>(t==="steps"?(i+1)+". ":"")+c.h+": "+c.b).join("\n");
   if(t==="table") return (b.head||[]).join(" | ")+"\n"+(b.x||[]).map(r=>r.join(" | ")).join("\n");
-  if(t==="tree") return (b.x||[]).map(r=>"  ".repeat(+r[0]||0)+r[1]+((r[2]||[]).length?" ["+r[2].join(", ")+"]":"")+(r[3]?" — "+r[3]:"")).join("\n");
+  if(t==="tree") return (b.x||[]).map(r=>"  ".repeat(+r[0]||0)+r[1]+((r[2]||[]).length?" ["+r[2].join(", ")+"]":"")+(r[3]?": "+r[3]:"")).join("\n");
   if(t==="img") return "Image"+(b.cap?": "+b.cap:"")+" #"+String(b.src||"").length+":"+crc32(new TextEncoder().encode(String(b.src||"").slice(0,20000)));
   return JSON.stringify(b);
 }
