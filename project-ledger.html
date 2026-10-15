@@ -2077,7 +2077,7 @@ function deckPlan(o){
   var r=range(), list=entriesIn(r), plan=[{kind:"title"},{kind:"glance"}];
   if(list.length){ plan.push({kind:"tags"}); plan.push({kind:"projects"}); }
   if(o.daily&&list.length) plan.push({kind:"daily"});
-  var ws=winsIn(r), newest=function(a,b){ return a.date<b.date?1:-1; };
+  var ws=winsIn(r), newest=function(a,b){ return a.date<b.date?1:-1; }, oldest=function(a,b){ return a.date<b.date?-1:a.date>b.date?1:0; };
   var st=ws.filter(function(w){ return w.star; }).sort(newest);
   var cards=function(list,title,extra){
     var hp=highlightPages(list);
@@ -2086,11 +2086,12 @@ function deckPlan(o){
   if(view==="month"){
     /* Stars are weekly highlights. The month deck lists them by week, and you can
        pick up to 6 of them for a "Top of the month" slide. */
-    if(o.top){ var picks=st.filter(function(w){ return w.pick; }); cards(picks.slice(0,6),"Top of the month",0); }
+    if(o.top){ var picks=st.filter(function(w){ return w.pick; }); cards(picks.slice(0,6).sort(oldest),"Top of the month",0); }
     if(o.weekly&&st.length) plan=plan.concat(winPages(r,"week",function(w){ return w.star; },
       {first:"Weekly highlights",cont:"Weekly highlights, continued",section:"weekly"}));
   } else if(o.highlights){
-    cards(st.slice(0,6),"Highlights",Math.max(0,st.length-6));
+    /* Pull the 6 most recent stars, then lay them out oldest to newest. */
+    cards(st.slice(0,6).sort(oldest),"Highlights",Math.max(0,st.length-6));
   }
   if(o.wins&&ws.length) plan=plan.concat(winPages(r,o.winGroup));
   if(o.notes&&(state.reportNote||"").trim()) plan.push({kind:"notes"});

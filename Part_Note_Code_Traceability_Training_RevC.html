@@ -349,8 +349,11 @@ body{padding-bottom:var(--mkb,0px)}
 /* ---------- decomposition checks ---------- */
 .dtree{overflow-x:auto;padding:6px 2px 10px;margin:0 0 10px}
 .dtree ul{display:flex;justify-content:center;list-style:none;margin:0;padding:18px 0 0;position:relative}
-.dtree > ul{padding-top:0}
-.dtree li{position:relative;padding:18px 5px 0;text-align:center;list-style:none;display:flex;flex-direction:column;align-items:center;min-width:0}
+.dtree > ul{padding-top:0;width:max-content;min-width:100%;box-sizing:border-box;margin:0 auto}
+.dtree li{position:relative;padding:18px 5px 0;text-align:center;list-style:none;display:flex;flex-direction:column;align-items:center;flex:0 0 auto}
+.dtree.tight li{padding-left:3px;padding-right:3px}
+.dtree.tight .db{max-width:132px;min-width:60px;padding:6px 7px;font-size:12.5px}
+.dtree.tight .dls{max-width:118px}
 .dtree > ul > li{padding-top:0}
 .dtree li::before,.dtree li::after{content:"";position:absolute;top:0;right:50%;width:50%;height:18px;border-top:1.5px solid #8998A2}
 .dtree li::after{right:auto;left:50%;border-left:1.5px solid #8998A2}
@@ -394,18 +397,32 @@ body{padding-bottom:var(--mkb,0px)}
 .dgrid{display:grid;grid-template-columns:1fr;gap:6px;margin-top:8px}
 .dgrid label{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--paper);border:1px solid var(--rule);border-radius:4px;padding:6px 9px}
 .dgrid select{max-width:55%;border:1px solid var(--rule);border-radius:4px;padding:3px 5px;font-size:12.5px}
+/* Indented list layout. Phones always get it. Wider screens get it when the tree
+   is wider than its space (class 'vert', set by decFit), so no block is cut off. */
 @media(max-width:640px){
   .dtree ul{display:block;padding:0 0 0 16px}
-  .dtree > ul{padding-left:0}
+  .dtree > ul{padding-left:0;width:auto;min-width:0}
   .dtree li{display:block;text-align:left;padding:6px 0 0 14px;border-left:1.5px solid #8998A2}
   .dtree > ul > li{border-left:0;padding-left:0}
+  .dtree li:only-child{padding-top:6px}
   .dtree li::before{display:block!important;border:0;border-top:1.5px solid #8998A2;width:12px;height:0;top:22px;left:0;right:auto;border-radius:0}
   .dtree li::after,.dtree ul ul::before{display:none!important}
   .dtree > ul > li::before{display:none!important}
   .dtree li:last-child{border-left-color:transparent}
   .dtree li:last-child::before{border-left:1.5px solid #8998A2;height:17px;top:5px;width:12px;border-top:0;border-bottom:1.5px solid #8998A2}
-  .db{max-width:none;flex-direction:row;flex-wrap:wrap;text-align:left}
+  .dtree .db{max-width:none;flex-direction:row;flex-wrap:wrap;text-align:left}
 }
+  .dtree.vert ul{display:block;padding:0 0 0 16px}
+  .dtree.vert > ul{padding-left:0;width:auto;min-width:0}
+  .dtree.vert li{display:block;text-align:left;padding:6px 0 0 14px;border-left:1.5px solid #8998A2}
+  .dtree.vert > ul > li{border-left:0;padding-left:0}
+  .dtree.vert li:only-child{padding-top:6px}
+  .dtree.vert li::before{display:block!important;border:0;border-top:1.5px solid #8998A2;width:12px;height:0;top:22px;left:0;right:auto;border-radius:0}
+  .dtree.vert li::after,.dtree.vert ul ul::before{display:none!important}
+  .dtree.vert > ul > li::before{display:none!important}
+  .dtree.vert li:last-child{border-left-color:transparent}
+  .dtree.vert li:last-child::before{border-left:1.5px solid #8998A2;height:17px;top:5px;width:12px;border-top:0;border-bottom:1.5px solid #8998A2}
+  .dtree.vert .db{max-width:none;flex-direction:row;flex-wrap:wrap;text-align:left}
 .db.root.given{background:var(--ink);color:#fff;border-color:var(--ink);border-style:solid}
 
 /* ---------- printable versions ---------- */
@@ -462,6 +479,7 @@ body.printmode .chrome, body.printmode .shell, body.printmode #mkBot, body.print
 .ptab td{padding:9px 9px 5px;border-top:1px solid var(--rule)}
 .ptab td.pfill{width:50%}
 .pblank{display:inline-block;width:90px;border-bottom:1.5px solid var(--ink-2);height:16px}
+.db.root .pblank{border-bottom-color:#fff}
 .pex{margin:14px 0 0}
 .pex h4{font-family:var(--serif);font-size:17px;margin:0 0 6px}
 .ppart{margin:12px 0 0;break-inside:avoid;page-break-inside:avoid}
@@ -701,6 +719,7 @@ var REVISIONS = [
    "Results pass criteria: section checks 80 percent and drill lines 80 percent right first time. Every written answer graded acceptable.",
    "New browser storage key. The builder rebalanced option order for the new page IDs. Print a new answer key.",
    "Course engine: the decomposition check dropdowns no longer use em dashes.",
+   "Course engine: tree checks never cut off a block. A tree wider than its space now shows as an indented list, on screen and in print. A tree that overflows scrolls to every block.",
    "Trainer notes use generic document names."
   ]
  },
@@ -6966,7 +6985,7 @@ function printDoc(mode, fromCourse){
   var d=document.createElement("div"); d.id="printdoc";
   d.innerHTML="<div class='ptool'><b>"+(mode==="key"?"Trainer answer key":"Printable handout")+"</b><span>Use your browser’s Print, or Save as PDF.</span>"+
     "<button class='btn pri' id='pPrint'>Print or save as PDF</button>"+(fromCourse?"<button class='btn' id='pBack'>← Back to the course</button>":"")+"</div>"+printHtml(mode);
-  document.body.appendChild(d);
+  document.body.appendChild(d); decFit(d);
   document.title=(COURSE.docTitle||COURSE.title||"Training")+(mode==="key"?" · answer key":" · handout");
   document.getElementById("pPrint").addEventListener("click", function(){ window.print(); });
   var bk=document.getElementById("pBack"); if(bk) bk.addEventListener("click", function(){ d.parentNode.removeChild(d); document.body.classList.remove("printmode"); document.title=COURSE.docTitle||COURSE.title||"Training"; draw(); window.scrollTo(0,0); });
@@ -7088,6 +7107,62 @@ function viewSection(m,s,p){
    ---------------------------------------------------------------------------- */
 var DEC_TMP = {};
 var DEC_NONE = -9, DEC_BIN = -2;
+/* Fit, tighten, or switch. Each tree check gets one of three layouts:
+     ""      the tree as drawn
+     "tight" the tree with narrower boxes, when it is a little too wide
+     "vert"  the indented list, when even the tight tree is too wide
+   Trees in one check share a layout. A layout only escalates until the window
+   resizes, so it does not flip while a trainee places blocks. A build check is
+   sized by its full answer tree, because most blocks start in the tray.
+   Print measures against the printable width of a Letter or A4 page. */
+var DEC_VERT = {}, DEC_PRINTW = 0, DEC_PAGEW = 690, DEC_MODES = ["", "tight", "vert"];
+function decFit(root){
+  root = root || document;
+  var pw = DEC_PRINTW || ((document.body && document.body.classList.contains("printmode")) ? DEC_PAGEW : 0);
+  var groups = [], byId = {};
+  Array.prototype.forEach.call(root.querySelectorAll(".dtree"), function(t){
+    var c = t.closest ? t.closest("[data-check]") : null, id = c ? c.getAttribute("data-check") : "";
+    if(id){ if(!byId[id]){ byId[id] = {id:id, ts:[]}; groups.push(byId[id]); } byId[id].ts.push(t); }
+    else groups.push({id:"", ts:[t]});
+  });
+  groups.forEach(function(g){
+    var sticky = (g.id && !pw && DEC_VERT[g.id]) || 0, rank = sticky;
+    var sec = g.id ? decSec(g.id) : null;
+    var build = !!(sec && sec.check && sec.check.dec && sec.check.dec.mode === "build");
+    while(rank < 2 && !decFits(g.ts, DEC_MODES[rank], pw, build ? sec : null)) rank++;
+    g.ts.forEach(function(t){ t.classList.remove("vert", "tight"); if(rank) t.classList.add(DEC_MODES[rank]); });
+    if(g.id && !pw && rank > sticky) DEC_VERT[g.id] = rank;
+  });
+}
+function decFits(ts, cls, pw, sec){
+  var ok = true;
+  ts.forEach(function(t){
+    t.classList.remove("vert", "tight"); if(cls) t.classList.add(cls);
+    var ul = t.firstElementChild; if(!ul) return;
+    var avail = decRoom(t); if(pw) avail = Math.min(avail, pw);
+    ul.style.minWidth = "0"; if(ul.scrollWidth > avail) ok = false; ul.style.minWidth = "";
+  });
+  if(ok && sec){ var a0 = decRoom(ts[0]); if(pw) a0 = Math.min(a0, pw); if(decNeed(sec, cls) > a0) ok = false; }
+  return ok;
+}
+function decRoom(t){ var cs = getComputedStyle(t); return t.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0); }
+function decSec(id){ var r = null; MODULES.forEach(function(m){ m.sections.forEach(function(x){ if(x.id === id) r = x; }); }); return r; }
+function decNeed(sec, cls){ // natural width of the right tree, drawn off screen
+  var all = decAll(sec.check.dec);
+  var w = document.createElement("div"); w.style.cssText = "position:absolute;left:-9999px;top:0;visibility:hidden";
+  w.innerHTML = decTree(all, function(i){ return (i>0 && !all[i].decoy) ? all[i].p : null; }, function(i){ return decBoxHtml(all[i].n, i===0?"root":""); });
+  if(cls && w.firstChild) w.firstChild.classList.add(cls);
+  document.body.appendChild(w);
+  var ul = w.querySelector(".dtree > ul"), n = 0; if(ul){ ul.style.minWidth = "0"; n = ul.scrollWidth; }
+  document.body.removeChild(w); return n;
+}
+(function(){
+  var tm = null;
+  window.addEventListener("resize", function(){ clearTimeout(tm); tm = setTimeout(function(){ DEC_VERT = {}; decFit(); }, 120); });
+  window.addEventListener("beforeprint", function(){ DEC_PRINTW = DEC_PAGEW; decFit(); });
+  window.addEventListener("afterprint", function(){ DEC_PRINTW = 0; DEC_VERT = {}; decFit(); });
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ DEC_VERT = {}; decFit(); });
+})();
 function isDec(s){ return !!(s.check && s.check.dec); }
 function decAll(d){ return d.blocks.map(function(b,i){ return {n:b.n, p:(i===0?-1:+b.p), given:!!b.given, lab:b.lab, shown:b.shown, decoy:false}; })
   .concat(d.mode==="label" ? [] : (d.decoys||[]).map(function(x){ return {n:x.n, p:DEC_BIN, decoy:true, shown:x.shown}; })); }
@@ -7193,7 +7268,7 @@ function decRefresh(id){
   var el=document.querySelector("[data-check='"+id+"']"); if(!sec||!el) return;
   var wrap=document.createElement("div"); wrap.innerHTML=decHtml(sec); var nu=wrap.firstChild;
   el.parentNode.replaceChild(nu, el);
-  wireDec(nu);
+  wireDec(nu); decFit(nu);
   Array.prototype.forEach.call(nu.querySelectorAll("[data-ckgo]"), function(b){ b.addEventListener("click", function(){ grade(b.getAttribute("data-ckgo")); }); });
   if(GLO.inChecks) glApply(nu);
 }
@@ -7585,7 +7660,7 @@ function recordNo(){
    WIRING
    ========================================================================== */
 function wire(i,p){
-  wireOrder(); wireDec();
+  wireOrder(); wireDec(); decFit();
   Array.prototype.forEach.call(document.querySelectorAll("[data-nav]"), function(b){
     b.addEventListener("click", function(){ go(b.getAttribute("data-nav")); });
   });
