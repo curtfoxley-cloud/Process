@@ -172,6 +172,17 @@
   td.r,th.r{text-align:right;padding-right:18px}
   td.r:last-child,th.r:last-child{padding-right:0}
   .pname{display:flex;align-items:center;gap:8px}
+  /* Keep each name whole; lines break only between names. */
+  .person{white-space:nowrap}
+  .pnote2{font-weight:400;color:var(--muted);font-size:.92em}
+  .teamhead,.teamrow{display:grid;grid-template-columns:minmax(140px,1fr) 142px 142px 72px 66px;gap:6px;align-items:center}
+  #teamEditor{margin-bottom:14px}
+  .teamhead{font-size:12px;color:var(--muted);margin:2px 0 3px}
+  .teamrow{margin-bottom:6px}
+  .teamrow input{width:100%;min-width:0}
+  .teamrow.gone .team-name{color:var(--muted)}
+  @media (max-width:600px){ .teamhead{display:none} .teamrow{grid-template-columns:1fr 1fr} .teamrow .team-name{grid-column:1/-1} }
+  #projectSummary th{white-space:nowrap}
   .rowacts{display:flex;gap:2px;justify-content:flex-end}
 
   /* wins */
@@ -280,8 +291,8 @@
       <button class="quiet" id="today">Today</button>
     </div>
     <div class="scope" role="group" aria-label="Reporting period">
-      <button data-view="day" aria-pressed="false">Day</button>
-      <button data-view="week" aria-pressed="true">Week</button>
+      <button data-view="day" aria-pressed="true">Day</button>
+      <button data-view="week" aria-pressed="false">Week</button>
       <button data-view="month" aria-pressed="false">Month</button>
       <button data-view="year" aria-pressed="false">Year</button>
     </div>
@@ -298,8 +309,8 @@
       <input type="search" id="fSearch" placeholder="Filter by name or person">
       <select id="fTag"></select>
       <select id="fSort">
-        <option value="hours">Sort by hours</option>
         <option value="tag">Group by tag</option>
+        <option value="hours">Sort by hours</option>
         <option value="name">Sort by name</option>
       </select>
       <button class="quiet" id="fFold">Collapse all</button>
@@ -401,7 +412,7 @@
 
     <div class="panel" id="peoplePanel">
       <h2>Collaboration</h2>
-      <p class="note">Your own hours on projects each person is named on. This is not time they worked.</p>
+      <p class="note">Your own hours on each project while that person was on it. This is not time they worked.</p>
       <div id="people"></div>
     </div>
 
@@ -571,8 +582,8 @@ var state={
   reportNote:""
 };
 syncTags();
-var view="week", anchor=new Date(), editingWin=null, timer=null, dirty=false, winRangeKey="";
-var filters={text:"",tag:"",hours:false,sort:"hours"};
+var view="day", anchor=new Date(), editingWin=null, timer=null, dirty=false, winRangeKey="";
+var filters={text:"",tag:"",hours:false,sort:"tag"};
 /* Which tag groups are collapsed. A view preference, so it lives in this browser
    rather than in your saved ledger file. */
 var collapsedTags={};
@@ -699,6 +710,48 @@ function allTimeHours(id){ return state.entries.filter(function(e){ return e.pro
   .reduce(function(s,e){ return s+e.hours; },0); }
 function tagOf(pid){ var p=projById(pid); return (p&&p.tag)?p.tag:"Untagged"; }
 function tagColor(t){ return TAG_COLORS[t]||UNTAGGED_COLOR; }
+/* ---------- collaborators over time ----------
+   Each project keeps a team list of {name, from, to}. Dates are optional and inclusive.
+   A blank From means since the start. A blank To means still on the project.
+   Reports show who was on the project during the period on screen. */
+function teamOf(p){ return (p&&p.team)||[]; }
+function onDate(m,d){ return (!m.from||m.from<=d)&&(!m.to||m.to>=d); }
+function inRange(m,r){ return (!m.from||m.from<=r[1])&&(!m.to||m.to>=r[0]); }
+function shortDate(d){ var x=parseISO(d); return x.getDate()+" "+MON[x.getMonth()]; }
+function teamIn(p,r){
+  return teamOf(p).filter(function(m){ return inRange(m,r); }).map(function(m){
+    var bits=[];
+    if(m.from&&m.from>r[0]) bits.push("from "+shortDate(m.from));
+    if(m.to&&m.to<r[1]) bits.push("until "+shortDate(m.to));
+    return {name:m.name,note:bits.join(" ")};
+  });
+}
+function teamText(p,r){ return teamIn(p,r).map(function(t){ return t.name+(t.note?" ("+t.note+")":""); }).join(", "); }
+function teamHtml(p,r){
+  var t=teamIn(p,r);
+  return t.map(function(x,i){
+    return '<span class="person">'+esc(x.name)+(x.note?' <span class="pnote2">('+esc(x.note)+')</span>':'')+(i<t.length-1?",":"")+'</span>';
+  }).join(" ");
+}
+/* Names on the project today or later. Saved as "people" so older builds can still read the file. */
+function currentNames(p){ var t=iso(new Date()); return teamOf(p).filter(function(m){ return !m.to||m.to>=t; }).map(function(m){ return m.name; }); }
+/* The most people on the project on any one day, and that day. */
+function maxConcurrent(team){
+  var best={n:0,date:""};
+  team.forEach(function(a){
+    var pt=a.from||"0000-01-01";
+    var n=team.filter(function(m){ return onDate(m,pt); }).length;
+    if(n>best.n) best={n:n,date:a.from};
+  });
+  return best;
+}
+function cleanTeam(list){
+  var okDate=function(d){ return /^\d{4}-\d{2}-\d{2}$/.test(d||"")?d:""; };
+  return (list||[]).map(function(m){
+    if(typeof m==="string") m={name:m};
+    return {name:String(m&&m.name||"").trim(),from:okDate(m&&m.from),to:okDate(m&&m.to)};
+  }).filter(function(m){ return m.name; });
+}
 function tagChip(t){ return t?'<span class="tagchip" style="background:'+tint(tagColor(t),0.16)+';color:'+tagColor(t)+'">'+esc(t)+'</span>':''; }
 function hoursByTag(r){
   var m={},order=[];
@@ -1011,7 +1064,7 @@ function card(p,r){
     .reduce(function(s,e){ return s+e.hours; },0);
   var all=allTimeHours(p.id);
   var running=timer&&timer.projectId===p.id;
-  var people=(p.people||[]).filter(Boolean);
+  var team=teamHtml(p,r);
   var c=projColor(p.id);
   var badge = p.status==="complete" ? '<span class="pill">Complete'+(p.completedOn?" · "+esc(prettyDate(p.completedOn).slice(4)):"")+'</span>'
             : p.status==="archived" ? '<span class="pill">Archived</span>'
@@ -1019,7 +1072,7 @@ function card(p,r){
   return '<article class="pcard'+(p.status!=="active"?" done":"")+'" style="--c:'+c+';--tint:'+tint(c,0.06)+'">'+
     '<div class="ptop"><h3>'+esc(p.name)+'</h3>'+badge+'</div>'+
     '<div class="pmeta">'+tagChip(p.tag)+
-      (people.length?'<span>with <b>'+people.map(esc).join(", ")+'</b></span>':'')+'</div>'+
+      (team?'<span>with <b>'+team+'</b></span>':'')+'</div>'+
     '<div class="phours"><span class="big num">'+fmt(periodH)+'</span><span class="sm">h '+esc(scopeLabel())+' · '+fmt(all)+' h total</span></div>'+
     (p.status==="active" ?
     '<div class="padd">'+
@@ -1052,7 +1105,7 @@ function renderBoard(r){
     if(filters.tag&&filters.tag!=="__none"&&p.tag!==filters.tag) return false;
     if(filters.hours&&!hrs[p.id]) return false;
     if(q){
-      var hay=(p.name+" "+(p.tag||"")+" "+((p.people||[]).join(" "))).toLowerCase();
+      var hay=(p.name+" "+(p.tag||"")+" "+teamOf(p).map(function(m){ return m.name; }).join(" ")).toLowerCase();
       if(hay.indexOf(q)<0) return false;
     }
     return true;
@@ -1130,7 +1183,7 @@ function renderSummary(list,total,r){
   var rows=agg.map(function(d){
     var p=projById(d.id);
     return {id:d.id, name:projName(d.id), tag:(p&&p.tag)||"",
-            people:((p&&p.people)||[]).filter(Boolean).join(", "),
+            team:p?teamHtml(p,r):"",
             status:p?p.status:"", hours:d.value, all:allTimeHours(d.id)};
   });
   var k=summarySort.key, dir=summarySort.dir;
@@ -1161,7 +1214,7 @@ function renderSummary(list,total,r){
       return '<tr><td><div class="pname"><span class="swatch" style="background:'+projColor(d.id)+'"></span>'+
         esc(d.name)+'</div></td>'+
         '<td>'+(d.tag?tagChip(d.tag):'—')+'</td>'+
-        '<td>'+esc(d.people||"—")+'</td>'+
+        '<td>'+(d.team||"—")+'</td>'+
         '<td>'+esc(d.status==="active"?"Active":d.status==="complete"?"Complete":d.status?"Archived":"—")+'</td>'+
         '<td class="r num">'+fmt(d.hours)+'</td>'+
         '<td class="r num">'+Math.round(d.hours/total*100)+'%</td>'+
@@ -1172,14 +1225,18 @@ function renderSummary(list,total,r){
 }
 
 function renderPeople(r){
-  var agg=hoursByProject(r), m={};
-  agg.forEach(function(d){
-    var p=projById(d.id); if(!p) return;
-    (p.people||[]).filter(Boolean).forEach(function(n){
-      if(!m[n]) m[n]={h:0,n:0};
-      m[n].h+=d.value; m[n].n++;
+  var m={};
+  entriesIn(r).forEach(function(e){
+    var p=projById(e.projectId); if(!p) return;
+    var seen={};
+    teamOf(p).forEach(function(t){
+      if(seen[t.name]||!onDate(t,e.date)) return;
+      seen[t.name]=1;
+      if(!m[t.name]) m[t.name]={h:0,p:{}};
+      m[t.name].h+=e.hours; m[t.name].p[p.id]=1;
     });
   });
+  Object.keys(m).forEach(function(n){ m[n].n=Object.keys(m[n].p).length; });
   var names=Object.keys(m).sort(function(a,b){ return m[b].h-m[a].h; });
   if(!names.length){ $("#people").innerHTML=emptyBox("No collaborators named on projects with hours in the selected "+viewWord()+"."); return; }
   $("#people").innerHTML='<table><thead><tr><th>Person</th><th class="r">My hours</th>'+
@@ -1285,11 +1342,11 @@ function renderSelects(){
 }
 
 /* ---------- mutations ---------- */
-function addProject(name,tag,people){
+function addProject(name,tag,people,team){
   name=(name||"").trim(); if(!name) return null;
   tag=TAGS.indexOf(tag)>=0?tag:"";
   var p={id:uid(),name:name,tag:tag,
-         people:(people||[]).map(function(s){ return String(s||"").trim(); }).filter(Boolean).slice(0,3),
+         team:cleanTeam(team||people),
          status:"active",created:iso(new Date()),completedOn:null};
   state.projects.push(p); markDirty(); return p;
 }
@@ -1310,6 +1367,7 @@ function download(filename,text,type){
 function saveFile(){
   state.reportNote=$("#reportNote").value;
   var payload=JSON.parse(JSON.stringify(state));
+  payload.projects.forEach(function(pp){ pp.people=currentNames(projById(pp.id)).slice(0,3); });
   payload.savedAt=new Date().toISOString();
   payload.activeTimer=timer;
   var slug=(state.owner||"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
@@ -1340,7 +1398,7 @@ function loadFile(text){
   }
   state.projects=rawProjects.map(function(p,i){
     return {id:p.id||uid(),name:p.name||"Untitled",tag:normTag(p),
-            people:Array.isArray(p.people)?p.people.filter(Boolean).slice(0,3):[],
+            team:cleanTeam(Array.isArray(p.team)?p.team:(Array.isArray(p.people)?p.people.slice(0,3):[])),
             status:p.status||(p.archived?"archived":"active"),
             created:p.created||iso(new Date()),completedOn:p.completedOn||null};
   });
@@ -1376,7 +1434,8 @@ function exportCsv(){
   var r=range(), list=entriesIn(r);
   var rows=[["date","project","tag","collaborators","status","hours","note"]].concat(list.map(function(e){
     var p=projById(e.projectId);
-    return [e.date,projName(e.projectId),p?(p.tag||""):"",p?(p.people||[]).join("; "):"",p?p.status:"",fmt(e.hours),e.note||""];
+    var who=teamOf(p).filter(function(m){ return onDate(m,e.date); }).map(function(m){ return m.name; }).join("; ");
+    return [e.date,projName(e.projectId),p?(p.tag||""):"",who,p?p.status:"",fmt(e.hours),e.note||""];
   }));
   var csv=rows.map(function(row){ return row.map(function(c){
     c=String(c); return /[",\n]/.test(c)?'"'+c.replace(/"/g,'""')+'"':c; }).join(","); }).join("\n");
@@ -1402,10 +1461,10 @@ function copySummary(){
     lines.push("","By project:");
   }
   agg.forEach(function(d){
-    var p=projById(d.id), people=((p&&p.people)||[]).filter(Boolean);
+    var p=projById(d.id), people=p?teamText(p,r):"";
     lines.push("• "+projName(d.id)+": "+fmt(d.value)+" h ("+Math.round(d.value/total*100)+"%)"+
       (p&&p.tag?" · "+p.tag:"")+
-      (p&&p.status==="complete"?" [complete]":"")+(people.length?" · with "+people.join(", "):""));
+      (p&&p.status==="complete"?" [complete]":"")+(people?" · with "+people:""));
     var notes=list.filter(function(e){ return e.projectId===d.id&&e.note; }).map(function(e){ return e.note; });
     var seen={};
     notes.filter(function(n){ if(seen[n]) return false; seen[n]=1; return true; })
@@ -1538,6 +1597,9 @@ function helpModal(){
       '<tr><td><strong>Undo</strong></td><td>Click Reopen.</td><td>Click Reopen.</td></tr>'+
     '</tbody></table>'+
     '<p>You can still log time to a completed or archived project. Pick it in the entry bar under the board.</p>'+
+    '<h3>Collaborators who change</h3>'+
+    '<p>Each person on a project can have a first day and a last day. Both are optional. When someone moves on, open the project\u2019s Edit dialog and click Replace next to their name. That sets their last day and adds a row for the new person, starting the next day. Change either date if the swap happened earlier.</p>'+
+    '<p>Every report shows who was on the project during the period on screen. A month that spans the change lists both people, with a note such as \u201Cuntil 12 Oct\u201D or \u201Cfrom 13 Oct\u201D. The Collaboration panel counts your hours only on the days each person was on the project. The limit is 3 people at a time, and a project\u2019s history can list more.</p>'+
     '<h3>Grouping the board</h3>'+
     '<p>Pick Group by tag to sort the cards under tag headings. Click a heading to collapse or expand that group. Collapse all and Expand all act on every group at once. The page remembers your choice in this browser.</p>'+
     '<h3>Delete</h3>'+
@@ -1567,7 +1629,7 @@ function helpModal(){
 }
 
 function knownPeople(){
-  var m={}; state.projects.forEach(function(p){ (p.people||[]).forEach(function(n){ if(n) m[n]=1; }); });
+  var m={}; state.projects.forEach(function(p){ teamOf(p).forEach(function(t){ m[t.name]=1; }); });
   return Object.keys(m);
 }
 /* The project's recent entries, editable in place. Changes apply when you click Save changes. */
@@ -1593,9 +1655,28 @@ function projectTimeSection(p){
       (list.length>shown.length?'Showing the '+shown.length+' most recent of '+list.length+' entries. ':'')+
       'To change a date or note, open <button class="quiet hist" data-p="'+p.id+'" style="padding:0;margin:0;font-size:12px;text-decoration:underline">History</button></p>';
 }
+function teamRow(m,i){
+  var t=iso(new Date()), gone=m.to&&m.to<t;
+  return '<div class="teamrow'+(gone?" gone":"")+'" data-i="'+i+'">'+
+    '<input type="text" class="team-name" list="peopleList" value="'+esc(m.name||"")+'" placeholder="Name" aria-label="Name">'+
+    '<input type="date" class="team-from" value="'+esc(m.from||"")+'" aria-label="On the project from" title="First day on the project. Leave blank for since the start.">'+
+    '<input type="date" class="team-to" value="'+esc(m.to||"")+'" aria-label="Last day on the project" title="Last day on the project. Leave blank if still on it.">'+
+    '<button class="quiet team-replace" title="This person left. Set their last day and add the new person.">Replace</button>'+
+    '<button class="quiet danger team-del">Remove</button></div>';
+}
+function drawTeam(rows){
+  $("#teamEditor").innerHTML=(rows.length?'<div class="teamhead"><span>Name</span><span>From</span><span>To</span></div>':'')+
+    rows.map(teamRow).join("")+'<button id="teamAdd">Add person</button>';
+}
+function readTeamRows(){
+  return Array.prototype.map.call(document.querySelectorAll("#teamEditor .teamrow"),function(row){
+    return {name:row.querySelector(".team-name").value.trim(),from:row.querySelector(".team-from").value,to:row.querySelector(".team-to").value};
+  });
+}
 function projectModal(id){
   var p=id?projById(id):null;
-  var people=(p&&p.people?p.people.slice():[]).concat(["","",""]).slice(0,3);
+  var team=teamOf(p).map(function(m){ return {name:m.name,from:m.from,to:m.to}; });
+  if(!team.length) team=[{name:"",from:"",to:""}];
   openModal('<h2>'+(p?"Edit project":"New project")+'</h2>'+
     '<input type="hidden" id="pId" value="'+(p?p.id:"")+'">'+
     '<div class="mrow"><div class="c" style="flex:2 1 220px"><label for="pName">Project name</label>'+
@@ -1603,10 +1684,11 @@ function projectModal(id){
       '<div class="c"><label for="pTag">Tag</label><select id="pTag"><option value="">Untagged</option>'+
       TAGS.map(function(t){ return '<option value="'+esc(t)+'"'+((p&&p.tag===t)?" selected":"")+'>'+esc(t)+'</option>'; }).join("")+
       '</select></div></div>'+
-    '<label>Collaborating with (up to 3 people)</label>'+
-    '<div class="mrow">'+[0,1,2].map(function(i){
-      return '<div class="c"><input type="text" class="pp" list="peopleList" value="'+esc(people[i]||"")+'" placeholder="'+(i===0?"Name":"Optional")+'"></div>';
-    }).join("")+'<datalist id="peopleList">'+knownPeople().map(function(n){ return '<option value="'+esc(n)+'">'; }).join("")+'</datalist></div>'+
+    '<h3>Collaborating with</h3>'+
+    '<p class="note" style="font-size:12px;color:var(--muted);margin:0 0 6px;line-height:1.45">Up to 3 people at a time. Dates are optional. '+
+      'When someone moves on, click Replace: it sets their last day and adds a row for the new person. Reports for earlier dates keep the old team.</p>'+
+    '<div id="teamEditor"></div>'+
+    '<datalist id="peopleList">'+knownPeople().map(function(n){ return '<option value="'+esc(n)+'">'; }).join("")+'</datalist>'+
     (p?'<div class="mrow"><div class="c" style="flex:0 1 160px"><label for="pStatus">Status</label><select id="pStatus">'+
         ['active','complete','archived'].map(function(s){
           return '<option value="'+s+'"'+(p.status===s?' selected':'')+'>'+s.charAt(0).toUpperCase()+s.slice(1)+'</option>';
@@ -1615,7 +1697,8 @@ function projectModal(id){
     '<div style="display:flex;justify-content:space-between;gap:8px;margin-top:14px">'+
       (p?'<button class="danger pdel" data-p="'+p.id+'">Delete project</button>':'<span></span>')+
       '<span><button id="mClose">Cancel</button> <button class="primary" id="pSave">'+(p?"Save changes":"Create project")+'</button></span>'+
-    '</div>');
+    '</div>',true);
+  drawTeam(team);
 }
 var tagDraft=[];
 function nextTagColor(){
@@ -1773,6 +1856,22 @@ document.addEventListener("click",function(ev){
   }
   if(el.classList.contains("tm")){ toggleTimer(el.dataset.p); return; }
   if(el.classList.contains("ep")){ projectModal(el.dataset.p); return; }
+  if(el.id==="teamAdd"){
+    var ta=readTeamRows(); ta.push({name:"",from:"",to:""}); drawTeam(ta);
+    var nm=document.querySelectorAll("#teamEditor .team-name"); nm[nm.length-1].focus(); return;
+  }
+  if(el.classList.contains("team-del")){
+    var td=readTeamRows(); td.splice(+el.closest(".teamrow").dataset.i,1); drawTeam(td); return;
+  }
+  if(el.classList.contains("team-replace")){
+    var tr=readTeamRows(), ri=+el.closest(".teamrow").dataset.i, who=tr[ri];
+    if(!who.to) who.to=iso(new Date());
+    tr.splice(ri+1,0,{name:"",from:iso(addDays(parseISO(who.to),1)),to:""});
+    drawTeam(tr);
+    var nn=document.querySelectorAll("#teamEditor .team-name")[ri+1]; if(nn) nn.focus();
+    toast((who.name||"That person")+"'s last day is set to "+prettyDate(who.to)+". Type the new person's name. Change either date if needed.");
+    return;
+  }
   if(el.classList.contains("prm")){
     var row=el.closest("tr"), on=!row.classList.contains("removing");
     row.classList.toggle("removing",on);
@@ -1854,8 +1953,12 @@ function saveProjectModal(){
   var id=$("#pId").value;
   var name=$("#pName").value.trim();
   if(!name){ toast("Give the project a name"); $("#pName").focus(); return; }
-  var people=Array.prototype.map.call($("#modal").querySelectorAll(".pp"),function(i){ return i.value.trim(); })
-    .filter(Boolean).slice(0,3);
+  var team=readTeamRows().filter(function(m){ return m.name; });
+  for(var ti=0;ti<team.length;ti++){
+    if(team[ti].from&&team[ti].to&&team[ti].to<team[ti].from){ toast(team[ti].name+"'s last day is before their first day."); return; }
+  }
+  var mc=maxConcurrent(team);
+  if(mc.n>3){ toast(mc.n+" people overlap"+(mc.date?" on "+prettyDate(mc.date):"")+". The limit is 3 at a time. Set a last day for whoever left."); return; }
   if(id){
     var p=projById(id);
     /* Check every hours box before changing anything. */
@@ -1870,7 +1973,7 @@ function saveProjectModal(){
     });
     if(bad){ toast("Enter time as 1.5, 90m, or 1:30. To drop an entry, click Remove."); bad.focus(); return; }
     if(p){
-      p.name=name; p.tag=$("#pTag").value; p.people=people;
+      p.name=name; p.tag=$("#pTag").value; p.team=cleanTeam(team); delete p.people;
       var st=$("#pStatus");
       if(st){
         p.status=st.value;
@@ -1893,7 +1996,7 @@ function saveProjectModal(){
     toast(msg, removed.length ? function(){ state.entries=state.entries.concat(removed); markDirty(); render(); toast("Removed entries restored"); } : null);
     return;
   }
-  addProject(name,$("#pTag").value,people);
+  addProject(name,$("#pTag").value,null,team);
   closeModal(); render(); toast("Project created");
 }
 
@@ -2072,7 +2175,42 @@ function highlightPages(list){
   }
   return out;
 }
-var DETAIL_ROWS=14;
+/* Project detail table. Long project names and collaborator lists wrap instead of
+   being cut, so rows are sized by their text and pages are filled by height. */
+var DETAIL_COLS=[3.5,1.6,4.5,0.8,0.8,0.933], DETAIL_ROW=0.34, DETAIL_LINE=0.2;
+/* Characters per line in a 12pt table cell. Calibri averages about 0.0056" a character per point. */
+function cellChars(colW){ return Math.floor((colW-0.16)/(12*0.006)); }
+function peopleOf(pr){ return teamIn(pr,range()).map(function(t){ return t.name+(t.note?" ("+t.note+")":""); }); }
+/* Non-breaking spaces and hyphens keep each name on one line; lines break between names. */
+function peopleText(pr){ var n=peopleOf(pr); return n.length ? n.map(function(x){ return x.replace(/ /g,"\u00A0").replace(/-/g,"\u2011"); }).join(", ") : "\u2013"; }
+function namesLines(names,perLine){
+  var lines=1, len=0;
+  names.forEach(function(n,i){
+    var w=n.length+(i<names.length-1?2:0);
+    if(len>0&&len+w>perLine){ lines++; len=0; }
+    len+=w;
+  });
+  return lines;
+}
+function detailRowH(d){
+  var lines=Math.max(deckLines(projName(d.id),cellChars(DETAIL_COLS[0])),
+                     namesLines(peopleOf(projById(d.id)),cellChars(DETAIL_COLS[2])));
+  return DETAIL_ROW+(lines-1)*DETAIL_LINE;
+}
+function detailPages(agg){
+  var budget=DK.BOTTOM-1.5-DETAIL_ROW-0.15, hs=agg.map(detailRowH);
+  var n=1, used=0;
+  hs.forEach(function(h){ if(used>0&&used+h>budget){ n++; used=0; } used+=h; });
+  /* Spread rows evenly so the last page is not nearly empty. */
+  var target=hs.reduce(function(a,b){ return a+b; },0)/n, pages=[], cur=[], u=0;
+  agg.forEach(function(d,i){
+    var h=hs[i];
+    if(cur.length&&(u+h>budget||(pages.length<n-1&&u+h>target+0.17))){ pages.push(cur); cur=[]; u=0; }
+    cur.push(d); u+=h;
+  });
+  if(cur.length) pages.push(cur);
+  return pages;
+}
 function deckPlan(o){
   var r=range(), list=entriesIn(r), plan=[{kind:"title"},{kind:"glance"}];
   if(list.length){ plan.push({kind:"tags"}); plan.push({kind:"projects"}); }
@@ -2096,8 +2234,8 @@ function deckPlan(o){
   if(o.wins&&ws.length) plan=plan.concat(winPages(r,o.winGroup));
   if(o.notes&&(state.reportNote||"").trim()) plan.push({kind:"notes"});
   if(o.detail&&list.length){
-    var agg=hoursByProject(r), pages=Math.ceil(agg.length/DETAIL_ROWS), per=Math.ceil(agg.length/pages);
-    for(var i=0;i<pages;i++) plan.push({kind:"detail",rows:agg.slice(i*per,(i+1)*per),page:i+1,pages:pages});
+    var dp=detailPages(hoursByProject(r));
+    dp.forEach(function(rows,i){ plan.push({kind:"detail",rows:rows,page:i+1,pages:dp.length}); });
   }
   return plan;
 }
@@ -2311,14 +2449,14 @@ function buildDeck(o){
                 {text:"All time",options:Object.assign({},H,{align:"right"})}]];
       p.rows.forEach(function(d){
         var pr=projById(d.id);
-        trs.push([{text:clip(projName(d.id),48),options:C({})},
+        trs.push([{text:projName(d.id),options:C({})},
                   {text:pr&&pr.tag?[{text:"■ ",options:{color:hx(tagColor(pr.tag))}},{text:pr.tag}]:"–",options:C({})},
-                  {text:clip(((pr&&pr.people)||[]).filter(Boolean).join(", ")||"–",34),options:C({color:DK.MUTED})},
+                  {text:peopleText(pr),options:C({color:DK.MUTED})},
                   {text:fmt(d.value),options:C({align:"right"})},
                   {text:Math.round(d.value/total*100)+"%",options:C({align:"right"})},
                   {text:fmt(allTimeHours(d.id)),options:C({align:"right",color:DK.MUTED})}]);
       });
-      s.addTable(trs,{x:DK.X,y:1.5,w:DK.CW,colW:[4.45,2.0,3.0,0.85,0.85,0.98],rowH:0.34,margin:[0,0.08,0,0.08]});
+      s.addTable(trs,{x:DK.X,y:1.5,w:DK.CW,colW:DETAIL_COLS,rowH:[DETAIL_ROW].concat(p.rows.map(detailRowH)),margin:[0,0.08,0,0.08]});
       return;
     }
   });
