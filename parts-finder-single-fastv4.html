@@ -231,6 +231,7 @@ details.setup pre{font:11.5px/1.6 var(--mono);background:#fff;border:1px solid v
 .cprev table.ct{width:auto;max-width:100%;margin:6px 0 14px;font-size:12.5px;background:#fff;border:1px solid var(--ink3)}
 .cprev table.ct td{border:1px solid var(--ink3);padding:3px 7px;font-family:var(--sans);white-space:normal;vertical-align:top}
 .chf{font:11.5px/1.5 var(--mono);color:var(--ink2);background:#f2f5f3;border-left:2px solid var(--rule);padding:4px 9px;margin:4px 0 10px}
+.cprev h5.ctitle{margin:14px 0 4px;font-size:13.5px;font-weight:650;color:var(--blue)}
 </style>
 </head>
 <body>
@@ -516,6 +517,9 @@ details.setup pre{font:11.5px/1.6 var(--mono);background:#fff;border:1px solid v
             <span>Join tables split across pages</span></label>
         </div>
       </div>
+      <label class="check"><input type="checkbox" id="cTblHead" checked>
+        <span>Put a numbered heading above each table — “Table 3 (PDF pages 4 to 6)” — so tables
+        that sit close together are never read as one, and each shows in Word's Navigation pane</span></label>
       <label class="check"><input type="checkbox" id="cNewPage" checked>
         <span>Start each PDF page on a new Word page, with the same size and orientation</span></label>
       <label class="check"><input type="checkbox" id="cTwoPass" checked>
@@ -97549,7 +97553,22 @@ function rowsMatch(a, b){
   });
 }
 
+// Number tables in reading order, after joining, so a table that runs over
+// several pages is one table with one heading.
+function numberTables(pages){
+  var n = 0;
+  pages.forEach(function(pg){
+    pg.els.forEach(function(e){
+      if (e.type !== "table") return;
+      var tb = e.table, a = tb.pageFrom, b = tb.pageTo;
+      tb.title = "Table " + (++n) + (a === b ? " (PDF page " + a + ")" : " (PDF pages " + a + " to " + b + ")");
+    });
+  });
+  return n;
+}
+
 function joinTables(A, B){
+  A.pageTo = B.pageTo;
   // 1. The PDF repeats the column headers on each page; Word will do that
   //    itself from the marked header rows, so the copies go.
   for (var k = Math.min(3, A.rows.length, B.rows.length); k >= 1; k--){
@@ -97703,6 +97722,10 @@ var DOCX_STYLES = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
   '<w:next w:val="Normal"/><w:uiPriority w:val="9"/><w:qFormat/>' +
   '<w:pPr><w:keepNext/><w:spacing w:before="200" w:after="80"/><w:outlineLvl w:val="1"/></w:pPr>' +
   '<w:rPr><w:b/><w:color w:val="1F3B4D"/><w:sz w:val="26"/><w:szCs w:val="26"/></w:rPr></w:style>' +
+'<w:style w:type="paragraph" w:styleId="Heading3"><w:name w:val="heading 3"/><w:basedOn w:val="Normal"/>' +
+  '<w:next w:val="Normal"/><w:uiPriority w:val="9"/><w:qFormat/>' +
+  '<w:pPr><w:keepNext/><w:keepLines/><w:spacing w:before="240" w:after="80"/><w:outlineLvl w:val="2"/></w:pPr>' +
+  '<w:rPr><w:b/><w:color w:val="2C5D7D"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr></w:style>' +
 '<w:style w:type="paragraph" w:styleId="CellText"><w:name w:val="Cell Text"/><w:basedOn w:val="Normal"/>' +
   '<w:qFormat/><w:pPr><w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="auto"/></w:pPr></w:style>' +
 '<w:style w:type="paragraph" w:styleId="Header"><w:name w:val="header"/><w:basedOn w:val="Normal"/>' +
@@ -97780,7 +97803,9 @@ function paraXml(e, sect){
   if (e.type === "note") ppr += '<w:pStyle w:val="PageNote"/>';
   else if (e.level === 1) ppr += '<w:pStyle w:val="Heading1"/>';
   else if (e.level === 2) ppr += '<w:pStyle w:val="Heading2"/>';
+  else if (e.level === 3) ppr += '<w:pStyle w:val="Heading3"/>';
   if (e.tiny) ppr += '<w:spacing w:before="0" w:after="0" w:line="40" w:lineRule="exact"/><w:rPr><w:sz w:val="2"/></w:rPr>';
+  else if (e.afterTable && !e.level) ppr += '<w:spacing w:before="160"/>';
   ppr += sect || "";
   return '<w:p>' + (ppr ? '<w:pPr>' + ppr + '</w:pPr>' : "") + runsXml(e.text, 0) + '</w:p>';
 }
@@ -97854,12 +97879,20 @@ function buildDocx(pages, plan, opts){
     var prevTable = false;
     els.forEach(function(e, ei){
       if (e.type === "table"){
-        // Word fuses two tables that touch, so keep a spacer between them.
-        if (prevTable) body.push(paraXml({ type: "p", text: "", tiny: true }));
+        if (e.table.title){
+          // A real Word heading: it shows in the Navigation pane and stays
+          // with the first row of its table (keepNext in the style).
+          body.push(paraXml({ type: "p", text: e.table.title, level: 3 }));
+        } else if (prevTable){
+          // Word fuses two tables that touch, so keep a spacer between them.
+          body.push(paraXml({ type: "p", text: "", tiny: true }));
+        }
         body.push(tableXml(e.table, S.textW));
         prevTable = true;
       } else {
-        body.push(paraXml(e, ei === els.length - 1 ? sect : ""));
+        // Breathing room between a table and the text after it.
+        var pe = prevTable ? Object.assign({}, e, { afterTable: true }) : e;
+        body.push(paraXml(pe, ei === els.length - 1 ? sect : ""));
         prevTable = false;
       }
     });
@@ -97942,7 +97975,7 @@ function previewHtml(out){
       (pg.joinedFrom ? '<p class="cnote">↳ The first table on this page continues the table from page ' + pg.joinedFrom + ', so its rows are shown there.</p>' : '') +
       (pg.joinBlocked ? '<p class="cnote">Not joined to the table on page ' + pg.joinBlocked + ': the page header or footer changes here, and Word cannot change it inside a table.</p>' : '') +
       pg.els.map(function(e){
-        if (e.type === "table") return tableHtml(e.table);
+        if (e.type === "table") return (e.table.title ? '<h5 class="ctitle">' + hEsc(e.table.title) + '</h5>' : '') + tableHtml(e.table);
         if (e.type === "note") return '<p class="cnote">' + hEsc(e.text) + '</p>';
         var tag = e.level === 1 ? "h3" : e.level === 2 ? "h4" : "p";
         return '<' + tag + '>' + hEsc(e.text).replace(/\t/g, '<span class="ctab"></span>') + '</' + tag + '>';
@@ -97975,6 +98008,7 @@ function readConvOpts(){
     twoPass:  $("cTwoPass").checked,
     hf:       $("cHF").value,
     joinTables: $("cJoin").checked,
+    tableHeadings: $("cTblHead").checked,
     binarize: $("cBinarize").checked
   };
 }
@@ -98103,7 +98137,9 @@ async function convertRun(){
       conv.lastRecs = recs;   // kept for inspection from the console
       if (opts.hf === "move") markHeadersFooters(recs);
       var pagesOut = recs.map(function(rec){
-        return { n: rec.n, w: rec.w, h: rec.h, source: rec.source, els: pageElements(rec, opts),
+        var els = pageElements(rec, opts);
+        els.forEach(function(e){ if (e.type === "table"){ e.table.pageFrom = e.table.pageTo = rec.n; } });
+        return { n: rec.n, w: rec.w, h: rec.h, source: rec.source, els: els,
                  head: opts.hf === "move" ? rec.head || [] : [], foot: opts.hf === "move" ? rec.foot || [] : [] };
       });
       if (!pagesOut.length){
@@ -98113,6 +98149,7 @@ async function convertRun(){
       }
       opts.totalPages = numPages;
       var plan = planDocument(pagesOut, opts);
+      if (opts.tableHeadings) numberTables(pagesOut);
       var bytes = await buildDocx(pagesOut, plan, opts);
       conv.outputs.push({
         name: f.name, docName: f.name.replace(/\.pdf$/i, "") + ".docx", bytes: bytes, pages: pagesOut,
