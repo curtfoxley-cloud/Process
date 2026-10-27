@@ -175,6 +175,14 @@
   /* Keep each name whole; lines break only between names. */
   .person{white-space:nowrap}
   .pnote2{font-weight:400;color:var(--muted);font-size:.92em}
+  .poppill{font-size:11.5px;font-weight:500;border-radius:3px;padding:1px 7px;white-space:nowrap;background:#F6ECD6;color:#8A5A00}
+  .splitbar{display:flex;height:22px;border-radius:4px;overflow:hidden;margin:4px 0 6px}
+  .splitbar i{display:block;height:100%}
+  .splitkey{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:13px;margin-bottom:12px}
+  .splitkey span{display:flex;align-items:center;gap:6px}
+  .popcols{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .popcols h3{font-size:12px;color:var(--muted);margin:0 0 4px;font-weight:600}
+  @media (max-width:760px){ .popcols{grid-template-columns:1fr} }
   .teamhead,.teamrow{display:grid;grid-template-columns:minmax(140px,1fr) 142px 142px 72px 66px;gap:6px;align-items:center}
   #teamEditor{margin-bottom:14px}
   .teamhead{font-size:12px;color:var(--muted);margin:2px 0 3px}
@@ -408,6 +416,12 @@
       <h2>Project summary</h2>
       <p class="note" id="summaryNote"></p>
       <div id="projectSummary"></div>
+    </div>
+
+    <div class="panel wide" id="popPanel">
+      <h2>Planned vs pop-up</h2>
+      <p class="note" id="popNote"></p>
+      <div id="popBody"></div>
     </div>
 
     <div class="panel" id="peoplePanel">
@@ -752,6 +766,27 @@ function cleanTeam(list){
     return {name:String(m&&m.name||"").trim(),from:okDate(m&&m.from),to:okDate(m&&m.to)};
   }).filter(function(m){ return m.name; });
 }
+/* ---------- pop-up asks ----------
+   A project flagged as a pop-up holds unplanned work. "Requested by" is optional. */
+var POP_COLOR="#B07A12", PLAN_COLOR="#1F5D50";
+function isPop(id){ var p=projById(id); return !!(p&&p.popup); }
+function popSplit(r){
+  var list=entriesIn(r), pop=0, plan=0;
+  list.forEach(function(e){ if(isPop(e.projectId)) pop+=e.hours; else plan+=e.hours; });
+  return {pop:pop,plan:plan,total:pop+plan};
+}
+function popBy(r,key){
+  var m={};
+  entriesIn(r).forEach(function(e){
+    var p=projById(e.projectId); if(!p||!p.popup) return;
+    var k = key==="req" ? (p.requestedBy||"Not recorded") : p.id;
+    m[k]=(m[k]||0)+e.hours;
+  });
+  return Object.keys(m).map(function(k){ return {key:k,label:key==="req"?k:projName(k),value:m[k]}; })
+    .sort(function(a,b){ return b.value-a.value; });
+}
+function popPill(p){ return p&&p.popup ? '<span class="poppill">Pop-up'+(p.requestedBy?' \u00B7 '+esc(p.requestedBy):'')+'</span>' : ''; }
+function knownRequesters(){ var m={}; state.projects.forEach(function(p){ if(p.requestedBy) m[p.requestedBy]=1; }); return Object.keys(m); }
 function tagChip(t){ return t?'<span class="tagchip" style="background:'+tint(tagColor(t),0.16)+';color:'+tagColor(t)+'">'+esc(t)+'</span>':''; }
 function hoursByTag(r){
   var m={},order=[];
@@ -1025,6 +1060,7 @@ function render(){
   renderPayPeriod();
   renderSummary(list,total,r);
   renderPeople(r);
+  renderPop(r);
   renderWins(r);
   renderEntries(list);
   $("#reportNotePrint").textContent=state.reportNote||"";
@@ -1044,6 +1080,8 @@ function renderFigures(list,total,r){
     {k:"Completed",v:String(completedIn(r).length)},
     {k:"Days with entries",v:active+" of "+days.length}
   ];
+  var spf=popSplit(r);
+  if(spf.pop>0) figs.splice(2,0,{k:"Pop-up asks",v:fmt(spf.pop)+" h \u00B7 "+Math.round(spf.pop/spf.total*100)+"%"});
   var pp=payPeriodFor(iso(anchor));
   if(pp) figs.push({k:"Pay period so far",v:fmt(totalOf(entriesIn(pp)))+" of "+fmt(state.settings.periodHours),cls:"pp-only"});
   var bp=top?projName(top.id):"—";
@@ -1071,7 +1109,7 @@ function card(p,r){
             : running ? '<span class="pill on">Timing</span>' : '';
   return '<article class="pcard'+(p.status!=="active"?" done":"")+'" style="--c:'+c+';--tint:'+tint(c,0.06)+'">'+
     '<div class="ptop"><h3>'+esc(p.name)+'</h3>'+badge+'</div>'+
-    '<div class="pmeta">'+tagChip(p.tag)+
+    '<div class="pmeta">'+tagChip(p.tag)+popPill(p)+
       (team?'<span>with <b>'+team+'</b></span>':'')+'</div>'+
     '<div class="phours"><span class="big num">'+fmt(periodH)+'</span><span class="sm">h '+esc(scopeLabel())+' · '+fmt(all)+' h total</span></div>'+
     (p.status==="active" ?
@@ -1102,10 +1140,11 @@ function renderBoard(r){
   var q=(filters.text||"").toLowerCase();
   function matches(p){
     if(filters.tag==="__none"&&p.tag) return false;
-    if(filters.tag&&filters.tag!=="__none"&&p.tag!==filters.tag) return false;
+    if(filters.tag==="__popup"&&!p.popup) return false;
+    if(filters.tag&&filters.tag!=="__none"&&filters.tag!=="__popup"&&p.tag!==filters.tag) return false;
     if(filters.hours&&!hrs[p.id]) return false;
     if(q){
-      var hay=(p.name+" "+(p.tag||"")+" "+teamOf(p).map(function(m){ return m.name; }).join(" ")).toLowerCase();
+      var hay=(p.name+" "+(p.tag||"")+" "+(p.requestedBy||"")+" "+teamOf(p).map(function(m){ return m.name; }).join(" ")).toLowerCase();
       if(hay.indexOf(q)<0) return false;
     }
     return true;
@@ -1157,7 +1196,8 @@ function renderBoard(r){
   var sel=$("#fTag"), cur=filters.tag;
   sel.innerHTML='<option value="">All tags</option>'+
     TAGS.map(function(t){ return '<option value="'+esc(t)+'">'+esc(t)+'</option>'; }).join("")+
-    '<option value="__none">Untagged</option>';
+    '<option value="__none">Untagged</option>'+
+    (state.projects.some(function(x){ return x.popup; })?'<option value="__popup">Pop-ups only</option>':'');
   sel.value=cur||"";
   $("#fSort").value=filters.sort;
   var fold=$("#fFold"), grouped=filters.sort==="tag"&&active.length;
@@ -1212,7 +1252,7 @@ function renderSummary(list,total,r){
     '</tr></thead><tbody>'+
     rows.map(function(d){
       return '<tr><td><div class="pname"><span class="swatch" style="background:'+projColor(d.id)+'"></span>'+
-        esc(d.name)+'</div></td>'+
+        esc(d.name)+(isPop(d.id)?' '+popPill(projById(d.id)):'')+'</div></td>'+
         '<td>'+(d.tag?tagChip(d.tag):'—')+'</td>'+
         '<td>'+(d.team||"—")+'</td>'+
         '<td>'+esc(d.status==="active"?"Active":d.status==="complete"?"Complete":d.status?"Archived":"—")+'</td>'+
@@ -1224,6 +1264,27 @@ function renderSummary(list,total,r){
     '</tbody></table>';
 }
 
+function renderPop(r){
+  var panel=$("#popPanel");
+  if(!state.projects.some(function(p){ return p.popup; })){ panel.style.display="none"; return; }
+  panel.style.display="";
+  var sp=popSplit(r);
+  if(!sp.total){ $("#popNote").textContent=""; $("#popBody").innerHTML=emptyBox("No hours logged in the selected "+viewWord()+"."); return; }
+  var pp=Math.round(sp.pop/sp.total*100);
+  $("#popNote").textContent=fmt(sp.pop)+" of "+fmt(sp.total)+" hours went to pop-up asks in the selected "+viewWord()+".";
+  var table=function(rows){
+    if(!rows.length) return '<p style="font-size:13px;color:var(--muted);margin:0">None.</p>';
+    return '<table><tbody>'+rows.map(function(d){
+      return '<tr><td>'+esc(d.label)+'</td><td class="r num">'+fmt(d.value)+' h</td><td class="r num" style="color:var(--muted)">'+Math.round(d.value/sp.total*100)+'%</td></tr>';
+    }).join("")+'</tbody></table>';
+  };
+  $("#popBody").innerHTML=
+    '<div class="splitbar"><i style="width:'+(100-pp)+'%;background:'+PLAN_COLOR+'"></i><i style="width:'+pp+'%;background:'+POP_COLOR+'"></i></div>'+
+    '<div class="splitkey"><span><span class="swatch" style="background:'+PLAN_COLOR+'"></span>Planned '+fmt(sp.plan)+' h \u00B7 '+(100-pp)+'%</span>'+
+      '<span><span class="swatch" style="background:'+POP_COLOR+'"></span>Pop-up '+fmt(sp.pop)+' h \u00B7 '+pp+'%</span></div>'+
+    '<div class="popcols"><div><h3>Pop-up hours by requester</h3>'+table(popBy(r,"req"))+'</div>'+
+      '<div><h3>Pop-up hours by project</h3>'+table(popBy(r,"proj"))+'</div></div>';
+}
 function renderPeople(r){
   var m={};
   entriesIn(r).forEach(function(e){
@@ -1342,11 +1403,12 @@ function renderSelects(){
 }
 
 /* ---------- mutations ---------- */
-function addProject(name,tag,people,team){
+function addProject(name,tag,people,team,extra){
   name=(name||"").trim(); if(!name) return null;
   tag=TAGS.indexOf(tag)>=0?tag:"";
   var p={id:uid(),name:name,tag:tag,
          team:cleanTeam(team||people),
+         popup:!!(extra&&extra.popup),requestedBy:(extra&&extra.popup&&extra.requestedBy)||"",
          status:"active",created:iso(new Date()),completedOn:null};
   state.projects.push(p); markDirty(); return p;
 }
@@ -1399,6 +1461,7 @@ function loadFile(text){
   state.projects=rawProjects.map(function(p,i){
     return {id:p.id||uid(),name:p.name||"Untitled",tag:normTag(p),
             team:cleanTeam(Array.isArray(p.team)?p.team:(Array.isArray(p.people)?p.people.slice(0,3):[])),
+            popup:!!p.popup,requestedBy:p.popup?String(p.requestedBy||"").trim():"",
             status:p.status||(p.archived?"archived":"active"),
             created:p.created||iso(new Date()),completedOn:p.completedOn||null};
   });
@@ -1432,10 +1495,10 @@ function loadFile(text){
 }
 function exportCsv(){
   var r=range(), list=entriesIn(r);
-  var rows=[["date","project","tag","collaborators","status","hours","note"]].concat(list.map(function(e){
+  var rows=[["date","project","tag","collaborators","status","hours","note","pop-up","requested by"]].concat(list.map(function(e){
     var p=projById(e.projectId);
     var who=teamOf(p).filter(function(m){ return onDate(m,e.date); }).map(function(m){ return m.name; }).join("; ");
-    return [e.date,projName(e.projectId),p?(p.tag||""):"",who,p?p.status:"",fmt(e.hours),e.note||""];
+    return [e.date,projName(e.projectId),p?(p.tag||""):"",who,p?p.status:"",fmt(e.hours),e.note||"",p&&p.popup?"yes":"no",p&&p.popup?(p.requestedBy||""):""];
   }));
   var csv=rows.map(function(row){ return row.map(function(c){
     c=String(c); return /[",\n]/.test(c)?'"'+c.replace(/"/g,'""')+'"':c; }).join(","); }).join("\n");
@@ -1454,6 +1517,12 @@ function copySummary(){
       ": "+fmt(totalOf(entriesIn(ppr)))+" of "+fmt(state.settings.periodHours)+" h");
   }
   lines.push("");
+  var spc=popSplit(r);
+  if(spc.pop>0){
+    lines.push("Pop-up asks: "+fmt(spc.pop)+" h ("+Math.round(spc.pop/total*100)+"%). Planned work: "+fmt(spc.plan)+" h.");
+    popBy(r,"req").forEach(function(d){ lines.push("    From "+d.label+": "+fmt(d.value)+" h"); });
+    lines.push("");
+  }
   var tagAgg=hoursByTag(r);
   if(tagAgg.length){
     lines.push("By tag:");
@@ -1597,6 +1666,8 @@ function helpModal(){
       '<tr><td><strong>Undo</strong></td><td>Click Reopen.</td><td>Click Reopen.</td></tr>'+
     '</tbody></table>'+
     '<p>You can still log time to a completed or archived project. Pick it in the entry bar under the board.</p>'+
+    '<h3>Pop-up asks</h3>'+
+    '<p>Tick Pop-up ask in a project\u2019s Edit dialog to mark it as unplanned work. Add who asked in Requested by if you want. The card shows a Pop-up label, and the Planned vs pop-up panel splits your time and totals pop-up hours by requester. The copied summary, CSV, and PowerPoint include the split too. To see only pop-ups on the board, pick Pop-ups only in the tag filter.</p>'+
     '<h3>Collaborators who change</h3>'+
     '<p>Each person on a project can have a first day and a last day. Both are optional. When someone moves on, open the project\u2019s Edit dialog and click Replace next to their name. That sets their last day and adds a row for the new person, starting the next day. Change either date if the swap happened earlier.</p>'+
     '<p>Every report shows who was on the project during the period on screen. A month that spans the change lists both people, with a note such as \u201Cuntil 12 Oct\u201D or \u201Cfrom 13 Oct\u201D. The Collaboration panel counts your hours only on the days each person was on the project. The limit is 3 people at a time, and a project\u2019s history can list more.</p>'+
@@ -1684,6 +1755,10 @@ function projectModal(id){
       '<div class="c"><label for="pTag">Tag</label><select id="pTag"><option value="">Untagged</option>'+
       TAGS.map(function(t){ return '<option value="'+esc(t)+'"'+((p&&p.tag===t)?" selected":"")+'>'+esc(t)+'</option>'; }).join("")+
       '</select></div></div>'+
+    '<div class="mrow" style="align-items:flex-end">'+
+      '<label class="chk" style="flex:0 0 auto;margin:0 6px 9px 0;font-size:13px;color:var(--ink)"><input type="checkbox" id="pPopup"'+(p&&p.popup?" checked":"")+'> Pop-up ask (unplanned work)</label>'+
+      '<div class="c"><label for="pReq">Requested by</label><input id="pReq" type="text" list="reqList" value="'+esc(p&&p.requestedBy||"")+'" placeholder="Optional: who asked"'+(p&&p.popup?"":" disabled")+'></div>'+
+      '<datalist id="reqList">'+knownRequesters().map(function(n){ return '<option value="'+esc(n)+'">'; }).join("")+'</datalist></div>'+
     '<h3>Collaborating with</h3>'+
     '<p class="note" style="font-size:12px;color:var(--muted);margin:0 0 6px;line-height:1.45">Up to 3 people at a time. Dates are optional. '+
       'When someone moves on, click Replace: it sets their last day and adds a row for the new person. Reports for earlier dates keep the old team.</p>'+
@@ -1974,6 +2049,7 @@ function saveProjectModal(){
     if(bad){ toast("Enter time as 1.5, 90m, or 1:30. To drop an entry, click Remove."); bad.focus(); return; }
     if(p){
       p.name=name; p.tag=$("#pTag").value; p.team=cleanTeam(team); delete p.people;
+      p.popup=$("#pPopup").checked; p.requestedBy=p.popup?$("#pReq").value.trim():"";
       var st=$("#pStatus");
       if(st){
         p.status=st.value;
@@ -1996,7 +2072,7 @@ function saveProjectModal(){
     toast(msg, removed.length ? function(){ state.entries=state.entries.concat(removed); markDirty(); render(); toast("Removed entries restored"); } : null);
     return;
   }
-  addProject(name,$("#pTag").value,null,team);
+  addProject(name,$("#pTag").value,null,team,{popup:$("#pPopup").checked,requestedBy:$("#pReq").value.trim()});
   closeModal(); render(); toast("Project created");
 }
 
@@ -2007,11 +2083,12 @@ document.addEventListener("input",function(ev){
   if(ev.target.classList&&ev.target.classList.contains("tagname")){ tagDraft[+ev.target.dataset.i].name=ev.target.value; }
 });
 document.addEventListener("change",function(ev){
+  if(ev.target.id==="pPopup"){ var rq=$("#pReq"); rq.disabled=!ev.target.checked; if(ev.target.checked) rq.focus(); }
   if(ev.target.id==="fTag"){ filters.tag=ev.target.value; renderBoard(range()); }
   if(ev.target.id==="fHours"){ filters.hours=ev.target.checked; renderBoard(range()); }
   if(ev.target.id==="fSort"){ filters.sort=ev.target.value; renderBoard(range()); }
   if(ev.target.id==="wSort"){ state.settings.winSort=ev.target.value; markDirty(); renderWins(range()); }
-  if(/^d(Daily|High|Top|Weekly|Wins|Group|Notes|Detail)$/.test(ev.target.id||"")){ updateDeckCount(); }
+  if(/^d(Daily|Pop|High|Top|Weekly|Wins|Group|Notes|Detail)$/.test(ev.target.id||"")){ updateDeckCount(); }
   if(ev.target.classList&&ev.target.classList.contains("dpick")){
     var pw=state.wins.filter(function(x){ return x.id===ev.target.dataset.id; })[0];
     if(pw){ pw.pick=ev.target.checked; markDirty(); renderWins(range()); }
@@ -2091,7 +2168,7 @@ setInterval(function(){
    then drawn, so the export dialog can show the slide count before you download. */
 var DK={W:13.333,X:0.6,CW:12.133,TOP:1.45,BOTTOM:6.75,
         INK:"14231F",MUTED:"5E6E68",SOFT:"B9D3C9",RULE:"D2DAD4",TINT:"F1F4F2",FONT:"Calibri"};
-var deckOpts={highlights:true,top:true,weekly:true,wins:true,winGroup:"tag",daily:true,notes:true,detail:true};
+var deckOpts={popups:true,highlights:true,top:true,weekly:true,wins:true,winGroup:"tag",daily:true,notes:true,detail:true};
 try{ var _dk=JSON.parse(localStorage.getItem("ledger.deckOpts")||"null"); if(_dk) for(var _k in _dk) if(_k in deckOpts) deckOpts[_k]=_dk[_k]; }catch(e){}
 function saveDeckOpts(){ try{ localStorage.setItem("ledger.deckOpts",JSON.stringify(deckOpts)); }catch(e){} }
 
@@ -2193,7 +2270,7 @@ function namesLines(names,perLine){
   return lines;
 }
 function detailRowH(d){
-  var lines=Math.max(deckLines(projName(d.id),cellChars(DETAIL_COLS[0])),
+  var lines=Math.max(deckLines(projName(d.id)+(isPop(d.id)?" (pop-up)":""),cellChars(DETAIL_COLS[0])),
                      namesLines(peopleOf(projById(d.id)),cellChars(DETAIL_COLS[2])));
   return DETAIL_ROW+(lines-1)*DETAIL_LINE;
 }
@@ -2214,6 +2291,7 @@ function detailPages(agg){
 function deckPlan(o){
   var r=range(), list=entriesIn(r), plan=[{kind:"title"},{kind:"glance"}];
   if(list.length){ plan.push({kind:"tags"}); plan.push({kind:"projects"}); }
+  if(o.popups&&popSplit(r).pop>0) plan.push({kind:"popups"});
   if(o.daily&&list.length) plan.push({kind:"daily"});
   var ws=winsIn(r), newest=function(a,b){ return a.date<b.date?1:-1; }, oldest=function(a,b){ return a.date<b.date?-1:a.date>b.date?1:0; };
   var st=ws.filter(function(w){ return w.star; }).sort(newest);
@@ -2314,6 +2392,9 @@ function buildDeck(o){
         txt(s,clip(projName(d.id),44),{x:DK.X+0.32,y:y,w:4.3,h:0.4,fontSize:14,color:DK.INK,valign:"middle"});
         txt(s,fmt(d.value)+" h · "+Math.round(d.value/total*100)+"%",{x:DK.X+4.6,y:y,w:1.3,h:0.4,fontSize:14,color:DK.MUTED,align:"right",valign:"middle"});
       });
+      var spg=popSplit(r);
+      if(spg.pop>0) txt(s,"Pop-up asks: "+fmt(spg.pop)+" of "+fmt(spg.total)+" hours ("+Math.round(spg.pop/spg.total*100)+"%)",
+        {x:DK.X,y:6.35,w:5.9,h:0.35,fontSize:12,color:DK.MUTED});
       var rx=6.9;
       txt(s,"Completed this "+name,{x:rx,y:3.7,w:5.8,h:0.4,fontSize:16,bold:true,color:DK.INK});
       var dl=done.slice(0,4);
@@ -2376,6 +2457,27 @@ function buildDeck(o){
         key.push({text:t+(i<used.length-1?"     ":""),options:{color:DK.MUTED}});
       });
       txt(s,key,{x:DK.X,y:Math.min(6.45,1.6+ch),w:DK.CW,h:0.35,fontSize:12});
+      return;
+    }
+    if(p.kind==="popups"){
+      var sp=popSplit(r), pct=Math.round(sp.pop/sp.total*100);
+      s=slide("Summary","Pop-up asks took "+pct+"% of the time");
+      [[PLAN_COLOR,"Planned work",sp.plan,100-pct],[POP_COLOR,"Pop-up asks",sp.pop,pct]].forEach(function(c,i){
+        var y=1.6+i*2.35;
+        s.addShape(pptx.ShapeType.roundRect,{x:DK.X,y:y,w:4.1,h:2.05,fill:{color:DK.TINT},line:{color:DK.TINT},rectRadius:0.08});
+        chip(s,DK.X+0.3,y+0.36,0.22,c[0]);
+        txt(s,c[1],{x:DK.X+0.65,y:y+0.25,w:3.2,h:0.45,fontSize:16,bold:true,color:DK.INK,valign:"middle"});
+        txt(s,fmt(c[2])+" h",{x:DK.X+0.3,y:y+0.8,w:2.4,h:0.9,fontSize:40,bold:true,color:DK.INK});
+        txt(s,c[3]+"%",{x:DK.X+2.6,y:y+0.95,w:1.25,h:0.6,fontSize:22,color:DK.MUTED,align:"right"});
+      });
+      var byReq=popBy(r,"req"), useReq=byReq.some(function(d){ return d.key!=="Not recorded"; });
+      var bars=(useReq?byReq:popBy(r,"proj")).slice(0,8);
+      txt(s,useReq?"Pop-up hours by requester":"Pop-up hours by project",{x:5.2,y:1.55,w:7.5,h:0.4,fontSize:16,bold:true,color:DK.INK});
+      var po=axis();
+      Object.assign(po,{x:5.2,y:2.0,w:7.53,h:Math.min(4.55,0.5*bars.length+0.6),barDir:"bar",catAxisOrientation:"maxMin",valAxisHidden:true,valGridLine:{style:"none"},
+        showValue:true,dataLabelPosition:"outEnd",dataLabelFormatCode:"General",dataLabelColor:DK.INK,dataLabelFontSize:12,
+        barGapWidthPct:45,chartColors:[hx(POP_COLOR)],showLegend:false});
+      s.addChart(pptx.ChartType.bar,[{name:"Hours",labels:bars.map(function(d){ return clip(d.label,36); }),values:bars.map(function(d){ return Math.round(d.value*100)/100; })}],po);
       return;
     }
     if(p.kind==="daily"){
@@ -2449,7 +2551,7 @@ function buildDeck(o){
                 {text:"All time",options:Object.assign({},H,{align:"right"})}]];
       p.rows.forEach(function(d){
         var pr=projById(d.id);
-        trs.push([{text:projName(d.id),options:C({})},
+        trs.push([{text:projName(d.id)+(pr&&pr.popup?" (pop-up)":""),options:C({})},
                   {text:pr&&pr.tag?[{text:"■ ",options:{color:hx(tagColor(pr.tag))}},{text:pr.tag}]:"–",options:C({})},
                   {text:peopleText(pr),options:C({color:DK.MUTED})},
                   {text:fmt(d.value),options:C({align:"right"})},
@@ -2477,6 +2579,7 @@ function deckModal(){
       '. The charts stay editable in PowerPoint.</p>'+
     '<p style="font-size:13px;margin:0 0 6px">Always included: a title slide, an at-a-glance slide, and time by tag and by project.</p>'+
     cb("dDaily","daily","Hours by day chart","",false)+
+    cb("dPop","popups","Pop-up asks slide",popSplit(r).pop>0?"Planned vs pop-up time, and who asked.":"No pop-up hours in this "+view+".",!(popSplit(r).pop>0))+
     (view==="week"
       ? cb("dHigh","highlights","Highlights slide",
           stars ? stars+" starred win"+(stars>1?"s":"")+(stars>6?". The slide fits 6, so it shows the 6 most recent.":".")
@@ -2516,7 +2619,7 @@ function updatePicks(){
 }
 function readDeckOpts(){
   var g=function(id){ var el=$("#"+id); return !!(el&&el.checked); };
-  return {daily:g("dDaily"),highlights:g("dHigh"),top:g("dTop"),weekly:g("dWeekly"),wins:g("dWins"),
+  return {popups:g("dPop"),daily:g("dDaily"),highlights:g("dHigh"),top:g("dTop"),weekly:g("dWeekly"),wins:g("dWins"),
           winGroup:$("#dGroup").value,notes:g("dNotes"),detail:g("dDetail")};
 }
 function updateDeckCount(){
@@ -2533,7 +2636,7 @@ function exportDeck(){
   /* Remember choices, but not ones forced off because there was nothing to show. */
   ["daily","detail"].forEach(function(k){ deckOpts[k]=o[k]; });
   var remember=function(id,key){ var el=document.getElementById(id); if(el&&!el.disabled) deckOpts[key]=el.checked; };
-  remember("dHigh","highlights"); remember("dTop","top"); remember("dWeekly","weekly");
+  remember("dHigh","highlights"); remember("dPop","popups"); remember("dTop","top"); remember("dWeekly","weekly");
   if(!$("#dWins").disabled) deckOpts.wins=o.wins;
   if(!$("#dNotes").disabled) deckOpts.notes=o.notes;
   deckOpts.winGroup=o.winGroup; saveDeckOpts();
