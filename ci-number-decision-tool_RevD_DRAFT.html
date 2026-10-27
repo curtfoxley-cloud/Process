@@ -1,0 +1,2537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="Tool Builder: tree">
+<title>Same CI or Separate CIs</title>
+<style>
+:root{
+  --ink:#1E262E; --ink-2:#2C3841; --slate:#5C6D78; --mute:#8998A2;
+  --paper:#FFFFFF; --surface:#F4F6F7; --surface-2:#EDF0F1; --rule:#D6DCDF;
+  --rust:#A8481F; --rust-soft:#F2E4DD; --rust-ink:#7E340F;
+  --amber:#9A6508; --amber-soft:#F6ECD8;
+  --serif:Georgia,Cambria,"Times New Roman",serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--surface);font-size:15px;line-height:1.55}
+button{font-family:inherit;cursor:pointer}
+input,textarea{font-family:inherit;font-size:14px;color:inherit}
+.top{background:var(--ink);color:#fff;padding:13px 20px}
+.top b{font-family:var(--serif);font-size:16px;display:block;line-height:1.2}
+.top span{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#93A2AB}
+.wrap{max-width:820px;margin:0 auto;padding:24px 20px 70px}
+h1{font-family:var(--serif);font-size:27px;font-weight:400;margin:0 0 6px;line-height:1.2}
+.lede{font-size:14px;color:var(--slate);margin:0 0 20px}
+.lab{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--rust-ink);font-weight:700;margin-bottom:8px}
+.card{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:16px 18px;margin:0 0 18px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fld label{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--slate);font-weight:700;margin-bottom:4px}
+.fld input,.fld textarea{width:100%;padding:7px 9px;border:1px solid var(--rule);border-radius:4px;background:var(--paper)}
+.fld input:focus,.fld textarea:focus{outline:2px solid var(--rust);outline-offset:1px}
+.rowf{display:flex;gap:7px;align-items:center;margin-bottom:7px}
+.rowf .tag{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--mute);min-width:20px}
+.x{border:1px solid var(--rule);background:var(--paper);color:var(--slate);border-radius:4px;width:30px;height:31px;font-size:16px;line-height:1;flex:none}
+.x:hover{border-color:var(--rust);color:var(--rust)}
+.btn.sm{padding:5px 11px;font-size:12.5px}
+.pathnow{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin-bottom:14px;font-size:13px;color:var(--slate)}
+.pathnow b{color:var(--ink);font-weight:600}
+
+/* ---- the tree ---- */
+#tree{position:relative;padding-left:30px}
+#tree:before{content:"";position:absolute;left:8px;top:10px;bottom:26px;width:2px;background:var(--rule)}
+.node{position:relative;margin-bottom:6px}
+.node:before{content:"";position:absolute;left:-26px;top:13px;width:14px;height:2px;background:var(--rule)}
+.node:after{content:"";position:absolute;left:-30px;top:8px;width:11px;height:11px;border-radius:50%;
+  background:var(--paper);border:2px solid var(--rule)}
+.node.done:after{background:var(--slate);border-color:var(--slate)}
+.node.fired:after{background:var(--rust);border-color:var(--rust)}
+.node.here:after{background:var(--paper);border-color:var(--rust);box-shadow:0 0 0 3px var(--rust-soft)}
+.node.hold:after{background:var(--amber);border-color:var(--amber)}
+
+.node .row{display:flex;gap:10px;align-items:baseline;padding:5px 0;font-size:13.5px;color:var(--mute)}
+.node .g{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--mute);min-width:28px}
+.node.done .row,.node.fired .row,.node.hold .row{color:var(--ink-2)}
+.node.done .g,.node.fired .g,.node.hold .g{color:var(--rust-ink)}
+.node .ans{margin-left:auto;font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;padding:2px 7px;border-radius:3px;background:var(--surface-2);color:var(--slate);white-space:nowrap;cursor:pointer;border:1px solid var(--rule)}
+.node.fired .ans{background:var(--rust-soft);color:var(--rust-ink);border-color:#E3CCC2}
+.node.hold .ans{background:var(--amber-soft);color:var(--amber);border-color:#E4D3AF}
+.node .ans:hover{border-color:var(--slate)}
+
+.node.here{background:var(--paper);border:1px solid var(--rule);border-left:3px solid var(--rust);
+  border-radius:0 6px 6px 0;padding:14px 16px;margin:10px 0 12px -3px}
+.node.here:before{top:22px}
+.node.here:after{top:17px}
+.node.here .row{padding:0;font-size:16px;color:var(--ink);display:block}
+.node.here .g{display:block;margin-bottom:5px;font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--rust-ink)}
+.node.here .qt{font-family:var(--serif);font-size:19px;line-height:1.3;display:block}
+.node.here .why{font-size:13px;color:var(--slate);margin:7px 0 0}
+.branch{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.branch button{border:1px solid var(--rule);background:var(--paper);color:var(--ink);border-radius:4px;
+  padding:8px 15px;font-size:13.5px;font-weight:600}
+.branch button:hover{background:var(--surface);border-color:var(--slate)}
+.branch button:focus-visible{outline:2px solid var(--rust);outline-offset:2px}
+.branch button.stop{border-style:dashed;color:var(--slate)}
+.branch button.cur{border-color:var(--rust);background:var(--rust-soft);color:var(--rust-ink)}
+.branch button.cur:after{content:" \2713"}
+.nav{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-top:11px}
+.lnk{border:0;background:none;padding:2px 0;font-size:13px;font-weight:600;color:var(--slate);
+  text-decoration:underline;text-underline-offset:3px}
+.lnk:hover{color:var(--rust)}
+.lnk:focus-visible{outline:2px solid var(--rust);outline-offset:2px;border-radius:3px}
+.leaf h2:focus{outline:none}
+.node.pending{opacity:.55}
+.node.scope:after{border-style:dashed}
+
+.leaf{margin-top:6px;position:relative}
+.leaf:after{content:"";position:absolute;left:-30px;top:8px;width:11px;height:11px;border-radius:50%;
+  background:var(--paper);border:2px solid var(--rule)}
+.leaf.on:after{background:var(--rust);border-color:var(--rust)}
+.leaf.on.hold:after{background:var(--amber);border-color:var(--amber)}
+.leaf:before{content:"";position:absolute;left:-26px;top:13px;width:14px;height:2px;background:var(--rule)}
+.leaf .box{border:1px solid var(--rule);border-radius:6px;background:var(--paper);padding:14px 16px}
+.leaf.on .box{border-left:3px solid var(--rust);margin-left:-3px}
+.leaf.on.hold .box{border-left-color:var(--amber)}
+.leaf h2{font-family:var(--serif);font-size:20px;font-weight:400;margin:0 0 4px}
+.leaf p{margin:0;font-size:13.5px;color:var(--slate)}
+.leaf ul{margin:10px 0 0;padding-left:18px}
+.leaf li{font-size:13px;color:var(--ink-2);margin-bottom:4px}
+.crit{display:block;margin-top:6px}
+.crit label{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--ink-2);padding:4px 0;line-height:1.4;cursor:pointer}
+.crit label:hover{color:var(--ink)}
+.crit input{margin:3px 0 0;flex:none}
+.crit .ck{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--rust-ink);min-width:20px}
+#critmsg{font-size:12.5px;color:var(--rust-ink);margin-top:6px;min-height:1px}
+.pathnote{font-size:12.5px;color:var(--slate);border-left:3px solid var(--rule);padding:2px 0 2px 10px;margin:0 0 12px}
+.warn{background:var(--amber-soft);border:1px solid #E4D3AF;border-radius:5px;padding:11px 13px;margin-top:12px;font-size:13px;color:var(--ink-2)}
+.warn ul{margin:6px 0 0}
+.btnrow{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:14px}
+.btn{border:1px solid var(--rule);background:var(--paper);color:var(--ink);border-radius:4px;padding:9px 16px;font-size:13.5px;font-weight:600}
+.btn:hover{background:var(--surface)}
+.btn:focus-visible{outline:2px solid var(--rust);outline-offset:2px}
+.btn.pri{background:var(--rust);border-color:var(--rust);color:#fff}
+.btn.pri:hover{background:var(--rust-ink)}
+.btn.gh{background:transparent;color:var(--slate)}
+#msg,#msg2{font-size:12.5px;color:var(--slate)}
+h2.sect{font-family:var(--serif);font-size:19px;font-weight:400;margin:30px 0 10px}
+h2.sect.gn{margin:16px 0 10px}
+hr.bar{border:0;border-top:2px solid var(--ink-2);margin:34px 0 0}
+table.ref{border-collapse:collapse;width:100%;font-size:13.5px}
+table.ref td{padding:7px 10px;border-top:1px solid var(--rule);color:var(--ink-2);vertical-align:top}
+table.ref td.k{font-family:var(--mono);font-size:12px;color:var(--rust-ink);font-weight:700;width:38px}
+.small{font-size:12.5px;color:var(--slate)}
+.foot{font-size:12.5px;color:var(--slate);border-top:1px solid var(--rule);padding-top:14px;margin-top:26px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media(max-width:680px){.grid{grid-template-columns:1fr}.node .ans{margin-left:0}}
+@media print{.top,.branch,.btnrow,.nav,.lnk,#msg,#msg2,#pathpick,.x,#additem,#addinst{display:none}body{background:#fff;font-size:11pt}.node.pending{display:none}}
+
+/* shared additions for generated tools */
+.pull{font-family:var(--serif);font-size:15px;font-style:italic;color:var(--ink-2);border-left:3px solid var(--rust);padding-left:12px;margin:14px 0;max-width:62ch}
+#app{display:contents}
+
+/* per-item criteria grid */
+.cmx-wrap{overflow-x:auto;margin-top:4px}
+table.cmx{border-collapse:collapse;width:100%;font-size:13px}
+table.cmx th,table.cmx td{border-top:1px solid var(--rule);padding:6px 6px;vertical-align:top}
+table.cmx thead th{border-top:0;font-family:var(--mono);font-size:11px;font-weight:700;color:var(--rust-ink);text-align:center;width:34px}
+table.cmx thead th:first-child{width:auto}
+table.cmx tbody th{text-align:left;font-weight:400;color:var(--ink-2);line-height:1.4}
+table.cmx tbody th .ck{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--rust-ink);margin-right:4px}
+table.cmx td{text-align:center}
+table.cmx td input{margin:2px 0 0;width:16px;height:16px;cursor:pointer}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;color:var(--slate);margin:8px 0 2px}
+.legend b{font-family:var(--mono);font-size:11px;color:var(--rust-ink);margin-right:3px}
+#critstat{margin:2px 0 0}
+.leaf ul.sub{margin:4px 0 6px;padding-left:16px}
+
+</style>
+</head>
+<body>
+<div id="app"></div>
+<!-- The tool definition. The builder reads this block to reopen the tool for editing. -->
+<script type="application/json" id="tool-def">
+{
+ "builder": "tree",
+ "version": 1,
+ "tool": {
+  "id": "same-ci-or-separate-cis",
+  "rev": "D",
+  "build": "2026-10-27",
+  "exportName": "ci-number-decision-tool_RevD_DRAFT",
+  "pageTitle": "Same CI or Separate CIs",
+  "barTitle": "Same CI or Separate CIs",
+  "barSub": "Configuration Management · Rev D draft · build 2026-10-27",
+  "h1": "One CI identifier, or more than one?",
+  "lede": "Every trigger runs. Any one of them separates on its own, so the record lists all of them.",
+  "scriptCheck": "If this line is still showing, the page script did not run. Open the browser console and check the build stamp in the header bar against the build you expect.",
+  "docTitle": "Same CI or Separate CIs",
+  "docSub": "Attach to the CI selection criteria checklist for each item. The separation drivers below are the rationale entry for that checklist.",
+  "textTitle": "SAME CI OR SEPARATE CIs",
+  "fileStem": "CI-Number-Assessment"
+ },
+ "paths": [
+  {
+   "id": "A",
+   "label": "Two or more items compared",
+   "note": "",
+   "pinLabel": "",
+   "pinShort": "",
+   "listLabel": "Items compared",
+   "itemName": "Item",
+   "countLabel": "Items"
+  },
+  {
+   "id": "B",
+   "label": "One PIN in more than one place",
+   "note": "Compare the item instances and their next-higher items (installed position) together, not the items alone.",
+   "pinLabel": "Part or Identifying Number",
+   "pinShort": "PIN",
+   "listLabel": "Item instances",
+   "itemName": "Item instance",
+   "countLabel": "Items"
+  }
+ ],
+ "alt": {
+  "label": "Software wording",
+  "when": [
+   [
+    {
+     "s": "a:P2",
+     "o": "is",
+     "v": "yes"
+    }
+   ]
+  ]
+ },
+ "nodes": [
+  {
+   "g": "C1",
+   "paths": [
+    "A"
+   ],
+   "kind": "context",
+   "short": "Current CI designation",
+   "q": "Are these items already designated as a CI?",
+   "why": "The answer decides whether the verdict is a first designation as a CI, a split, or a consolidation.",
+   "opts": [
+    {
+     "v": "none",
+     "l": "Not yet",
+     "stop": ""
+    },
+    {
+     "v": "one",
+     "l": "One CI today",
+     "stop": ""
+    },
+    {
+     "v": "separate",
+     "l": "Separate today",
+     "stop": ""
+    }
+   ],
+   "fire": "",
+   "driver": "",
+   "holdValue": "",
+   "holdText": "",
+   "when": [],
+   "crit": false,
+   "critRequire": "",
+   "critClear": "",
+   "critMsg": "",
+   "qualValue": "",
+   "qualLabel": "",
+   "qualText": "",
+   "itemPick": "",
+   "itemPickLabel": "",
+   "itemPickMsg": "",
+   "reframe": "",
+   "reframeLabel": "",
+   "reframeHelp": "",
+   "reframeMsg": ""
+  },
+  {
+   "g": "C1",
+   "paths": [
+    "B"
+   ],
+   "kind": "context",
+   "short": "Current CI designation",
+   "q": "Are these item instances already designated as a CI?",
+   "why": "The answer decides whether the verdict is a first designation as a CI, a split, or a consolidation.",
+   "opts": [
+    {
+     "v": "none",
+     "l": "Not yet",
+     "stop": ""
+    },
+    {
+     "v": "one",
+     "l": "One CI today",
+     "stop": ""
+    },
+    {
+     "v": "separate",
+     "l": "Separate today",
+     "stop": ""
+    }
+   ],
+   "fire": "",
+   "driver": "",
+   "holdValue": "",
+   "holdText": "",
+   "when": [],
+   "crit": false,
+   "critRequire": "",
+   "critClear": "",
+   "critMsg": "",
+   "qualValue": "",
+   "qualLabel": "",
+   "qualText": "",
+   "itemPick": "",
+   "itemPickLabel": "",
+   "itemPickMsg": "",
+   "reframe": "",
+   "reframeLabel": "",
+   "reframeHelp": "",
+   "reframeMsg": ""
+  },
+  {
+   "g": "P1",
+   "paths": [
+    "A"
+   ],
+   "kind": "scope",
+   "short": "Procurement level",
+   "q": "Is any item inside a larger item procured as a unit from its designing supplier?",
+   "why": "Where the supplier holds the design and the company procures the item as a unit, the procured item is the CI. Answer yes and enter the procured-level name for each item it affects. The record keeps the original beside the new one. This is a scope check. It does not end the assessment.",
+   "opts": [
+    {
+     "v": "no",
+     "l": "No",
+     "stop": ""
+    },
+    {
+     "v": "yes",
+     "l": "Yes, re-framed below",
+     "stop": ""
+    }
+   ],
+   "fire": "",
+   "driver": "",
+   "holdValue": "",
+   "holdText": "",
+   "when": [],
+   "crit": false,
+   "critRequire": "",
+   "critClear": "",
+   "critMsg": "",
+   "qualValue": "",
+   "qualLabel": "",
+   "qualText": "",
+   "itemPick": "",
+   "itemPickLabel": "",
+   "itemPickMsg": "",
+   "reframe": "yes",
+   "reframeLabel": "Procured-level names",
+   "reframeHelp": "Fill in only what changes. A blank keeps the entry as typed above.",
+   "reframeMsg": "Enter at least one procured-level entry before answering yes."
+  },
+  {
+   "g": "P1",
+   "paths": [
+    "B"
+   ],
+   "kind": "scope",
+   "short": "Procurement level",
+   "q": "Is the part inside a larger item procured as a unit from its designing supplier?",
+   "why": "Where the supplier holds the design and the company procures the item as a unit, the procured item is the CI. Answer yes and enter the procured-level PIN and the procured-level name for each item instance it affects. The record keeps the original beside the new one. This is a scope check. It does not end the assessment.",
+   "opts": [
+    {
+     "v": "no",
+     "l": "No",
+     "stop": ""
+    },
+    {
+     "v": "yes",
+     "l": "Yes, re-framed below",
+     "stop": ""
+    }
+   ],
+   "fire": "",
+   "driver": "",
+   "holdValue": "",
+   "holdText": "",
+   "when": [],
+   "crit": false,
+   "critRequire": "",
+   "critClear": "",
+   "critMsg": "",
+   "qualValue": "",
+   "qualLabel": "",
+   "qualText": "",
+   "itemPick": "",
+   "itemPickLabel": "",
+   "itemPickMsg": "",
+   "reframe": "yes",
+   "reframeLabel": "Procured-level PIN and names",
+   "reframeHelp": "Fill in only what changes. A blank keeps the entry as typed above.",
+   "reframeMsg": "Enter at least one procured-level entry before answering yes."
+  },
+  {
+   "g": "P2",
+   "paths": [],
+   "kind": "scope",
+   "short": "Software",
+   "q": "Is this assessment about computer software?",
+   "why": "Computer software is designated as a CSCI by rule. Answer yes and the record reads version identifier for PIN, and build or load for variant.",
+   "opts": [
+    {
+     "v": "no",
+     "l": "No",
+     "stop": ""
+    },
+    {
+     "v": "yes",
+     "l": "Yes",
+     "stop": ""
+    }
+   ],
+   "fire": "",
+   "driver": "",
+   "holdValue": "",
+   "holdText": "",
+   "when": [],
+   "crit": false,
+   "critRequire": "",
+   "critClear": "",
+   "critMsg": "",
+   "qualValue": "",
+   "qualLabel": "",
+   "qualText": "",
+   "itemPick": "",
+   "itemPickLabel": "",
+   "itemPickMsg": "",
+   "reframe": "",
+   "reframeLabel": "",
+   "reframeHelp": "",
+   "reframeMsg": ""
+  },
+  {
+   "g": "Q1",
+   "paths": [
+    "A"
+   ],
+   "kind": "qualify",
+   "short": "End-use function",
+   "q": "Does each item satisfy a system end-use function?",
+   "why": "If an item fails, tick it below before you answer.",
+   "opts": [
+    {
+     "v": "yes",
+     "l": "Yes, each one",
+     "stop": ""
+    },
+    {
+     "v": "no",
+     "l": "At least one does not",
+     "stop": "not-candidates"
+    }
+   ],
+   "fire": "",
+   "driver": "",
+   "holdValue": "",
+   "holdText": "",
+   "when": [],
+   "crit": false,
+   "critRequire": "",
+   "critClear": "",
+   "critMsg": "",
+   "qualValue": "yes",
+   "qualLabel": "Gate",
+   "qualText": "Satisfies a system end-use function",
+   "itemPick": "no",
+   "itemPickLabel": "Items with no system end-use function",
+   "itemPickMsg": "Tick each item that has no system end-use function, then answer.",
+   "reframe": "",
+   "reframeLabel": "",
+   "reframeHelp": "",
+   "reframeMsg": ""
+  },
+  {
+   "g": "Q1",
+   "paths": [
+    "B"
+   ],
+   "kind": "qualify",
+   "short": "End-use function",
+   "q": "Does each item instance satisfy a system end-use function?",
+   "why": "If an item instance fails, tick it below before you answer.",
+   "opts": [
+    {
+     "v": "yes",
+     "l": "Yes, each one",
+     "stop": ""
+    },
+    {
+     "v": "no",
+     "l": "At least one does not",
+     "stop": "not-candidates"
+    }
+   ],
+   "fire": "",
+   "driver": "",
+   "holdValue": "",
+   "holdText": "",
+   "when": [],
+   "crit": false,
+   "critRequire": "",
+   "critClear": "",
+   "critMsg": "",
+   "qualValue": "yes",
+   "qualLabel": "Gate",
+   "qualText": "Satisfies a system end-use function",
+   "itemPick": "no",
+   "itemPickLabel": "Item instances with no system end-use function",
+   "itemPickMsg": "Tick each item instance that has no system end-use function, then answer.",
+   "reframe": "",
+   "reframeLabel": "",
+   "reframeHelp": "",
+   "reframeMsg": ""
+  },
+  {
+   "g": "Q2",
+   "paths": [
+    "A"
+   ],
+   "kind": "qualify",
+   "short": "CI qualification",
+   "q": "Does each item meet at least one CI selection criterion?",
+   "why": "Run the selection criteria screen on each one. Tick every criterion that applies to each item, not just the first. The designation survives if one underlying fact later changes. An item with no tick fails.",
+   "opts": [
+    {
+     "v": "yes",
+     "l": "Yes, each one",
+     "stop": ""
+    },
+    {
+     "v": "no",
+     "l": "At least one does not",
+     "stop": "parts-only"
+    }
+   ],
+   "fire": "",
+   "driver": "",
+   "holdValue": "",
+   "holdText": "",
+   "when": [],
+   "crit": true,
+   "critRequire": "yes",
+   "critClear": "",
+   "critMsg": "Tick at least one criterion for every item before answering yes.",
+   "qualValue": "",
+   "qualLabel": "",
+   "qualText": "",
+   "itemPick": "no",
+   "itemPickLabel": "",
+   "itemPickMsg": "Every item has a criterion ticked. An item that fails has no ticks. Clear them, then answer.",
+   "reframe": "",
+   "reframeLabel": "",
+   "reframeHelp": "",
+   "reframeMsg": ""
+  },
+  {
+   "g": "Q2",
+   "paths": [
+    "B"
+   ],
+   "kind": "qualify",
+   "short": "CI qualification",
+   "q": "Does each item instance meet at least one CI selection criterion?",
+   "why": "Run the selection criteria screen on each one. Tick every criterion that applies to each item instance, not just the first. The designation survives if one underlying fact later changes. An item instance with no tick fails.",
+   "opts": [
+    {
+     "v": "yes",
+     "l": "Yes, each one",
+     "stop": ""
+    },
+    {
+     "v": "no",
+     "l": "At least one does not",
+     "stop": "parts-only"
+    }
+   ],
+   "fire": "",
+   "driver": "",
+   "holdValue": "",
+   "holdText": "",
+   "when": [],
+   "crit": true,
+   "critRequire": "yes",
+   "critClear": "",
+   "critMsg": "Tick at least one criterion for every item instance before answering yes.",
+   "qualValue": "",
+   "qualLabel": "",
+   "qualText": "",
+   "itemPick": "no",
+   "itemPickLabel": "",
+   "itemPickMsg": "Every item instance has a criterion ticked. An item instance that fails has no ticks. Clear them, then answer.",
+   "reframe": "",
+   "reframeLabel": "",
+   "reframeHelp": "",
+   "reframeMsg": ""
+  },
+  {
+   "g": "B1",
+   "paths": [
+    "B"
+   ],
+   "kind": "trigger",
+   "short": "Function",
+   "q": "Does each item instance satisfy a different end-use function?",
+   "why": "",
+   "opts": [
+    {
+     "v": "yes",
+     "l": "Yes",
+     "stop": ""
+    },
+    {
+     "v": "no",
+     "l": "No",
+     "stop": ""
+    }
+   ],
+   "fire": "yes",
+   "driver": "The item instances satisfy different end-use functions.",
+   "holdValue": "",
+   "holdText": "",
+   "when": [],
+   "crit": false,
+   "critRequire": "",
+   "critClear": "",
+   "critMsg": "",
+   "qualValue": "",
+   "qualLabel": "",
+   "qualText": "",
+   "itemPick": "",
+   "itemPickLabel": "",
+   "itemPickMsg": "",
+   "reframe": "",
+   "reframeLabel": "",
+   "reframeHelp": "",
+   "reframeMsg": ""
+  },
+  {
+   "g": "B2",
+   "paths": [
+    "B"
+   ],
+   "kind": "trigger",
+   "short": "Hierarchy",
+   "q": "Does each item instance sit under a different parent in the system or sub-system hierarchy?",
+   "why": "Where MBSE is used, answer from the model.",
+   "opts": [
+    {
+     "v": "yes",
+     "l": "Yes",
+     "stop": ""
+    },
+    {
+     "v": "no",
+     "l": "No",
+     "stop": ""
+    }
+   ],
+   "fire": "yes",
+   "driver": "The item instances sit under different parents in the system or sub-system hierarchy.",
+   "holdValue": "",
+   "holdText": "",
+   "when": [],
+   "crit": false,
+   "critRequire": "",
+   "critClear": "",
+   "critMsg": "",
+   "qualValue": "",
+   "qualLabel": "",
+   "qualText": "",
+   "itemPick": "",
+   "itemPickLabel": "",
+   "itemPickMsg": "",
+   "reframe": "",
+   "reframeLabel": "",
+   "reframeHelp": "",
+   "reframeMsg": ""
+  },
+  {
+   "g": "B3",
+   "paths": [
+    "B"
+   ],
+   "kind": "trigger",
+   "short": "Change or maintenance effectivity",
+   "q": "Does each item instance need its own change or maintenance effectivity address?",
+   "why": "Examples: cut-in time, separate next higher assembly, separate end item, maintenance or replacement intervals.",
+   "opts": [
+    {
+     "v": "yes",
+     "l": "Yes",
+     "stop": ""
+    },
+    {
+     "v": "no",
+     "l": "No",
+     "stop": ""
+    }
+   ],
+   "fire": "yes",
+   "driver": "Each item instance needs its own change or maintenance effectivity address.",
+   "holdValue": "",
+   "holdText": "",
+   "when": [],
+   "crit": false,
+   "critRequire": "",
+   "critClear": "",
+   "critMsg": "",
+   "qualValue": "",
+   "qualLabel": "",
+   "qualText": "",
+   "itemPick": "",
+   "itemPickLabel": "",
+   "itemPickMsg": "",
+   "reframe": "",
+   "reframeLabel": "",
+   "reframeHelp": "",
+   "reframeMsg": ""
+  },
+  {
+   "g": "B4",
+   "paths": [
+    "B"
+   ],
+   "kind": "trigger",
+   "short": "Safety",
+   "q": "Is one item instance safety-critical when another is not?",
+   "why": "Answer from the safety management system. Do not re-determine the consequence here.",
+   "opts": [
+    {
+     "v": "yes",
+     "l": "Yes",
+     "stop": ""
+    },
+    {
+     "v": "no",
+     "l": "No",
+     "stop": ""
+    }
+   ],
+   "fire": "yes",
+   "driver": "One item instance is safety-critical and another is not.",
+   "holdValue": "",
+   "holdText": "",
+   "when": [],
+   "crit": false,
+   "critRequire": "",
+   "critClear": "",
+   "critMsg": "",
+   "qualValue": "",
+   "qualLabel": "",
+   "qualText": "",
+   "itemPick": "",
+   "itemPickLabel": "",
+   "itemPickMsg": "",
+   "reframe": "",
+   "reframeLabel": "",
+   "reframeHelp": "",
+   "reframeMsg": ""
+  },
+  {
+   "g": "S1",
+   "paths": [
+    "A"
+   ],
+   "kind": "trigger",
+   "short": "Function",
+   "q": "Do the items perform different end-use functions?",
+   "why": "",
+   "opts": [
+    {
+     "v": "yes",
+     "l": "Yes",
+     "stop": ""
+    },
+    {
+     "v": "no",
+     "l": "No",
+     "stop": ""
+    }
+   ],
+   "fire": "yes",
+   "driver": "The items perform different end-use functions. The CI identifier follows function.",
+   "holdValue": "",
+   "holdText": "",
+   "when": [],
+   "crit": false,
+   "critRequire": "",
+   "critClear": "",
+   "critMsg": "",
+   "qualValue": "",
+   "qualLabel": "",
+   "qualText": "",
+   "itemPick": "",
+   "itemPickLabel": "",
+   "itemPickMsg": "",
+   "reframe": "",
+   "reframeLabel": "",
+   "reframeHelp": "",
+   "reframeMsg": ""
+  },
+  {
+   "g": "S2",
+   "paths": [
+    "A"
+   ],
+   "kind": "trigger",
+   "short": "Hierarchy",
+   "q": "Do the items sit under different parents in the system or sub-system hierarchy?",
+   "why": "Where MBSE is used, answer from the model.",
+   "opts": [
+    {
+     "v": "yes",
+     "l": "Yes",
+     "stop": ""
+    },
+    {
+     "v": "no",
+     "l": "No",
+     "stop": ""
+    }
+   ],
+   "fire": "yes",
+   "driver": "The items sit under different parents in the system or sub-system hierarchy.",
+   "holdValue": "",
+   "holdText": "",
+   "when": [],
+   "crit": false,
+   "critRequire": "",
+   "critClear": "",
+   "critMsg": "",
+   "qualValue": "",
+   "qualLabel": "",
+   "qualText": "",
+   "itemPick": "",
+   "itemPickLabel": "",
+   "itemPickMsg": "",
+   "reframe": "",
+   "reframeLabel": "",
+   "reframeHelp": "",
+   "reframeMsg": ""
+  },
+  {
+   "g": "S3",
+   "paths": [
+    "A"
+   ],
+   "kind": "trigger",
+   "short": "Safety",
+   "q": "Is any one of the items safety-critical?",
+   "why": "Answer from the safety management system. Do not re-determine the consequence here. One is enough. Do not wait for all of them to be.",
+   "opts": [
+    {
+     "v": "yes",
+     "l": "Yes",
+     "stop": ""
+    },
+    {
+     "v": "no",
+     "l": "None of them",
+     "stop": ""
+    }
+   ],
+   "fire": "yes",
+   "driver": "At least one item is safety-critical. Each one needs distinct hazard traceability and its own effectivity address for safety-driven changes.",
+   "holdValue": "",
+   "holdText": "",
+   "when": [],
+   "crit": false,
+   "critRequire": "",
+   "critClear": "",
+   "critMsg": "",
+   "qualValue": "",
+   "qualLabel": "",
+   "qualText": "",
+   "itemPick": "",
+   "itemPickLabel": "",
+   "itemPickMsg": "",
+   "reframe": "",
+   "reframeLabel": "",
+   "reframeHelp": "",
+   "reframeMsg": ""
+  },
+  {
+   "g": "S4",
+   "paths": [
+    "A"
+   ],
+   "kind": "trigger",
+   "short": "One specification",
+   "q": "Does any item have or need its own specification for performance or for interfaces?",
+   "why": "Appearing on the same ICD is not evidence of a common interface. Where the ICD calls out separate interfaces for each item, analyze that before you answer no.",
+   "opts": [
+    {
+     "v": "yes",
+     "l": "Yes",
+     "stop": ""
+    },
+    {
+     "v": "no",
+     "l": "No",
+     "stop": ""
+    },
+    {
+     "v": "unknown",
+     "l": "Not established",
+     "stop": ""
+    }
+   ],
+   "fire": "yes",
+   "driver": "At least one item has or needs its own specification for performance or for interfaces.",
+   "holdValue": "unknown",
+   "holdText": "Whether one specification covers performance and interfaces for all variants. The interface callouts need analysis.",
+   "when": [],
+   "crit": false,
+   "critRequire": "",
+   "critClear": "",
+   "critMsg": "",
+   "qualValue": "",
+   "qualLabel": "",
+   "qualText": "",
+   "itemPick": "",
+   "itemPickLabel": "",
+   "itemPickMsg": "",
+   "reframe": "",
+   "reframeLabel": "",
+   "reframeHelp": "",
+   "reframeMsg": ""
+  },
+  {
+   "g": "S5",
+   "paths": [
+    "A"
+   ],
+   "kind": "trigger",
+   "short": "Verification",
+   "q": "Do the items have or need different verification requirements or different verification plans?",
+   "why": "The verification picture is often unknown early. It is frequently the deciding fact. Obtain it before deciding.",
+   "opts": [
+    {
+     "v": "yes",
+     "l": "Yes",
+     "stop": ""
+    },
+    {
+     "v": "no",
+     "l": "No",
+     "stop": ""
+    },
+    {
+     "v": "unknown",
+     "l": "Not established",
+     "stop": ""
+    }
+   ],
+   "fire": "yes",
+   "driver": "Verification requirements or verification plans differ.",
+   "holdValue": "unknown",
+   "holdText": "The verification requirements and the verification plan for each item.",
+   "when": [],
+   "crit": false,
+   "critRequire": "",
+   "critClear": "",
+   "critMsg": "",
+   "qualValue": "",
+   "qualLabel": "",
+   "qualText": "",
+   "itemPick": "",
+   "itemPickLabel": "",
+   "itemPickMsg": "",
+   "reframe": "",
+   "reframeLabel": "",
+   "reframeHelp": "",
+   "reframeMsg": ""
+  },
+  {
+   "g": "S6",
+   "paths": [
+    "A"
+   ],
+   "kind": "trigger",
+   "short": "Change or maintenance effectivity",
+   "q": "Will changes to any one item routinely need its own change or maintenance effectivity address?",
+   "why": "Examples: cut-in time, separate next higher assembly, separate end item, maintenance or replacement intervals. Where changes or maintenance tasking normally apply across the family, one CI is sufficient. An influencing part fails the safety criterion by its own definition and still needs its own effectivity address. The approved lifing basis of the part it governs depends on its configuration. S3 will not catch it. S6 will.",
+   "opts": [
+    {
+     "v": "yes",
+     "l": "Yes",
+     "stop": ""
+    },
+    {
+     "v": "no",
+     "l": "No",
+     "stop": ""
+    }
+   ],
+   "fire": "yes",
+   "driver": "Changes to at least one item routinely need their own change or maintenance effectivity address.",
+   "holdValue": "",
+   "holdText": "",
+   "when": [],
+   "crit": false,
+   "critRequire": "",
+   "critClear": "",
+   "critMsg": "",
+   "qualValue": "",
+   "qualLabel": "",
+   "qualText": "",
+   "itemPick": "",
+   "itemPickLabel": "",
+   "itemPickMsg": "",
+   "reframe": "",
+   "reframeLabel": "",
+   "reframeHelp": "",
+   "reframeMsg": ""
+  },
+  {
+   "g": "S7",
+   "paths": [
+    "A"
+   ],
+   "kind": "trigger",
+   "short": "External drivers",
+   "q": "Does Acquirer direction, nomenclature, or logistics force separation?",
+   "why": "",
+   "opts": [
+    {
+     "v": "yes",
+     "l": "Yes",
+     "stop": ""
+    },
+    {
+     "v": "no",
+     "l": "No",
+     "stop": ""
+    }
+   ],
+   "fire": "yes",
+   "driver": "Acquirer direction, nomenclature, or logistics forces separation.",
+   "holdValue": "",
+   "holdText": "",
+   "when": [],
+   "crit": false,
+   "critRequire": "",
+   "critClear": "",
+   "critMsg": "",
+   "qualValue": "",
+   "qualLabel": "",
+   "qualText": "",
+   "itemPick": "",
+   "itemPickLabel": "",
+   "itemPickMsg": "",
+   "reframe": "",
+   "reframeLabel": "",
+   "reframeHelp": "",
+   "reframeMsg": ""
+  },
+  {
+   "g": "M1",
+   "paths": [],
+   "kind": "model",
+   "short": "MBSE in use",
+   "q": "Is MBSE used on this program?",
+   "why": "",
+   "opts": [
+    {
+     "v": "no",
+     "l": "No",
+     "stop": ""
+    },
+    {
+     "v": "yes",
+     "l": "Yes",
+     "stop": ""
+    }
+   ],
+   "fire": "",
+   "driver": "",
+   "holdValue": "",
+   "holdText": "",
+   "when": [
+    [
+     {
+      "s": "cnt:holds",
+      "o": "eq",
+      "v": "0"
+     }
+    ]
+   ],
+   "crit": false,
+   "critRequire": "",
+   "critClear": "",
+   "critMsg": "",
+   "qualValue": "",
+   "qualLabel": "",
+   "qualText": "",
+   "itemPick": "",
+   "itemPickLabel": "",
+   "itemPickMsg": "",
+   "reframe": "",
+   "reframeLabel": "",
+   "reframeHelp": "",
+   "reframeMsg": ""
+  },
+  {
+   "g": "M2",
+   "paths": [],
+   "kind": "model",
+   "short": "Model agreement",
+   "q": "Screen verdict: {provisional}. Does this verdict match the current MBSE model representation?",
+   "why": "The screen verdict comes from the gates above, before the model check. Every verdict passes this check. A separation verdict passes it too. The model informs this decision. It does not decide it. A mismatch does not make either view wrong.",
+   "opts": [
+    {
+     "v": "yes",
+     "l": "Yes",
+     "stop": ""
+    },
+    {
+     "v": "no",
+     "l": "No",
+     "stop": ""
+    }
+   ],
+   "fire": "",
+   "driver": "",
+   "holdValue": "no",
+   "holdText": "",
+   "when": [
+    [
+     {
+      "s": "cnt:holds",
+      "o": "eq",
+      "v": "0"
+     },
+     {
+      "s": "a:M1",
+      "o": "is",
+      "v": "yes"
+     }
+    ]
+   ],
+   "crit": false,
+   "critRequire": "",
+   "critClear": "",
+   "critMsg": "",
+   "qualValue": "",
+   "qualLabel": "",
+   "qualText": "",
+   "itemPick": "",
+   "itemPickLabel": "",
+   "itemPickMsg": "",
+   "reframe": "",
+   "reframeLabel": "",
+   "reframeHelp": "",
+   "reframeMsg": ""
+  }
+ ],
+ "criteria": {
+  "pickLabel": "Criteria met. Tick every one that applies to each item.",
+  "items": [
+   {
+    "k": "a",
+    "label": "Critical to the functioning of the system"
+   },
+   {
+    "k": "b",
+    "label": "Failure might result in serious injury, loss of life, or loss of primary system capability."
+   },
+   {
+    "k": "c",
+    "label": "Technology is complex, not well known, and critical to acquisition, operational, or supportability goals"
+   },
+   {
+    "k": "d",
+    "label": "The item is under control as designated by the Acquirer"
+   },
+   {
+    "k": "e",
+    "label": "Requires separate type designation, versions, or nomenclatures"
+   },
+   {
+    "k": "f",
+    "label": "Critical or high risk; failure would have significant financial impact"
+   },
+   {
+    "k": "g",
+    "label": "Requires dedicated logistics support elements (e.g., APL/AEL/ACL provisioning lists, special test equipment, technical manuals, PMS MIP/MRC, danger/caution tag-out)."
+   },
+   {
+    "k": "sw",
+    "label": "Item is computer software"
+   }
+  ]
+ },
+ "leaves": [
+  {
+   "key": "not-candidates",
+   "title": "Not CI candidates",
+   "titleAlt": "",
+   "style": "normal",
+   "desc": "At least one item has no system end-use function. Control it within the parent CI’s configuration documentation.",
+   "descAlt": "",
+   "next": "Name the parent CI for each item that failed\nRecord the decision not to designate as a CI on the CI selection criteria checklist\nRe-run this assessment on any trigger. A variant’s specification, verification, effectivity, or safety classification may diverge later. Each divergence is a trigger.",
+   "nextAlt": "",
+   "rat": "Not assessed. No system end-use function: {failed}.",
+   "ratAlt": ""
+  },
+  {
+   "key": "parts-only",
+   "title": "Parts, not CIs",
+   "titleAlt": "",
+   "style": "normal",
+   "desc": "At least one item meets no selection criterion. Do not designate CIs to solve a part numbering question. The PINs already carry the non-interchangeable differences.",
+   "descAlt": "At least one item meets no selection criterion. The version identifiers already carry the differences between builds.",
+   "next": "Record a rationale for not designating as a CI on the CI selection criteria checklist for every item that failed\nConfirm each one appears in the parent CI’s product structure\nApply the product unit record-structure test to each variant and to its component parts. One CI may contain parts of more than one product unit record structure. The product unit record structure follows that test. It does not follow CI status, and it does not follow this verdict.\nRe-run this assessment on any trigger. A variant’s specification, verification, effectivity, or safety classification may diverge later. Each divergence is a trigger.",
+   "nextAlt": "",
+   "rat": "Not designated as a CI. Meets no selection criterion: {failed}. Controlled as a part under the parent CI.",
+   "ratAlt": ""
+  },
+  {
+   "key": "hold-fact",
+   "title": "Hold. Obtain the missing facts",
+   "titleAlt": "",
+   "style": "hold",
+   "desc": "A trigger could not be answered from what is known today. Deciding without it means deciding twice. Any driver already found still stands.",
+   "descAlt": "",
+   "next": "Name the fact, name who owns it, and ask in writing\nSave this assessment and return when the fact arrives",
+   "nextAlt": "",
+   "rat": "No verdict. Facts outstanding at {holds}.",
+   "ratAlt": ""
+  },
+  {
+   "key": "hold-model",
+   "title": "Hold. Route to Systems Engineering",
+   "titleAlt": "",
+   "style": "hold",
+   "desc": "The screen verdict was {provisional}. It does not match the current MBSE model. Do not record it. Do not designate two CIs against one model element, and do not consolidate two model elements under one CI, before the model is dispositioned. The model informs this decision. It does not decide it. A mismatch may mean only that the architect stopped abstracting at a different level, and it does not make either view wrong.",
+   "descAlt": "",
+   "next": "Raise the discrepancy to Systems Engineering as a model disposition item\nCarry the screen result to SE as engineering evidence for which representation is correct. A variant family can be represented as one logical block with multiple physical realizations, or as sibling blocks. Both are valid SysML.\nWhere SE concurs, the model is corrected. That decomposition change is itself a re-evaluation trigger.\nWhere SE does not concur, the disagreement is an engineering dispute. Resolve it at a technical review.\nSave this assessment and return when the model and the CI structure agree",
+   "nextAlt": "",
+   "rat": "No verdict recorded. The screen verdict, {provisional}, and the MBSE model disagree. Routed to Systems Engineering for model disposition.",
+   "ratAlt": ""
+  },
+  {
+   "key": "separate",
+   "title": "Separate CIs",
+   "titleAlt": "",
+   "style": "normal",
+   "desc": "Each item gets its own CI identifier, its own position in the hierarchy, a determination of its required configuration documentation, its own effectivity address, and its own baseline management.",
+   "descAlt": "",
+   "next": "Record the rationale on the CI selection criteria checklist, citing every driver listed.\nMap each new CI’s interfaces in the interface register. Where the verdict splits an existing CI, re-map every row that landed on the old CI, including its Internal rows, and supersede each old row with its re-mapped row. Ask Systems Engineering whether the new CIs exchange anything no interface source yet defines.\nApply the product unit record-structure test to each variant and to its component parts. One CI may contain parts of more than one product unit record structure. The product unit record structure follows that test. It does not follow CI status, and it does not follow this verdict.\nAssign identifiers to each CI, its component parts, and its configuration documentation\nSubmit for Acquirer concurrence.\nRe-run this assessment on any trigger. A variant’s specification, verification, effectivity, or safety classification may diverge later. Each divergence is a trigger.",
+   "nextAlt": "",
+   "rat": "Separate CIs. {names} separate on {drivers}.",
+   "ratAlt": ""
+  },
+  {
+   "key": "one-ci",
+   "title": "One CI, multiple PIN variants",
+   "titleAlt": "One CSCI, multiple version identifiers",
+   "style": "normal",
+   "desc": "No trigger fires. One CI identifier covers the family. The PINs are carried as variants beneath it.",
+   "descAlt": "No trigger fires. One CSCI identifier covers the family. Each build or load is carried as a version identifier beneath it.",
+   "next": "Record the CI to PIN variant mapping in the CI index\nTabulate the specification by variant, including the interface callouts for each one\nIdentify variant applicability on each interface register row\nApply the product unit record-structure test to each variant and to its component parts. One CI may contain parts of more than one product unit record structure. The product unit record structure follows that test. It does not follow CI status, and it does not follow this verdict.\nRecord the rationale on the CI selection criteria checklist, citing every driver listed.\nSubmit for Acquirer concurrence.\nRe-run this assessment on any trigger. A variant’s specification, verification, effectivity, or safety classification may diverge later. Each divergence is a trigger.",
+   "nextAlt": "Record the CSCI to version identifier mapping in the CI index\nTabulate the specification by version identifier, including the interface callouts for each one\nIdentify version applicability on each interface register row\nApply the product unit record-structure test to each variant and to its component parts. One CI may contain parts of more than one product unit record structure. The product unit record structure follows that test. It does not follow CI status, and it does not follow this verdict.\nRecord the rationale on the CI selection criteria checklist, citing every driver listed.\nSubmit for Acquirer concurrence.\nRe-run this assessment on any trigger. A variant’s specification, verification, effectivity, or safety classification may diverge later. Each divergence is a trigger.",
+   "rat": "One CI. {names} carried as PIN variants beneath one CI.",
+   "ratAlt": "One CSCI. {names} carried as version identifiers beneath one CSCI."
+  },
+  {
+   "key": "separate-b",
+   "title": "Separate CIs against one PIN",
+   "titleAlt": "",
+   "style": "normal",
+   "desc": "The item instances separate. One part number carries more than one CI identifier.",
+   "descAlt": "",
+   "next": "Record the CI identifier against the installed position, not against the part\nConfirm the CSA system supports position-keyed CI identity, and record that confirmation with the rationale\nMap each new CI’s interfaces in the interface register. Where the verdict splits an existing CI, re-map every row that landed on the old CI, including its Internal rows, and supersede each old row with its re-mapped row. Ask Systems Engineering whether the new CIs exchange anything no interface source yet defines.\nApply the product unit record-structure test to each variant and to its component parts. One CI may contain parts of more than one product unit record structure. The product unit record structure follows that test. It does not follow CI status, and it does not follow this verdict.\nRecord the rationale on the CI selection criteria checklist, citing every driver listed.\nSubmit for Acquirer concurrence.\nRe-run this assessment on any trigger. A variant’s specification, verification, effectivity, or safety classification may diverge later. Each divergence is a trigger.",
+   "nextAlt": "",
+   "rat": "Separate CIs against one PIN. PIN {pin} separates across {names} on {drivers}.",
+   "ratAlt": ""
+  },
+  {
+   "key": "one-ci-b",
+   "title": "One CI covers every item instance",
+   "titleAlt": "",
+   "style": "normal",
+   "desc": "No trigger fires. The item instances sit under one CI identifier. The part number and the CI identifier stay aligned.",
+   "descAlt": "",
+   "next": "Record every item instance against the one CI in the CI index\nApply the product unit record-structure test to each variant and to its component parts. One CI may contain parts of more than one product unit record structure. The product unit record structure follows that test. It does not follow CI status, and it does not follow this verdict.\nRecord the rationale on the CI selection criteria checklist, citing every driver listed.\nSubmit for Acquirer concurrence.\nRe-run this assessment on any trigger. A variant’s specification, verification, effectivity, or safety classification may diverge later. Each divergence is a trigger.",
+   "nextAlt": "",
+   "rat": "One CI. PIN {pin} carries one CI identifier across {names}.",
+   "ratAlt": ""
+  }
+ ],
+ "rules": [
+  {
+   "when": [
+    [
+     {
+      "s": "cnt:holds",
+      "o": "gte",
+      "v": "1"
+     }
+    ]
+   ],
+   "leaf": "hold-fact"
+  },
+  {
+   "when": [
+    [
+     {
+      "s": "a:M2",
+      "o": "is",
+      "v": "no"
+     }
+    ]
+   ],
+   "leaf": "hold-model"
+  },
+  {
+   "when": [
+    [
+     {
+      "s": "path",
+      "o": "is",
+      "v": "B"
+     },
+     {
+      "s": "cnt:drivers",
+      "o": "gte",
+      "v": "1"
+     }
+    ]
+   ],
+   "leaf": "separate-b"
+  },
+  {
+   "when": [
+    [
+     {
+      "s": "path",
+      "o": "is",
+      "v": "B"
+     }
+    ]
+   ],
+   "leaf": "one-ci-b"
+  },
+  {
+   "when": [
+    [
+     {
+      "s": "cnt:drivers",
+      "o": "gte",
+      "v": "1"
+     }
+    ]
+   ],
+   "leaf": "separate"
+  },
+  {
+   "when": [],
+   "leaf": "one-ci"
+  }
+ ],
+ "warnings": [
+  {
+   "title": "State the cost before adopting this verdict",
+   "when": [
+    [
+     {
+      "s": "verdict",
+      "o": "is",
+      "v": "separate-b"
+     }
+    ]
+   ],
+   "items": "The CI identifier no longer resolves from the item alone. It resolves from the item and its installed position together.\nThe as-built record must carry the CI identifier at the item instance, not on the part.\nConfiguration status accounting must key on the CI and the position together.\nMarking on the part cannot carry the CI identifier. The part is one part number."
+  },
+  {
+   "title": "Separation here is driven by safety",
+   "when": [
+    [
+     {
+      "s": "fired:S3",
+      "o": "is",
+      "v": "yes"
+     },
+     {
+      "s": "verdict",
+      "o": "is",
+      "v": "separate"
+     }
+    ],
+    [
+     {
+      "s": "fired:S3",
+      "o": "is",
+      "v": "yes"
+     },
+     {
+      "s": "verdict",
+      "o": "is",
+      "v": "separate-b"
+     }
+    ],
+    [
+     {
+      "s": "fired:B4",
+      "o": "is",
+      "v": "yes"
+     },
+     {
+      "s": "verdict",
+      "o": "is",
+      "v": "separate"
+     }
+    ],
+    [
+     {
+      "s": "fired:B4",
+      "o": "is",
+      "v": "yes"
+     },
+     {
+      "s": "verdict",
+      "o": "is",
+      "v": "separate-b"
+     }
+    ]
+   ],
+   "items": "Consolidating these into a shared CI identifier instead requires System Safety concurrence.\nThe terms are the same as for any other decision not to designate a safety-critical item as a CI."
+  },
+  {
+   "title": "Check the safety designation before you record this",
+   "when": [
+    [
+     {
+      "s": "verdict",
+      "o": "is",
+      "v": "parts-only"
+     }
+    ]
+   ],
+   "items": "Any item identified as safety-critical under the safety management system will nearly always meet a selection criterion.\nA decision not to designate a safety-critical item as a CI requires System Safety concurrence."
+  },
+  {
+   "title": "Software product unit record structure",
+   "when": [
+    [
+     {
+      "s": "a:P2",
+      "o": "is",
+      "v": "yes"
+     },
+     {
+      "s": "verdict",
+      "o": "is",
+      "v": "one-ci"
+     }
+    ],
+    [
+     {
+      "s": "a:P2",
+      "o": "is",
+      "v": "yes"
+     },
+     {
+      "s": "verdict",
+      "o": "is",
+      "v": "separate"
+     }
+    ]
+   ],
+   "items": "Software carries identity on the loadable part number and the baseline. It never carries a physical unit identifier.\nDo not record a serialization obligation against a CSCI."
+  },
+  {
+   "title": "This verdict is a split",
+   "when": [
+    [
+     {
+      "s": "a:C1",
+      "o": "is",
+      "v": "one"
+     },
+     {
+      "s": "verdict",
+      "o": "is",
+      "v": "separate"
+     }
+    ],
+    [
+     {
+      "s": "a:C1",
+      "o": "is",
+      "v": "one"
+     },
+     {
+      "s": "verdict",
+      "o": "is",
+      "v": "separate-b"
+     }
+    ]
+   ],
+   "items": "CI identifiers change. Part numbers move only on a non-interchangeable condition. Product unit identifiers never move. A modified unit keeps its original unit identifier even though the PIN changes.\nA split creates boundaries that did not exist before. Re-map every interface register row that landed on the old CI, including its Internal rows, and supersede each old row. Ask Systems Engineering whether the new CIs exchange anything no interface source yet defines.\nRetain the old CI index row with its status changed. Never delete it. The old identifier is the trace to everything recorded against it.\nA split is a selection change. Submit it for Acquirer concurrence.\nApply the product unit record-structure test again. The product unit record structure follows that test, not the CI structure.\nA split does not create a serialization obligation. A consolidation does not remove one.\nA change to the CI structure is a re-evaluation trigger in its own right. Where MBSE is used, the model check applies to the changed structure before it is recorded."
+  },
+  {
+   "title": "This verdict is a consolidation",
+   "when": [
+    [
+     {
+      "s": "a:C1",
+      "o": "is",
+      "v": "separate"
+     },
+     {
+      "s": "verdict",
+      "o": "is",
+      "v": "one-ci"
+     }
+    ],
+    [
+     {
+      "s": "a:C1",
+      "o": "is",
+      "v": "separate"
+     },
+     {
+      "s": "verdict",
+      "o": "is",
+      "v": "one-ci-b"
+     }
+    ]
+   ],
+   "items": "The interfaces between the old CIs now sit inside one CI. Supersede each of those interface register rows with an Internal row, and record why. Do not leave a row pointing at a boundary that no longer exists.\nRetain the old CI index rows with their status changed.\nPart numbers do not merge. Variants keep their own beneath one CI. Consolidating the CI identifier does not make the variants interchangeable.\nA consolidation is a selection change. Submit it for Acquirer concurrence.\nApply the product unit record-structure test again. The product unit record structure follows that test, not the CI structure.\nA split does not create a serialization obligation. A consolidation does not remove one.\nA change to the CI structure is a re-evaluation trigger in its own right. Where MBSE is used, the model check applies to the changed structure before it is recorded."
+  }
+ ],
+ "sigs": [
+  {
+   "name": "System Safety",
+   "when": [
+    [
+     {
+      "s": "fired:S3",
+      "o": "is",
+      "v": "yes"
+     }
+    ],
+    [
+     {
+      "s": "fired:B4",
+      "o": "is",
+      "v": "yes"
+     }
+    ],
+    [
+     {
+      "s": "verdict",
+      "o": "is",
+      "v": "parts-only"
+     }
+    ]
+   ],
+   "note": "System Safety concurrence is required where a safety criterion was answered yes and the item is not designated as a CI, and where a safety-critical item is consolidated with a non-safety-critical item under one CI identifier."
+  },
+  {
+   "name": "RM&SH",
+   "when": [
+    [
+     {
+      "s": "fired:S6",
+      "o": "is",
+      "v": "yes"
+     }
+    ],
+    [
+     {
+      "s": "fired:B3",
+      "o": "is",
+      "v": "yes"
+     }
+    ]
+   ],
+   "note": "RM&SH concurrence is required where the determination rests on failure modes and effects or criticality analysis, single point or common mode failure identification, or a maintainability or health-monitoring driven limit."
+  },
+  {
+   "name": "Systems Engineering",
+   "when": [
+    [
+     {
+      "s": "verdict",
+      "o": "set",
+      "v": ""
+     }
+    ]
+   ],
+   "note": "Systems Engineering concurrence is required on the end-use function gate and where the determination rests on specification or interface considerations."
+  },
+  {
+   "name": "CM, determination",
+   "when": [],
+   "note": ""
+  },
+  {
+   "name": "Acquirer",
+   "when": [],
+   "note": ""
+  }
+ ],
+ "labels": {
+  "startLabel": "Start",
+  "startPrompt": "Pick the question you are answering.",
+  "pathNow": "Decision path:",
+  "changePath": "Change path",
+  "pathWord": "Decision path",
+  "assessor": "Assessor",
+  "date": "Date",
+  "backPath": "Back to the path question",
+  "verdictWord": "Verdict",
+  "verdictPh": "Answer the gates above.",
+  "editPh": "{g} is open for revision. The verdict returns when you answer it or resume.",
+  "noRule": "No rule matched these answers. Add a rule in the builder.",
+  "qualHeading": "CI qualification",
+  "holdsHeading": "Facts outstanding",
+  "driversHeading": "Separation drivers",
+  "nextHeading": "Next",
+  "actionsHeading": "Required actions",
+  "concurrenceHeading": "Concurrence",
+  "gatesHeading": "Gates",
+  "gateCol": "Gate",
+  "sigSentence": "This record carries a concurrence line for {list}.",
+  "ratLabel": "Rationale for the record",
+  "dlButton": "Download as Word",
+  "textAttach": "Attach to the CI selection criteria checklist for each item. The drivers above are the rationale entry for that checklist.",
+  "qualNote": "Record a rationale and a document reference against the gate and each criterion on the CI selection criteria checklist for each item.",
+  "disclaimer": "This record is an assessment. It is not a concurrence.",
+  "failHeading": "Items that fail",
+  "critNone": "No criterion ticked yet: {list}.",
+  "critAll": "Every item has at least one criterion ticked.",
+  "critNoneItem": "No criterion met.",
+  "reframedFrom": "re-framed from",
+  "reopened": "That change no longer fits the answer. Answer again.",
+  "loadReopened": "Assessment loaded. {n} answer(s) reopened. This build records criteria and failing items per item."
+ },
+ "notes": {
+  "heading": "General Notes",
+  "paras": [
+   {
+    "style": "normal",
+    "text": "**CI Selection Criteria**"
+   },
+   {
+    "style": "lead",
+    "text": "A CI is any hardware, software, firmware, or aggregation thereof that satisfies a system end-use function and one or more of the below:"
+   },
+   {
+    "style": "table",
+    "text": ""
+   },
+   {
+    "style": "after",
+    "text": "**Configuration Item (CI).** Any hardware, software, firmware, or aggregation thereof that satisfies a system end-use function and is designated for separate configuration management. Designation includes establishing the CI’s requirements and verifying that its configuration meets those requirements and that its configuration documentation accurately describes its configuration."
+   },
+   {
+    "style": "normal",
+    "text": "**Part or Identifying Number (PIN).** The identifier that, combined with the design activity CAGE code, uniquely identifies an item and its configuration. The PIN changes when a modification creates a non-interchangeable condition."
+   },
+   {
+    "style": "normal",
+    "text": "The CI identifier follows function. It also follows the management need for separate configuration control. The PIN follows form, fit, and function. The two identifiers are decoupled on purpose. Different part numbers do not decide the CI question. The same part number does not decide it either."
+   }
+  ]
+ },
+ "footer": {
+  "paras": [
+   {
+    "text": "CI selection is a CM decision. The concurrences confirm the technical basis is sound. They do not make the selection."
+   },
+   {
+    "text": "Final CI designation authority rests with the Acquirer. This tool is a decision aid. It does not substitute for engineering judgment. It does not substitute for contract requirements."
+   },
+   {
+    "text": "This tool runs the same-CI decision aid of the CI identification process. Nothing is stored. Save the assessment before you close the tab."
+   }
+  ]
+ }
+}
+</script>
+<script>
+/* ================= shared runtime: included in every generated tool ================= */
+var DEF=JSON.parse(document.getElementById('tool-def').textContent);
+var PREVIEW=!!window.TOOL_PREVIEW;
+
+/* ---- offline .docx writer: a docx is a ZIP of XML parts, stored uncompressed ---- */
+var CRC=(function(){var t=new Uint32Array(256),c,n,k;for(n=0;n<256;n++){c=n;for(k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);t[n]=c>>>0;}return t;})();
+function crc32(b){var c=0xFFFFFFFF;for(var i=0;i<b.length;i++)c=CRC[(c^b[i])&0xFF]^(c>>>8);return (c^0xFFFFFFFF)>>>0;}
+function utf8(s){return new TextEncoder().encode(s);}
+function makeZip(files){
+  var parts=[],cen=[],off=0;
+  function u16(v){return [v&255,(v>>8)&255];} function u32(v){return [v&255,(v>>8)&255,(v>>16)&255,(v>>>24)&255];}
+  files.forEach(function(f){
+    var nm=utf8(f.name),dt=utf8(f.data),c=crc32(dt);
+    var lo=[].concat(u32(0x04034b50),u16(20),u16(0x0800),u16(0),u16(0),u16(0),u32(c),u32(dt.length),u32(dt.length),u16(nm.length),u16(0));
+    parts.push(new Uint8Array(lo),nm,dt);
+    var ce=[].concat(u32(0x02014b50),u16(20),u16(20),u16(0x0800),u16(0),u16(0),u16(0),u32(c),u32(dt.length),u32(dt.length),u16(nm.length),u16(0),u16(0),u16(0),u16(0),u32(0),u32(off));
+    ce.name=nm; cen.push(ce); off+=lo.length+nm.length+dt.length;
+  });
+  var cd=[],cl=0; cen.forEach(function(c){cd.push(new Uint8Array(c),c.name);cl+=c.length+c.name.length;});
+  var end=new Uint8Array([].concat(u32(0x06054b50),u16(0),u16(0),u16(files.length),u16(files.length),u32(cl),u32(off),u16(0)));
+  var all=parts.concat(cd,[end]),tot=all.reduce(function(n,a){return n+a.length;},0),out=new Uint8Array(tot),p=0;
+  all.forEach(function(a){out.set(a,p);p+=a.length;});
+  return out;
+}
+function xe(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,'');}
+function rt(s){return String(s==null?'':s).split(/\r?\n/).map(function(l,i){return (i?'<w:br/>':'')+'<w:t xml:space="preserve">'+xe(l)+'</w:t>';}).join('');}
+function P(t,o){o=o||{};return '<w:p><w:pPr>'+(o.after!==undefined?'<w:spacing w:after="'+o.after+'"/>':'')+(o.keep?'<w:keepNext/>':'')+'</w:pPr><w:r><w:rPr>'+(o.b?'<w:b/>':'')+(o.i?'<w:i/>':'')+(o.sz?'<w:sz w:val="'+o.sz+'"/><w:szCs w:val="'+o.sz+'"/>':'')+(o.color?'<w:color w:val="'+o.color+'"/>':'')+'</w:rPr>'+rt(t)+'</w:r></w:p>';}
+function TC(x,w,o){o=o||{};return '<w:tc><w:tcPr><w:tcW w:w="'+w+'" w:type="dxa"/>'+(o.shade?'<w:shd w:val="clear" w:fill="'+o.shade+'"/>':'')+'<w:vAlign w:val="center"/></w:tcPr>'+x+'</w:tc>';}
+function TB(rows,w){
+  var b=['top','left','bottom','right','insideH','insideV'].map(function(s){return '<w:'+s+' w:val="single" w:sz="4" w:space="0" w:color="D6DCDF"/>';}).join('');
+  var grid='<w:tblGrid>'+w.map(function(n){return '<w:gridCol w:w="'+n+'"/>';}).join('')+'</w:tblGrid>';
+  return '<w:tbl><w:tblPr><w:tblW w:w="9360" w:type="dxa"/><w:tblBorders>'+b+'</w:tblBorders><w:tblCellMar><w:top w:w="60" w:type="dxa"/><w:left w:w="90" w:type="dxa"/><w:bottom w:w="60" w:type="dxa"/><w:right w:w="90" w:type="dxa"/></w:tblCellMar></w:tblPr>'+grid+
+    rows.map(function(r){return '<w:tr>'+r.map(function(c,i){return TC(c.xml,w[i],c);}).join('')+'</w:tr>';}).join('')+'</w:tbl>';
+}
+function MK(on){return P(on?'X':'',{b:true});}
+function packDocx(body,title,author){
+  var doc='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'+body+'<w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1080" w:right="1080" w:bottom="1080" w:left="1080" w:header="720" w:footer="720" w:gutter="0"/></w:sectPr></w:body></w:document>';
+  return makeZip([
+   {name:'[Content_Types].xml',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/></Types>'},
+   {name:'_rels/.rels',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/></Relationships>'},
+   {name:'docProps/core.xml',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>'+xe(title)+'</dc:title><dc:creator>'+xe(author)+'</dc:creator></cp:coreProperties>'},
+   {name:'word/_rels/document.xml.rels',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>'},
+   {name:'word/styles.xml',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:sz w:val="20"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="80" w:line="240" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style></w:styles>'},
+   {name:'word/document.xml',data:doc}
+  ]);
+}
+function dlBytes(bytes,name,mime){
+  var u=URL.createObjectURL(new Blob([bytes],{type:mime||'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}));
+  var a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(function(){URL.revokeObjectURL(u);},4000);
+}
+var DOCX_MIME='application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+/* ---- small helpers ---- */
+var $=function(id){return document.getElementById(id);};
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function today(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function slugN(s,n,dflt){return String(s||dflt||'item').replace(/[^A-Za-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,n||50);}
+function per(t){t=String(t||'').trim();return /[.!?]$/.test(t)?t:t+'.';}
+function arr(x){return Array.isArray(x)?x:[];}
+function lines(x){
+  if(Array.isArray(x)) return x.filter(function(s){return String(s).trim();});
+  return String(x||'').split(/\r?\n/).map(function(s){return s.trim();}).filter(Boolean);
+}
+/* Light markup for prose fields. **bold**, *italic*, `mono`, a new line is a line break. */
+function MD(s){
+  return esc(s).replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>')
+    .replace(/(^|[^*])\*([^*\s][^*]*)\*/g,'$1<i>$2</i>')
+    .replace(/`([^`]+)`/g,'<span style="font-family:var(--mono)">$1</span>')
+    .replace(/\r?\n/g,'<br>');
+}
+/* Plain text of the same markup, for Word and Copy. */
+function PLAIN(s){return String(s==null?'':s).replace(/\*\*([^*]+)\*\*/g,'$1').replace(/`([^`]+)`/g,'$1');}
+/* Fill {tokens} from a map. Unknown tokens stay as typed, so a mistake is visible. */
+function fill(s,map){
+  return String(s==null?'':s).replace(/\{([A-Za-z0-9_:\-]+)\}/g,function(m,k){
+    if(map&&Object.prototype.hasOwnProperty.call(map,k)) return map[k];
+    if(map&&map.__fn){var r=map.__fn(k); if(r!==undefined) return r;}
+    return m;
+  });
+}
+/* A template line that is only a list token expands to the list. Empty lines drop out. */
+function expand(tpl,lists,map){
+  var out=[];
+  String(tpl||'').split(/\r?\n/).forEach(function(l){
+    var t=l.trim(), m=/^\{([A-Za-z0-9_:\-]+)\}$/.exec(t);
+    if(m&&lists&&Object.prototype.hasOwnProperty.call(lists,m[1])){ out=out.concat(lists[m[1]]); return; }
+    if(m&&lists&&lists.__fn){var r=lists.__fn(m[1]); if(Array.isArray(r)){ out=out.concat(r); return; }}
+    var f=fill(t,map).trim(); if(f) out.push(f);
+  });
+  return out.join('\n');
+}
+/* Conditions. A condition is a list of groups. Any group may match.
+   Every row in a group must hold. An empty condition always holds. */
+function COND(c,get){
+  if(!c||!c.length) return true;
+  return c.some(function(g){
+    return arr(g).every(function(r){
+      var x=get(r.s); if(x==null) x='';
+      switch(r.o){
+        case 'is': return String(x)===String(r.v);
+        case 'not': return String(x)!==String(r.v);
+        case 'set': return String(x)!=='';
+        case 'unset': return String(x)==='';
+        case 'gte': return (+x||0)>=(+r.v||0);
+        case 'lte': return (+x||0)<=(+r.v||0);
+        case 'eq': return (+x||0)===(+r.v||0);
+      }
+      return false;
+    });
+  });
+}
+function copyText(t,btn,msgEl){
+  function ok(){btn.textContent='Copied';setTimeout(function(){btn.textContent='Copy';},2000);}
+  function fb(){var ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity=0;
+    document.body.appendChild(ta);ta.select();try{document.execCommand('copy');ok();}catch(e){if(msgEl)msgEl.textContent='Copy failed.';}
+    document.body.removeChild(ta);}
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(ok,fb);}else fb();
+}
+function guardUnload(test){
+  if(PREVIEW) return;
+  window.addEventListener('beforeunload',function(e){ if(test()){e.preventDefault();e.returnValue='';} });
+}
+
+/* ================= decision tree engine. Everything on the page comes from DEF. ================= */
+var TL=DEF.tool||{}, LB=DEF.labels||{};
+function L(k,d){return LB[k]!=null&&LB[k]!==''?LB[k]:d;}
+var PATHS=arr(DEF.paths), ALLNODES=arr(DEF.nodes), LEAVES={}, RULES=arr(DEF.rules);
+arr(DEF.leaves).forEach(function(l){LEAVES[l.key]=l;});
+var CRITCFG=DEF.criteria||{};
+
+/* ---- page skeleton ---- */
+(function build(){
+  var h='<div class="top"><b>'+esc(TL.barTitle)+'</b><span>'+esc(TL.barSub)+'</span></div><div class="wrap">'+
+    '<h1>'+esc(TL.h1)+'</h1><p class="lede">'+MD(TL.lede)+'</p>'+
+    '<div id="pathpick"></div><div id="meta" class="card"></div>'+
+    '<div class="sr" id="live" role="status" aria-live="polite"></div>'+
+    '<div id="tree"><p class="small">'+esc(TL.scriptCheck||'If this line is still showing, the page script did not run.')+'</p></div>';
+  var N=DEF.notes||{};
+  h+='<hr class="bar"><h2 class="sect gn">'+esc(N.heading||'General Notes')+'</h2>';
+  arr(N.paras).forEach(function(p){
+    if(p.style==='table'){
+      h+='<table class="ref" id="crittable">'+arr(CRITCFG.items).map(function(c){
+        return '<tr><td class="k">'+esc(c.k)+'</td><td>'+MD(c.label)+'</td></tr>';}).join('')+'</table>';
+    } else if(p.style==='pull') h+='<p class="pull">'+MD(p.text)+'</p>';
+    else if(p.style==='lead') h+='<p class="small" style="margin:0 0 8px">'+MD(p.text)+'</p>';
+    else if(p.style==='after') h+='<p class="small" style="margin-top:10px">'+MD(p.text)+'</p>';
+    else h+='<p class="small">'+MD(p.text)+'</p>';
+  });
+  var F=arr((DEF.footer||{}).paras);
+  if(F.length) h+='<div class="foot">'+F.map(function(p){return '<p>'+MD(p.text)+'</p>';}).join('')+'</div>';
+  h+='</div>';
+  document.getElementById('app').innerHTML=h;
+  document.title=TL.pageTitle||TL.barTitle||'Tool';
+})();
+
+/* ================= state ================= */
+var BUILD=TL.build||'';
+var PATH=null;
+var ITEMS=['',''];
+var PIN='';
+var ASSESSOR='';
+var DATE='';
+var A={};
+var CRIT=[[],[]];   /* criteria ticked, one list per item, aligned with ITEMS */
+var FAIL={};        /* item indices picked as failing, keyed by question ID */
+var RF=['',''];     /* procured-level names, aligned with ITEMS */
+var RFPIN='';       /* procured-level PIN */
+var RAT=null;
+var EDIT=null;
+
+DATE=today();
+function curPath(){return PATHS.filter(function(p){return p.id===PATH;})[0]||null;}
+function hasPin(){var p=curPath();return !!(p&&p.pinLabel);}
+function rawNames(){
+  var p=curPath()||{};
+  return ITEMS.map(function(v,i){return (v||'').trim()||((p.itemName||'Item')+' '+(i+1));});
+}
+/* Re-framing. A question with a re-frame answer replaces item names with procured-level names. */
+function reframeOn(){
+  return NODES.some(function(n,i){return n.reframe&&A[n.g]===n.reframe&&counted(n,i);});
+}
+function names(){
+  var raw=rawNames(), on=reframeOn();
+  return raw.map(function(v,i){var r=String(RF[i]||'').trim();return on&&r?r:v;});
+}
+function pinNow(){var r=RFPIN.trim();return reframeOn()&&r?r:PIN;}
+function resetRun(){A={};CRIT=ITEMS.map(function(){return [];});FAIL={};RF=ITEMS.map(function(){return '';});RFPIN='';RAT=null;EDIT=null;}
+function syncItems(){
+  while(CRIT.length<ITEMS.length) CRIT.push([]);
+  while(RF.length<ITEMS.length) RF.push('');
+  CRIT.length=ITEMS.length; RF.length=ITEMS.length;
+}
+function dropItem(i){
+  ITEMS.splice(i,1); CRIT.splice(i,1); RF.splice(i,1);
+  Object.keys(FAIL).forEach(function(g){
+    FAIL[g]=FAIL[g].filter(function(x){return x!==i;}).map(function(x){return x>i?x-1:x;});
+  });
+}
+/* Alternate wording, for example software. Decided from answers, never from the verdict. */
+function alt(){return !!(DEF.alt&&arr(DEF.alt.when).length&&COND(DEF.alt.when,get0));}
+function W(o,k){var a=o[k+'Alt'];return (alt()&&a&&String(a).trim())?a:o[k];}
+
+var CRITDEF=arr(CRITCFG.items).map(function(c){return {k:c.k,label:PLAIN(c.label)};});
+function critIdx(k){for(var i=0;i<CRITDEF.length;i++){if(CRITDEF[i].k===k) return i;} return 99;}
+function critLabel(k){var i=critIdx(k);return i<99?CRITDEF[i].label:'';}
+function critRef(k){return /^[a-z]$/.test(k)?'('+k+')':k.toUpperCase();}
+function critSort(){CRIT.forEach(function(l){l.sort(function(a,b){return critIdx(a)-critIdx(b);});});}
+function critOf(i){return arr(CRIT[i]).filter(function(k){return critIdx(k)<99;});}
+function critAny(){var u=[];CRIT.forEach(function(l,i){critOf(i).forEach(function(k){if(u.indexOf(k)<0)u.push(k);});});return u;}
+
+var NODES=[];
+function buildNodes(){ return ALLNODES.filter(function(n){ return !arr(n.paths).length || arr(n.paths).indexOf(PATH)>=0; }); }
+
+/* ================= flow ================= */
+function live(n){return !arr(n.when).length || COND(n.when,get0);}
+function opt(n,v){return arr(n.opts).filter(function(x){return x.v===v;})[0];}
+function stopIdx(){
+  for(var i=0;i<NODES.length;i++){
+    var a=A[NODES[i].g]; if(!a) continue;
+    var o=opt(NODES[i],a); if(o&&o.stop) return i;
+  }
+  return -1;
+}
+function stopHit(){
+  for(var i=0;i<NODES.length;i++){
+    var n=NODES[i]; if(!live(n)) continue;
+    var a=A[n.g]; if(!a) return null;
+    var o=opt(n,a); if(o&&o.stop) return {node:n,leaf:o.stop};
+  }
+  return null;
+}
+function counted(n,i){var c=stopIdx();return (c<0||i<=c)&&!!A[n.g];}
+function editIndex(){
+  if(!EDIT) return null;
+  var i=NODES.findIndex(function(n){return n.g===EDIT;});
+  if(i<0||!live(NODES[i])) return null;
+  var c=stopIdx(); if(c>=0&&i>c) return null;
+  return i;
+}
+function prevIdx(from){
+  var c=stopIdx();
+  for(var i=Math.min(from,NODES.length)-1;i>=0;i--){
+    if(c>=0&&i>c) continue;
+    if(live(NODES[i])&&A[NODES[i].g]) return i;
+  }
+  return -1;
+}
+function lastIdx(){return prevIdx(NODES.length);}
+function cursor(){
+  if(!PATH) return null;
+  var e=editIndex(); if(e!==null) return e;
+  if(stopHit()) return null;
+  for(var i=0;i<NODES.length;i++){ var n=NODES[i]; if(live(n)&&!A[n.g]) return i; }
+  return null;
+}
+function drivers(){return NODES.filter(function(n,i){return counted(n,i)&&n.fire&&A[n.g]===n.fire;});}
+function holds(){return NODES.filter(function(n,i){return counted(n,i)&&n.holdText&&n.holdValue&&A[n.g]===n.holdValue;});}
+
+/* condition subjects */
+function ans(g){
+  for(var i=0;i<NODES.length;i++) if(NODES[i].g===g && counted(NODES[i],i)) return A[g];
+  return '';
+}
+function get0(k){
+  if(k==='path') return PATH||'';
+  if(k==='cnt:drivers') return drivers().length;
+  if(k==='cnt:holds') return holds().length;
+  if(k==='cnt:crit') return critAny().length;
+  if(k.indexOf('a:')===0) return ans(k.slice(2));
+  if(k.indexOf('fired:')===0){var g=k.slice(6);return drivers().some(function(n){return n.g===g;})?'yes':'no';}
+  if(k.indexOf('crit:')===0) return critAny().indexOf(k.slice(5))>=0?'yes':'no';
+  return '';
+}
+function get1(k){ return k==='verdict' ? (leafKey()||'') : get0(k); }
+function ruleLeaf(skipHold){
+  for(var i=0;i<RULES.length;i++){
+    var l=LEAVES[RULES[i].leaf]; if(!l) continue;
+    if(skipHold && l.style==='hold') continue;
+    if(COND(RULES[i].when,get0)) return RULES[i].leaf;
+  }
+  return null;
+}
+function provisional(){var k=ruleLeaf(true);return k?W(LEAVES[k],'title'):'';}
+/* A question that shows {provisional} was answered against one screen verdict. That verdict is kept as "@g".
+   If an earlier answer changes the screen verdict, the answer is cleared and the question is asked again. */
+function basisNodes(){return NODES.filter(function(n){return /\{provisional\}/.test(String(n.q||'')+' '+String(n.why||''));});}
+function stampBasis(g){A['@'+g]=ruleLeaf(true)||'';}
+function restale(skip){
+  var now=ruleLeaf(true)||'';
+  basisNodes().forEach(function(n){
+    if(n.g===skip||!A[n.g]) return;
+    if(A['@'+n.g]!==now){ delete A[n.g]; delete A['@'+n.g]; }
+  });
+}
+/* Items that fail a question. On a criteria question, an item fails when no criterion is ticked for it.
+   On any other question, the user ticks the items that fail. */
+function failIdx(n){
+  if(!n||!n.itemPick||A[n.g]!==n.itemPick) return [];
+  if(n.crit) return ITEMS.map(function(x,i){return i;}).filter(function(i){return !critOf(i).length;});
+  return arr(FAIL[n.g]).filter(function(i){return i<ITEMS.length;}).sort(function(a,b){return a-b;});
+}
+function failNames(n){var nm=names();return failIdx(n).map(function(i){return nm[i];});}
+function failed(){
+  var out=[];
+  NODES.forEach(function(n,i){ if(counted(n,i)&&live(n)){ var f=failNames(n); if(f.length) out.push({g:n.g,names:f}); } });
+  return out;
+}
+function leafKey(){
+  if(!PATH) return null;
+  if(editIndex()!==null) return null;
+  var s=stopHit(); if(s) return LEAVES[s.leaf]?s.leaf:null;
+  if(cursor()!==null) return null;
+  return ruleLeaf(false);
+}
+function tok(){
+  return {__fn:function(k){
+    if(k==='provisional') return provisional();
+    if(k==='names') return names().join(', ');
+    if(k==='failed'){var f=[];failed().forEach(function(x){x.names.forEach(function(m){if(f.indexOf(m)<0)f.push(m);});});return f.join(', ')||'[none named]';}
+    if(k==='drivers') return drivers().map(function(x){return x.g;}).join(', ');
+    if(k==='holds') return holds().map(function(x){return x.g;}).join(', ');
+    if(k==='pin') return pinNow()||'[PIN]';
+    if(k==='count') return String(names().length);
+    return undefined;
+  }};
+}
+function txt(s){return fill(s,tok());}
+function sigList(){var k=leafKey();if(!k)return [];return arr(DEF.sigs).filter(function(x){return COND(x.when,get1);});}
+function sigNotes(){return sigList().filter(function(x){return x.note;}).map(function(x){return txt(x.note);});}
+function warnings(){
+  if(!leafKey()) return [];
+  return arr(DEF.warnings).filter(function(w){return COND(w.when,get1);}).map(function(w){
+    return {t:txt(w.title),list:lines(w.items).map(txt)};
+  });
+}
+function leafNext(L0){return lines(W(L0,'next')).map(txt);}
+
+/* ================= render ================= */
+function pathLabel(){var p=curPath();return p?p.label:'';}
+function renderPath(){
+  var p=$('pathpick');
+  if(PATH){
+    p.className='pathnow';
+    p.innerHTML='<span>'+esc(L('pathNow','Decision path:'))+' <b>'+esc(pathLabel())+'</b></span>'+
+      '<button class="btn gh sm" id="chpath">'+esc(L('changePath','Change path'))+'</button>'+
+      '<button class="btn gh sm" id="load">Open saved assessment</button>'+
+      '<input type="file" id="loadf" accept=".json,application/json" style="display:none">'+
+      '<span id="msg2"></span>';
+    $('chpath').addEventListener('click',function(){
+      if(Object.keys(A).length&&!confirm('Changing the path clears the answers. Continue?')) return;
+      PATH=null;resetRun();render();
+    });
+    $('load').addEventListener('click',function(){$('loadf').click();});
+    $('loadf').addEventListener('change',doLoad);
+    return;
+  }
+  p.className='card';
+  p.innerHTML='<div class="lab">'+esc(L('startLabel','Start'))+'</div><p style="margin:0 0 4px;font-size:13.5px;color:var(--slate)">'+esc(L('startPrompt','Pick the question you are answering.'))+'</p>'+
+    '<div class="branch">'+PATHS.map(function(x){return '<button data-path="'+esc(x.id)+'">'+esc(x.label)+'</button>';}).join('')+
+    '<button class="btn gh sm" id="load0">Open saved assessment</button></div>'+
+    '<input type="file" id="loadf0" accept=".json,application/json" style="display:none"><div id="msg2"></div>';
+  p.querySelectorAll('[data-path]').forEach(function(b){
+    b.addEventListener('click',function(){PATH=b.dataset.path;resetRun();render();focusCur();});
+  });
+  $('load0').addEventListener('click',function(){$('loadf0').click();});
+  $('loadf0').addEventListener('change',doLoad);
+}
+function listBlock(arr0,key,label,ph){
+  return '<div class="lab">'+esc(label)+'</div><div>'+arr0.map(function(v,i){
+    return '<div class="rowf"><span class="tag">'+(i+1)+'</span>'+
+      '<input data-list="'+key+'" data-i="'+i+'" placeholder="'+esc(ph)+' '+(i+1)+'" value="'+esc(v)+'">'+
+      (arr0.length>2?'<button class="x" data-rm="'+key+'" data-i="'+i+'" title="Remove">&times;</button>':'')+
+    '</div>';
+  }).join('')+'</div><button class="btn gh sm" data-add="'+key+'">Add another</button>';
+}
+function renderMeta(){
+  var m=$('meta');
+  if(!PATH){m.style.display='none';m.innerHTML='';return;}
+  m.style.display='';
+  var p=curPath()||{}, h='';
+  if(p.note) h+='<p class="pathnote">'+MD(p.note)+'</p>';
+  if(p.pinLabel) h+='<div class="fld" style="margin-bottom:12px"><label for="f-pin">'+esc(p.pinLabel)+'</label><input id="f-pin" value="'+esc(PIN)+'"></div>';
+  h+=listBlock(ITEMS,'items',p.listLabel||'Items',p.itemName||'Item');
+  h+='<div class="grid" style="margin-top:14px">'+
+     '<div class="fld"><label for="f-assessor">'+esc(L('assessor','Assessor'))+'</label><input id="f-assessor" value="'+esc(ASSESSOR)+'"></div>'+
+     '<div class="fld"><label for="f-date">'+esc(L('date','Date'))+'</label><input id="f-date" value="'+esc(DATE)+'"></div></div>';
+  m.innerHTML=h;
+  if($('f-pin')) $('f-pin').addEventListener('input',function(){PIN=this.value;});
+  $('f-assessor').addEventListener('input',function(){ASSESSOR=this.value;});
+  $('f-date').addEventListener('input',function(){DATE=this.value;});
+  m.querySelectorAll('[data-list]').forEach(function(inp){
+    inp.addEventListener('input',function(){ ITEMS[+inp.dataset.i]=inp.value; });
+  });
+  m.querySelectorAll('[data-add]').forEach(function(b){
+    b.addEventListener('click',function(){
+      ITEMS.push(''); syncItems(); renderMeta(); render();
+      var ins=$('meta').querySelectorAll('[data-list]'); if(ins.length) ins[ins.length-1].focus();
+    });
+  });
+  m.querySelectorAll('[data-rm]').forEach(function(b){
+    b.addEventListener('click',function(){ dropItem(+b.dataset.i); render(); });
+  });
+}
+/* Criteria are ticked per item. Rows are criteria. Columns are items, numbered as in the item list. */
+function legend(nm){
+  return '<p class="legend">'+nm.map(function(v,i){return '<span><b>'+(i+1)+'</b> '+esc(v)+'</span>';}).join('')+'</p>';
+}
+function critStat(){
+  var nm=names(), none=ITEMS.map(function(x,i){return i;}).filter(function(i){return !critOf(i).length;}).map(function(i){return nm[i];});
+  return none.length ? fill(L('critNone','No criterion ticked yet: {list}.'),{list:none.join(', ')})
+                     : L('critAll','Every item has at least one criterion ticked.');
+}
+function critBlock(n){
+  if(!CRITDEF.length) return '';
+  var nm=names();
+  return '<div class="lab" style="margin-top:13px">'+esc(CRITCFG.pickLabel||'Criteria met')+'</div>'+
+    '<div class="cmx-wrap"><table class="cmx"><thead><tr><th scope="col"><span class="sr">Criterion</span></th>'+
+    nm.map(function(v,i){return '<th scope="col" title="'+esc(v)+'">'+(i+1)+'</th>';}).join('')+'</tr></thead><tbody>'+
+    CRITDEF.map(function(c){
+      return '<tr><th scope="row"><span class="ck">'+esc(critRef(c.k))+'</span> '+esc(c.label)+'</th>'+
+        nm.map(function(v,i){
+          return '<td><input type="checkbox" data-g="'+esc(n.g)+'" data-crit="'+esc(c.k)+'" data-i="'+i+'"'+
+            (critOf(i).indexOf(c.k)>=0?' checked':'')+' aria-label="'+esc(critRef(c.k)+' '+v)+'"></td>';
+        }).join('')+'</tr>';
+    }).join('')+'</tbody></table></div>'+legend(nm)+
+    '<p class="small" id="critstat">'+esc(critStat())+'</p>';
+}
+function pickBlock(n){
+  var nm=names(), on=arr(FAIL[n.g]);
+  return '<div class="lab" style="margin-top:13px">'+esc(n.itemPickLabel||'Items that fail')+'</div><div class="crit">'+
+    nm.map(function(v,i){
+      return '<label><input type="checkbox" data-g="'+esc(n.g)+'" data-fail="'+i+'"'+(on.indexOf(i)>=0?' checked':'')+'>'+
+        '<span class="ck">'+(i+1)+'</span><span>'+esc(v)+'</span></label>';
+    }).join('')+'</div>';
+}
+function reframeBlock(n){
+  var p=curPath()||{}, raw=rawNames(), h='<div class="lab" style="margin-top:13px">'+esc(n.reframeLabel||'Procured-level name')+'</div>';
+  if(n.reframeHelp) h+='<p class="small" style="margin:0 0 8px">'+MD(n.reframeHelp)+'</p>';
+  if(hasPin()) h+='<div class="rowf"><span class="tag">'+esc(p.pinShort||'PIN')+'</span>'+
+    '<input data-g="'+esc(n.g)+'" data-rfpin="1" placeholder="'+esc(PIN||p.pinLabel)+'" value="'+esc(RFPIN)+'"></div>';
+  h+=raw.map(function(v,i){
+    return '<div class="rowf"><span class="tag">'+(i+1)+'</span><input data-g="'+esc(n.g)+'" data-rf="'+i+'" placeholder="'+esc(v)+'" value="'+esc(RF[i]||'')+'"></div>';
+  }).join('');
+  return h;
+}
+/* Returns a message when answer v cannot stand with what is ticked or typed on the card. Empty means fine. */
+function okFor(n,v){
+  var bare=ITEMS.some(function(x,i){return !critOf(i).length;});
+  if(n.crit&&n.critRequire&&v===n.critRequire&&bare) return n.critMsg||'Tick at least one criterion for every item first.';
+  if(n.itemPick&&v===n.itemPick){
+    if(n.crit){ if(!bare) return n.itemPickMsg||'Every item has a criterion ticked. Clear the ticks on each item that fails.'; }
+    else if(!arr(FAIL[n.g]).length) return n.itemPickMsg||'Tick each item that fails first.';
+  }
+  if(n.reframe&&v===n.reframe&&!RF.some(function(r){return String(r||'').trim();})&&!(hasPin()&&RFPIN.trim()))
+    return n.reframeMsg||'Enter at least one procured-level name first.';
+  return '';
+}
+/* Criteria count only once a criteria question is answered and inside the run. */
+function critRows(){
+  var on=NODES.some(function(n,i){return n.crit&&counted(n,i)&&live(n);});
+  if(!on||!critAny().length) return [];
+  var nm=names();
+  return nm.map(function(v,i){return {name:v,ks:critOf(i)};});
+}
+/* Qualifying gate lines: a node answered its qualifying value and counted. */
+function quals(){
+  return NODES.filter(function(n,i){return n.qualText&&n.qualValue&&A[n.g]===n.qualValue&&counted(n,i);})
+    .map(function(n){return {label:n.qualLabel||'Gate',text:n.qualText};});
+}
+function backLink(i){
+  if(i<0) return '<button class="lnk" data-back="__path">&larr; '+esc(L('backPath','Back to the path question'))+'</button>';
+  return '<button class="lnk" data-back="'+esc(NODES[i].g)+'">&larr; Back to '+esc(NODES[i].g)+' &middot; '+esc(NODES[i].short)+'</button>';
+}
+function render(){
+  NODES=PATH?buildNodes():[];
+  renderPath(); renderMeta();
+  if(!PATH){ $('tree').innerHTML=''; return; }
+
+  var cur=cursor(), stop=stopHit(), key=leafKey(), html='';
+  NODES.forEach(function(n,i){
+    if(!live(n)) return;
+    if(stop && i>NODES.indexOf(stop.node)) return;
+    var a=A[n.g], o=a?opt(n,a):null;
+    if(i===cur){
+      var pv=prevIdx(i);
+      html+='<div class="node here"><div class="row"><span class="g">'+esc(n.g)+'</span>'+
+        '<span class="qt">'+esc(txt(n.q))+'</span></div>'+
+        (n.why?'<p class="why">'+esc(txt(n.why))+'</p>':'')+
+        (n.reframe?reframeBlock(n):'')+
+        (n.crit?critBlock(n):(n.itemPick?pickBlock(n):''))+
+        '<div class="branch">'+arr(n.opts).map(function(x){
+          var on=a===x.v;
+          return '<button class="'+(x.stop?'stop':'')+(on?' cur':'')+'" data-g="'+esc(n.g)+'" data-v="'+esc(x.v)+'"'+
+            (on?' aria-pressed="true" title="Your current answer"':'')+'>'+esc(x.l)+'</button>';
+        }).join('')+'</div><div id="critmsg" role="alert"></div>'+
+        '<div class="nav">'+backLink(pv)+
+        (a?'<button class="lnk" data-resume="1">Resume &rarr;</button>':'')+
+        '</div></div>';
+    } else if(a){
+      var cls = n.fire&&a===n.fire ? 'fired' : (n.holdValue&&a===n.holdValue ? 'hold' : 'done');
+      html+='<div class="node '+cls+(n.kind==='scope'?' scope':'')+'"><div class="row"><span class="g">'+esc(n.g)+'</span>'+
+        '<span>'+esc(n.short)+'</span>'+
+        '<button class="ans" data-back="'+esc(n.g)+'" title="Go back to this gate">'+esc(o?o.l:a)+'</button>'+
+        '</div></div>';
+    } else {
+      html+='<div class="node pending"><div class="row"><span class="g">'+esc(n.g)+'</span><span>'+esc(n.short)+'</span></div></div>';
+    }
+  });
+
+  var L0=key?LEAVES[key]:null;
+  html+='<div class="leaf '+(key?'on ':'')+(L0&&L0.style==='hold'?'hold':'')+'"><div class="box">';
+  if(!L0){
+    html+='<h2>'+esc(L('verdictWord','Verdict'))+'</h2><p>'+(editIndex()!==null
+      ? esc(fill(L('editPh','{g} is open for revision. The verdict returns when you answer it or resume.'),{g:EDIT}))
+      : (cur===null&&!stop ? esc(L('noRule','No rule matched these answers. Add a rule in the builder.')) : esc(L('verdictPh','Answer the gates above.'))))+'</p>';
+  } else {
+    html+='<h2>'+esc(txt(W(L0,'title')))+'</h2><p>'+esc(txt(W(L0,'desc')))+'</p>';
+    var q=quals();
+    var cr=critRows();
+    if(q.length||cr.length) html+='<div class="lab" style="margin-top:12px">'+esc(L('qualHeading','CI qualification'))+'</div><ul>'+
+      q.map(function(x){return '<li><b>'+esc(x.label)+'</b> '+esc(x.text)+'</li>';}).join('')+
+      cr.map(function(r){return '<li><b>'+esc(r.name)+'</b>'+(r.ks.length
+        ? '<ul class="sub">'+r.ks.map(function(k){return '<li><b>'+esc(critRef(k))+'</b> '+esc(critLabel(k))+'</li>';}).join('')+'</ul>'
+        : ' '+esc(L('critNoneItem','No criterion met.')))+'</li>';}).join('')+'</ul>';
+    if(failed().length) html+='<div class="lab" style="margin-top:12px">'+esc(L('failHeading','Items that fail'))+'</div><ul>'+
+      failed().map(function(f){return '<li><b>'+esc(f.g)+'.</b> '+esc(f.names.join(', '))+'</li>';}).join('')+'</ul>';
+    if(holds().length) html+='<div class="lab" style="margin-top:12px">'+esc(L('holdsHeading','Facts outstanding'))+'</div><ul>'+
+      holds().map(function(n){return '<li><b>'+esc(n.g)+'.</b> '+esc(txt(n.holdText))+'</li>';}).join('')+'</ul>';
+    if(drivers().length) html+='<div class="lab" style="margin-top:12px">'+esc(L('driversHeading','Separation drivers'))+'</div><ul>'+
+      drivers().map(function(n){return '<li><b>'+esc(n.g)+'.</b> '+esc(txt(n.driver))+'</li>';}).join('')+'</ul>';
+    warnings().forEach(function(w){
+      html+='<div class="warn"><b>'+esc(w.t)+'.</b><ul style="margin:6px 0 0">'+
+        w.list.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul></div>';
+    });
+    html+='<div class="lab" style="margin-top:12px">'+esc(L('nextHeading','Next'))+'</div><ul>'+
+      leafNext(L0).map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul>';
+    var sigs=sigList().filter(function(x){return arr(x.when).length;}).map(function(x){return esc(x.name);});
+    if(sigs.length) html+='<p class="small" style="margin-top:10px">'+fill(esc(L('sigSentence','This record carries a concurrence line for {list}.')),{list:sigs.join(', ')})+'</p>';
+    html+='<div class="fld" style="margin-top:14px"><label for="f-rat">'+esc(L('ratLabel','Rationale for the record'))+'</label>'+
+      '<textarea id="f-rat" rows="3">'+esc(RAT!==null?RAT:suggest(key))+'</textarea></div>'+
+      '<div class="nav">'+backLink(lastIdx())+'</div>'+
+      '<div class="btnrow"><button class="btn pri" id="dl">'+esc(L('dlButton','Download as Word'))+'</button>'+
+      '<button class="btn" id="copy">Copy</button>'+
+      '<button class="btn" id="save">Save assessment</button>'+
+      '<button class="btn gh" id="reset">Clear</button><span id="msg"></span></div>';
+  }
+  html+='</div></div>';
+  $('tree').innerHTML=html;
+
+  /* A tick or a name that no longer fits the answer given reopens the question. */
+  function recheck(g,sel){
+    var n=NODES.filter(function(x){return x.g===g;})[0];
+    if(n&&A[g]&&okFor(n,A[g])){
+      delete A[g]; delete A['@'+g]; RAT=null; EDIT=g; render();
+      var el=sel&&$('tree').querySelector(sel); if(el) el.focus();
+      if($('critmsg')) $('critmsg').textContent=L('reopened','That change no longer fits the answer. Answer again.');
+      return true;
+    }
+    return false;
+  }
+  $('tree').querySelectorAll('[data-crit]').forEach(function(cb){
+    cb.addEventListener('change',function(){
+      var k=cb.dataset.crit, i=+cb.dataset.i; syncItems();
+      var l=CRIT[i], at=l.indexOf(k);
+      if(cb.checked){ if(at<0) l.push(k); } else if(at>=0) l.splice(at,1);
+      critSort();
+      if($('critmsg')) $('critmsg').textContent='';
+      if(!recheck(cb.dataset.g,'[data-crit="'+k+'"][data-i="'+i+'"]')&&$('critstat')) $('critstat').textContent=critStat();
+    });
+  });
+  $('tree').querySelectorAll('[data-fail]').forEach(function(cb){
+    cb.addEventListener('change',function(){
+      var g=cb.dataset.g, i=+cb.dataset.fail, l=FAIL[g]=arr(FAIL[g]), at=l.indexOf(i);
+      if(cb.checked){ if(at<0) l.push(i); } else if(at>=0) l.splice(at,1);
+      RAT=null;
+      if($('critmsg')) $('critmsg').textContent='';
+      recheck(g,'[data-fail="'+i+'"]');
+    });
+  });
+  $('tree').querySelectorAll('[data-rf],[data-rfpin]').forEach(function(inp){
+    inp.addEventListener('input',function(){
+      if(inp.dataset.rfpin) RFPIN=inp.value; else { syncItems(); RF[+inp.dataset.rf]=inp.value; }
+      RAT=null;
+      if($('critmsg')) $('critmsg').textContent='';
+    });
+    inp.addEventListener('change',function(){ recheck(inp.dataset.g,null); });
+  });
+  $('tree').querySelectorAll('[data-v]').forEach(function(b){
+    b.addEventListener('click',function(){
+      var g=b.dataset.g, v=b.dataset.v, n=NODES.filter(function(x){return x.g===g;})[0]||{};
+      var bad=okFor(n,v);
+      if(bad){ if($('critmsg')) $('critmsg').textContent=bad; return; }
+      if(n.crit&&n.critClear&&v===n.critClear) CRIT=ITEMS.map(function(){return [];});
+      if(A[g]!==v){ A[g]=v; RAT=null; }
+      if(basisNodes().some(function(x){return x.g===g;})) stampBasis(g);
+      restale(g);
+      EDIT=null; render(); focusCur();
+    });
+  });
+  $('tree').querySelectorAll('[data-back]').forEach(function(b){
+    b.addEventListener('click',function(){
+      if(b.dataset.back==='__path'){
+        if(Object.keys(A).length&&!confirm('Going back to the path question clears the answers. Continue?')) return;
+        PATH=null;resetRun();render();return;
+      }
+      EDIT=b.dataset.back; render(); focusCur();
+    });
+  });
+  $('tree').querySelectorAll('[data-resume]').forEach(function(b){
+    b.addEventListener('click',function(){ EDIT=null; render(); focusCur(); });
+  });
+  if(L0){
+    $('f-rat').addEventListener('input',function(){RAT=this.value;});
+    $('dl').addEventListener('click',doDownload);
+    $('copy').addEventListener('click',function(){copyText(textOut(),$('copy'),$('msg'));});
+    $('save').addEventListener('click',doSave);
+    $('reset').addEventListener('click',function(){
+      if(!confirm('Clear the assessment?')) return;
+      resetRun();render();
+    });
+    $('live').textContent=txt(W(L0,'title'))+'. '+txt(W(L0,'desc'));
+  } else {
+    var n=NODES[cur]; if(n) $('live').textContent=n.g+'. '+txt(n.q);
+  }
+}
+function focusCur(){
+  if(PREVIEW&&window.__noFocus) return;
+  var b=$('tree').querySelector('.node.here .branch button.cur')||
+        $('tree').querySelector('.node.here .branch button');
+  if(b){ b.focus(); return; }
+  var h=$('tree').querySelector('.leaf.on .box h2');
+  if(h){ h.setAttribute('tabindex','-1'); h.focus(); }
+}
+function suggest(k){ var l=LEAVES[k]; return l?txt(W(l,'rat')):''; }
+
+/* ================= outputs ================= */
+function answered(){
+  var stop=stopHit(), cut=stop?NODES.indexOf(stop.node):NODES.length-1, out=[];
+  NODES.forEach(function(n,i){
+    if(!live(n)||i>cut||!A[n.g]) return;
+    var o=opt(n,A[n.g]), f=failNames(n);
+    out.push({g:n.g,q:txt(n.q),a:(o?o.l:A[n.g])+(f.length?': '+f.join(', '):'')});
+  });
+  return out;
+}
+/* A re-framed name prints with the name it replaced, so the record shows what was assessed. */
+function rfNote(now,was){return now!==was&&was?now+' ('+L('reframedFrom','re-framed from')+' '+was+')':now;}
+function pinShown(){return rfNote(pinNow(),PIN);}
+function nameShown(i){return rfNote(names()[i],rawNames()[i]);}
+function subjectLines(){
+  var p=curPath()||{}, out=[];
+  if(p.pinLabel) out.push(p.pinLabel+': '+(pinShown()||''));
+  names().forEach(function(v,i){out.push((p.itemName||'Item')+' '+(i+1)+': '+nameShown(i));});
+  return out;
+}
+function sigLine(name){
+  var u=Math.max(8,27-name.length);
+  return '  '+name+' '+new Array(u+1).join('_')+'  Date __________';
+}
+function textOut(){
+  var L0=LEAVES[leafKey()],out=[];
+  out.push(TL.textTitle||'','',L('pathNow','Decision path:')+' '+pathLabel(),'');
+  subjectLines().forEach(function(l){out.push(l);});
+  out.push(L('assessor','Assessor')+': '+ASSESSOR,L('date','Date')+': '+DATE,'',L('gatesHeading','Gates'));
+  answered().forEach(function(s){out.push('  '+s.g+'. '+s.q,'      '+s.a);});
+  out.push('');
+  var q=quals(), cr=critRows();
+  if(q.length||cr.length){out.push(L('qualHeading','CI qualification'));
+    q.forEach(function(x){out.push('  '+x.label+' '+x.text);});
+    cr.forEach(function(r){out.push('  '+r.name+(r.ks.length?'':': '+L('critNoneItem','No criterion met.')));
+      r.ks.forEach(function(k){out.push('      '+critRef(k)+' '+critLabel(k));});});
+    out.push('');}
+  if(failed().length){out.push(L('failHeading','Items that fail'));
+    failed().forEach(function(f){out.push('  '+f.g+'. '+f.names.join(', '));});out.push('');}
+  if(holds().length){out.push(L('holdsHeading','Facts outstanding'));holds().forEach(function(n){out.push('  '+n.g+'. '+txt(n.holdText));});out.push('');}
+  if(drivers().length){out.push(L('driversHeading','Separation drivers'));drivers().forEach(function(n){out.push('  '+n.g+'. '+txt(n.driver));});out.push('');}
+  out.push(L('verdictWord','Verdict')+': '+txt(W(L0,'title')),txt(W(L0,'desc')),'','Rationale: '+($('f-rat')?$('f-rat').value:''),'');
+  warnings().forEach(function(w){out.push(w.t);w.list.forEach(function(x){out.push('  - '+x);});out.push('');});
+  out.push(L('actionsHeading','Required actions'));
+  leafNext(L0).forEach(function(x){out.push('  - '+x);});
+  if(L('textAttach','')) out.push('',L('textAttach',''),'');
+  else out.push('');
+  out.push(L('concurrenceHeading','Concurrence'));
+  sigList().forEach(function(x){out.push(sigLine(x.name));});
+  out.push('');
+  sigNotes().forEach(function(t){out.push(t);});
+  out.push('',L('disclaimer','This record is an assessment. It is not a concurrence.'));
+  return out.join('\n');
+}
+function docBody(){
+  var L0=LEAVES[leafKey()],b=[],p=curPath()||{};
+  b.push(P(TL.docTitle||'',{b:true,sz:32,after:40}));
+  if(TL.docSub) b.push(P(TL.docSub,{sz:18,color:'5C6D78',after:160}));
+  var mrows=[[{xml:P(L('pathWord','Decision path'),{b:true,sz:18}),shade:'F4F6F7'},{xml:P(pathLabel(),{sz:20})},
+              {xml:P(L('assessor','Assessor'),{b:true,sz:18}),shade:'F4F6F7'},{xml:P(ASSESSOR,{sz:20})}]];
+  mrows.push([{xml:P(L('date','Date'),{b:true,sz:18}),shade:'F4F6F7'},{xml:P(DATE,{sz:20})},
+              {xml:P(p.pinLabel?(p.pinShort||p.pinLabel):(p.countLabel||'Items'),{b:true,sz:18}),shade:'F4F6F7'},
+              {xml:P(p.pinLabel?pinShown():String(names().length),{sz:20})}]);
+  b.push(TB(mrows,[1500,3180,1500,3180]));
+  b.push(P('',{after:120}));
+  b.push(P(p.listLabel||'Items',{b:true,sz:24,keep:true}));
+  var irows=[];
+  names().forEach(function(v,i){irows.push([{xml:P(String(i+1),{b:true,sz:18})},{xml:P(nameShown(i),{sz:18})}]);});
+  b.push(TB(irows,[700,8660]));
+  b.push(P('',{after:160}));
+
+  b.push(P(L('gatesHeading','Gates'),{b:true,sz:24,keep:true}));
+  var rows=[[{xml:P(L('gateCol','Gate'),{b:true,sz:17}),shade:'EDF0F1'},{xml:P('Question',{b:true,sz:17}),shade:'EDF0F1'},{xml:P('Answer',{b:true,sz:17}),shade:'EDF0F1'}]];
+  answered().forEach(function(s){rows.push([{xml:P(s.g,{b:true,sz:18})},{xml:P(s.q,{sz:18})},{xml:P(s.a,{sz:18})}]);});
+  b.push(TB(rows,[900,6060,2400]));
+  b.push(P('',{after:160}));
+
+  var q=quals(), cr=critRows();
+  if(q.length||cr.length){
+    b.push(P(L('qualHeading','CI qualification'),{b:true,sz:24,keep:true}));
+    var krows=[];
+    q.forEach(function(x){krows.push([{xml:P(x.label,{b:true,sz:18})},{xml:P(x.text,{sz:18})}]);});
+    cr.forEach(function(r){krows.push([{xml:P(r.name,{b:true,sz:18})},
+      {xml:r.ks.length?r.ks.map(function(k){return P(critRef(k)+' '+critLabel(k),{sz:18});}).join(''):P(L('critNoneItem','No criterion met.'),{sz:18,color:'9A6508'})}]);});
+    b.push(TB(krows,[2400,6960]));
+    if(L('qualNote','')) b.push(P(L('qualNote',''),{sz:16,color:'5C6D78'}));
+    b.push(P('',{after:160}));
+  }
+  if(failed().length){
+    b.push(P(L('failHeading','Items that fail'),{b:true,sz:24,keep:true}));
+    failed().forEach(function(f){b.push(P(f.g+'. '+f.names.join(', '),{sz:18}));});
+    b.push(P('',{after:160}));
+  }
+  if(holds().length){
+    b.push(P(L('holdsHeading','Facts outstanding'),{b:true,sz:24,keep:true}));
+    holds().forEach(function(n){b.push(P(n.g+'. '+txt(n.holdText),{sz:18,color:'9A6508'}));});
+    b.push(P('',{after:160}));
+  }
+  if(drivers().length){
+    b.push(P(L('driversHeading','Separation drivers'),{b:true,sz:24,keep:true}));
+    drivers().forEach(function(n){b.push(P(n.g+'. '+txt(n.driver),{sz:18}));});
+    b.push(P('',{after:160}));
+  }
+  b.push(P(L('verdictWord','Verdict'),{b:true,sz:24,keep:true}));
+  b.push(TB([[{xml:P(txt(W(L0,'title')),{b:true,sz:22})+P(txt(W(L0,'desc')),{sz:18,color:'5C6D78'})}]],[9360]));
+  b.push(P('',{after:80}));
+  b.push(P('Rationale',{b:true,sz:20}));
+  b.push(TB([[{xml:P($('f-rat')?$('f-rat').value:'',{sz:20})}]],[9360]));
+  b.push(P('',{after:160}));
+  warnings().forEach(function(w){
+    b.push(P(w.t,{b:true,sz:24,keep:true}));
+    w.list.forEach(function(x){b.push(P(x,{sz:18}));});
+    b.push(P('',{after:120}));
+  });
+  b.push(P(L('actionsHeading','Required actions'),{b:true,sz:24,keep:true}));
+  leafNext(L0).forEach(function(x){b.push(P(x,{sz:18}));});
+  b.push(P('',{after:160}));
+  b.push(P(L('concurrenceHeading','Concurrence'),{b:true,sz:24,keep:true}));
+  var crows=sigList().map(function(x){return [{xml:P(x.name,{b:true,sz:18}),shade:'F4F6F7'},{xml:P('')},{xml:P('Date',{b:true,sz:18}),shade:'F4F6F7'},{xml:P('')}];});
+  if(crows.length) b.push(TB(crows,[1700,4260,900,2500]));
+  sigNotes().forEach(function(t){b.push(P(t,{sz:16,color:'5C6D78'}));});
+  b.push(P(L('disclaimer','This record is an assessment. It is not a concurrence.'),{sz:15,color:'8998A2'}));
+  return b.join('');
+}
+function subjectFilled(){
+  var n=ITEMS.filter(function(v){return v.trim();}).length>=2;
+  return hasPin() ? (PIN.trim()&&n) : n;
+}
+function subjectKey(){return hasPin()?pinNow():names()[0];}
+function doDownload(){
+  var p=curPath()||{};
+  if(!subjectFilled()){
+    var w=String(p.itemName||'Item').toLowerCase()+'s';
+    $('msg').textContent=hasPin()?'Name the '+(p.pinShort||p.pinLabel)+' and at least two '+w+' first.':'Name at least two '+w+' first.'; return; }
+  try{
+    var title=(TL.docTitle||'Assessment')+': '+(hasPin()?pinNow():names().join(' and '));
+    var by=packDocx(docBody(),title,ASSESSOR);
+    dlBytes(by,(TL.fileStem||'Assessment')+'_'+slugN(subjectKey(),36)+'_'+(DATE||today())+'.docx',DOCX_MIME);
+    $('msg').textContent='Downloaded.';
+  }catch(e){ $('msg').textContent='Build failed: '+e.message; }
+}
+/* ---- save and resume ---- */
+function stateBlob(){
+  return {tool:TL.id,rev:TL.rev,build:BUILD,path:PATH,items:ITEMS,pin:PIN,
+            assessor:ASSESSOR,date:DATE,answers:A,format:2,
+            criteria:ITEMS.map(function(x,i){return critOf(i);}),fail:FAIL,reframe:RF,reframePin:RFPIN,
+            rationale:($('f-rat')?$('f-rat').value:RAT)};
+}
+function doSave(){
+  dlBytes(utf8(JSON.stringify(stateBlob(),null,1)),
+    (TL.fileStem||'Assessment')+'_'+slugN(subjectKey()||'draft',36)+'_'+(DATE||today())+'.json','application/json');
+  if($('msg')) $('msg').textContent='Assessment saved. Reopen it with Open saved assessment.';
+}
+function applyBlob(o){
+  function strList(x){
+    var a=Array.isArray(x)?x.map(function(v){return typeof v==='string'?v:'';}):[];
+    while(a.length<2) a.push('');
+    return a;
+  }
+  PATH=PATHS.some(function(p){return p.id===o.path;})?o.path:null;
+  ITEMS=strList(o.items&&o.items.length?o.items:o.inst);
+  if(o.path==='B'&&Array.isArray(o.inst)&&o.inst.some(function(v){return v;})) ITEMS=strList(o.inst);
+  PIN=typeof o.pin==='string'?o.pin:'';
+  ASSESSOR=typeof o.assessor==='string'?o.assessor:'';
+  DATE=typeof o.date==='string'?o.date:today();
+  A=(o.answers&&typeof o.answers==='object'&&!Array.isArray(o.answers))?o.answers:{};
+  var c=o.criteria;
+  OLDCRIT=false;
+  if(Array.isArray(c)&&c.every(Array.isArray))
+    CRIT=c.map(function(l){return l.filter(function(k){return typeof k==='string'&&critIdx(k)<99;});});
+  else { CRIT=[]; OLDCRIT=Array.isArray(c)&&c.length>0; }
+  FAIL={};
+  if(o.fail&&typeof o.fail==='object'&&!Array.isArray(o.fail))
+    Object.keys(o.fail).forEach(function(g){FAIL[g]=arr(o.fail[g]).filter(function(i){return typeof i==='number'&&i>=0;});});
+  RF=Array.isArray(o.reframe)?o.reframe.map(function(v){return typeof v==='string'?v:'';}):[];
+  RFPIN=typeof o.reframePin==='string'?o.reframePin:'';
+  syncItems(); critSort();
+  EDIT=null;
+  RAT=(typeof o.rationale==='string')?o.rationale:null;
+}
+/* Saves from earlier builds pooled the criteria and did not name failing items.
+   Those answers reopen so the assessor can record them per item. Returns how many reopened. */
+var OLDCRIT=false;
+function afterLoad(){
+  NODES=PATH?buildNodes():[];
+  var re=0;
+  NODES.forEach(function(n){
+    var a=A[n.g]; if(!a) return;
+    var stale=(n.crit&&OLDCRIT)||((n.crit||n.itemPick)&&okFor(n,a)&&!(n.reframe&&a===n.reframe));
+    if(stale){ delete A[n.g]; delete A['@'+n.g]; re++; }
+  });
+  basisNodes().forEach(function(n){ if(A[n.g]&&A['@'+n.g]===undefined) stampBasis(n.g); });
+  OLDCRIT=false;
+  if(re) RAT=null;
+  return re;
+}
+function doLoad(ev){
+  var f=ev.target.files&&ev.target.files[0]; if(!f) return;
+  var r=new FileReader();
+  r.onload=function(){
+    try{
+      var o=JSON.parse(r.result);
+      if(o.tool!==TL.id) throw new Error('not an assessment file for this tool');
+      applyBlob(o); var re=afterLoad(); render();
+      if($('msg2')) $('msg2').textContent=re
+        ? fill(L('loadReopened','Assessment loaded. {n} answer(s) reopened. This build records criteria and failing items per item.'),{n:re})
+        : 'Assessment loaded.';
+    }catch(e){ if($('msg2')) $('msg2').textContent='Could not read that file: '+e.message; }
+  };
+  r.readAsText(f);
+  ev.target.value='';
+}
+guardUnload(function(){return Object.keys(A).length||critAny().length;});
+
+/* ---- the builder keeps answers across a preview refresh ---- */
+window.__getState=function(){var o=stateBlob();o.rationale=RAT;o.edit=EDIT;return o;};
+window.__setState=function(o){ if(!o) return; window.__noFocus=1; applyBlob(o); afterLoad(); EDIT=o.edit||null; if(!NODES) NODES=[]; render(); window.__noFocus=0; };
+window.__recordText=function(){ if(!PATH) return {text:'',note:'Pick a path in the preview to begin.'}; if(!leafKey()) return {text:'',note:'Answer the questions to reach a verdict. The record appears then.'}; return {text:textOut(),note:'This is the Copy text. The Word record carries the same content.'}; };
+window.textOut=textOut; window.leafKey=leafKey;
+render();
+
+</script>
+</body>
+</html>
