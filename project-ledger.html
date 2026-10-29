@@ -943,6 +943,16 @@ function stackedDaily(){
   return svg(W,H,g);
 }
 
+/* Split text into lines of at most n characters, breaking between words. */
+function wrapWords(text,n){
+  var lines=[], cur="";
+  String(text).split(/\s+/).forEach(function(w){
+    while(w.length>n){ if(cur){ lines.push(cur); cur=""; } lines.push(w.slice(0,n)); w=w.slice(n); }
+    if(!cur) cur=w; else if((cur+" "+w).length<=n) cur+=" "+w; else { lines.push(cur); cur=w; }
+  });
+  if(cur) lines.push(cur);
+  return lines.length?lines:[""];
+}
 function rankBars(){
   var r=range(), agg=hoursByProject(r), total=totalOf(entriesIn(r));
   if(!agg.length) return emptyBox("Log some hours to see project totals.");
@@ -953,16 +963,18 @@ function rankBars(){
   var tail=agg.slice(SHOW);
   if(tail.length) rows.push({label:"Other ("+tail.length+" project"+(tail.length>1?"s":"")+")",
     value:tail.reduce(function(s,d){ return s+d.value; },0), color:OTHER_COLOR});
-  var max=rows[0].value, rowH=26, W=560, H=rows.length*rowH+8, barX=176, barW=W-barX-64, g="";
-  rows.forEach(function(d,i){
-    var y=i*rowH+4, name=d.label;
-    if(name.length>27) name=name.slice(0,26)+"…";
-    g+='<text x="0" y="'+(y+14)+'" font-size="12.5" fill="#14231F" font-family="inherit">'+esc(name)+'</text>';
-    g+='<rect x="'+barX+'" y="'+(y+4)+'" width="'+barW+'" height="12" fill="#EDF0EC" rx="2"/>';
-    g+='<rect x="'+barX+'" y="'+(y+4)+'" width="'+Math.max(1,(d.value/max)*barW)+'" height="12" fill="'+d.color+'" rx="2"/>';
-    g+='<text x="'+W+'" y="'+(y+14)+'" text-anchor="end" font-size="12" fill="#14231F" font-family="inherit">'+fmt(d.value)+' h · '+Math.round(d.value/total*100)+'%</text>';
+  /* Long names wrap onto extra lines; each row grows to fit. */
+  var max=rows[0].value, LINE=15, W=560, barX=176, barW=W-barX-84, g="", y=4;
+  rows.forEach(function(d){
+    var lines=wrapWords(d.label,26), h=26+(lines.length-1)*LINE, by=y+(h-26)/2;
+    g+='<text x="0" y="'+(y+14)+'" font-size="12.5" fill="#14231F" font-family="inherit">'+
+      lines.map(function(l,j){ return '<tspan x="0" dy="'+(j?LINE:0)+'">'+esc(l)+'</tspan>'; }).join("")+'</text>';
+    g+='<rect x="'+barX+'" y="'+(by+4)+'" width="'+barW+'" height="12" fill="#EDF0EC" rx="2"/>';
+    g+='<rect x="'+barX+'" y="'+(by+4)+'" width="'+Math.max(1,(d.value/max)*barW)+'" height="12" fill="'+d.color+'" rx="2"/>';
+    g+='<text x="'+W+'" y="'+(by+14)+'" text-anchor="end" font-size="12" fill="#14231F" font-family="inherit">'+fmt(d.value)+' h · '+Math.round(d.value/total*100)+'%</text>';
+    y+=h;
   });
-  return svg(W,H,g);
+  return svg(W,y+4,g);
 }
 
 function payPeriodChart(pp){
@@ -1085,7 +1097,7 @@ function renderFigures(list,total,r){
   var pp=payPeriodFor(iso(anchor));
   if(pp) figs.push({k:"Pay period so far",v:fmt(totalOf(entriesIn(pp)))+" of "+fmt(state.settings.periodHours),cls:"pp-only"});
   var bp=top?projName(top.id):"—";
-  figs.push({k:"Biggest project",v:(bp.length>52?bp.slice(0,51)+"…":bp),cls:"name"});
+  figs.push({k:"Biggest project",v:bp,cls:"name"});
   $("#figures").innerHTML=figs.map(function(f){
     return '<div class="fig '+(f.cls||"")+'"><div class="v num">'+esc(f.v)+'</div><div class="k">'+esc(f.k)+'</div></div>';
   }).join("");
@@ -2191,7 +2203,10 @@ function winCaption(w,showProject,showTag){
 function perLineAt(widthIn,pt){ return Math.max(8,Math.floor(widthIn/(pt*0.0064))); }
 function textHeight(text,widthIn,pt){ return deckLines(text,perLineAt(widthIn,pt))*pt*1.22/72; }
 var WIN_W=11.78, WIN_CAPTION=0.22, WIN_GAP=0.15, GROUP_HEAD=0.5;
-function winHeight(w,noStar){ return textHeight((w.star&&!noStar?"★ ":"")+w.text,WIN_W,14)+WIN_CAPTION+WIN_GAP; }
+function winHeight(w,noStar){
+  var cap=Math.max(WIN_CAPTION,textHeight(winCaption(w,true,true),WIN_W,11)+0.04);
+  return textHeight((w.star&&!noStar?"★ ":"")+w.text,WIN_W,14)+cap+WIN_GAP;
+}
 
 /* keep: optional filter (weekly highlights pass starred wins only).
    titles: {first, cont, section}. */
@@ -2319,6 +2334,13 @@ function deckPlan(o){
 }
 
 /* Titles are messages. Long ones fall back to a plain label so they never wrap. */
+/* Font size that fits a name in a box two lines tall: 14pt on one line, else 12pt, else 10pt. */
+function nameFit(text,widthIn){
+  if(deckLines(text,perLineAt(widthIn,14))<=1) return 14;
+  return deckLines(text,perLineAt(widthIn,12))<=2 ? 12 : 10;
+}
+/* Chart category labels: break long names onto extra lines. */
+function chartLabel(text,n){ return wrapWords(text,n||30).join("\n"); }
 function fitTitle(msg,fallback){ return msg.length<=50 ? msg : fallback; }
 
 var MONTHFULL=["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -2389,7 +2411,7 @@ function buildDeck(o){
       top.forEach(function(d,i){
         var y=4.2+i*0.52;
         chip(s,DK.X,y+0.1,0.18,projColor(d.id));
-        txt(s,clip(projName(d.id),44),{x:DK.X+0.32,y:y,w:4.3,h:0.4,fontSize:14,color:DK.INK,valign:"middle"});
+        txt(s,projName(d.id),{x:DK.X+0.32,y:y-0.04,w:4.3,h:0.48,fontSize:nameFit(projName(d.id),4.3),color:DK.INK,valign:"middle"});
         txt(s,fmt(d.value)+" h · "+Math.round(d.value/total*100)+"%",{x:DK.X+4.6,y:y,w:1.3,h:0.4,fontSize:14,color:DK.MUTED,align:"right",valign:"middle"});
       });
       var spg=popSplit(r);
@@ -2400,8 +2422,9 @@ function buildDeck(o){
       var dl=done.slice(0,4);
       if(!dl.length) txt(s,"None this "+name+".",{x:rx,y:4.15,w:5.8,h:0.4,fontSize:14,color:DK.MUTED});
       dl.forEach(function(pr,i){
-        txt(s,[{text:clip(pr.name,46),options:{color:DK.INK}},{text:"  "+prettyDate(pr.completedOn),options:{color:DK.MUTED}}],
-          {x:rx,y:4.2+i*0.52,w:5.8,h:0.4,fontSize:14,valign:"middle"});
+        var cl=pr.name+"  "+prettyDate(pr.completedOn);
+        txt(s,[{text:pr.name,options:{color:DK.INK}},{text:"  "+prettyDate(pr.completedOn),options:{color:DK.MUTED}}],
+          {x:rx,y:4.16+i*0.52,w:5.8,h:0.48,fontSize:nameFit(cl,5.8),valign:"middle"});
       });
       if(done.length>4) txt(s,"And "+(done.length-4)+" more.",{x:rx,y:4.2+4*0.52,w:5.8,h:0.4,fontSize:12,color:DK.MUTED});
       var pp=view==="week"?payPeriodFor(iso(anchor)):null;
@@ -2434,7 +2457,7 @@ function buildDeck(o){
     }
     if(p.kind==="projects"){
       var shown=projAgg.slice(0,10), rest=projAgg.slice(10);
-      var labels=shown.map(function(d){ return clip(projName(d.id),42); });
+      var labels=shown.map(function(d){ return chartLabel(projName(d.id),34); });
       var vals=shown.map(function(d){ return Math.round(d.value*100)/100; });
       var cols=shown.map(function(d){ return hx(projColor(d.id)); });
       if(rest.length){
@@ -2443,8 +2466,9 @@ function buildDeck(o){
         cols.push(hx(UNTAGGED_COLOR));
       }
       var lead=projAgg[0];
-      s=slide("Summary",fitTitle(clip(projName(lead.id),30)+" led with "+fmt(lead.value)+" hours","Time by project"));
-      var ch=Math.min(5.0,0.42*labels.length+0.6);
+      s=slide("Summary",fitTitle(projName(lead.id)+" led with "+fmt(lead.value)+" hours","Time by project"));
+      var nLines=labels.reduce(function(a,l){ return a+l.split("\n").length; },0);
+      var ch=Math.min(5.0,0.3*labels.length+0.16*nLines+0.6);
       var opt=axis();
       Object.assign(opt,{x:DK.X,y:1.5,w:DK.CW,h:ch,barDir:"bar",catAxisOrientation:"maxMin",valAxisHidden:true,valGridLine:{style:"none"},
         showValue:true,dataLabelPosition:"outEnd",dataLabelFormatCode:"General",dataLabelColor:DK.INK,dataLabelFontSize:12,
@@ -2477,7 +2501,7 @@ function buildDeck(o){
       Object.assign(po,{x:5.2,y:2.0,w:7.53,h:Math.min(4.55,0.5*bars.length+0.6),barDir:"bar",catAxisOrientation:"maxMin",valAxisHidden:true,valGridLine:{style:"none"},
         showValue:true,dataLabelPosition:"outEnd",dataLabelFormatCode:"General",dataLabelColor:DK.INK,dataLabelFontSize:12,
         barGapWidthPct:45,chartColors:[hx(POP_COLOR)],showLegend:false});
-      s.addChart(pptx.ChartType.bar,[{name:"Hours",labels:bars.map(function(d){ return clip(d.label,36); }),values:bars.map(function(d){ return Math.round(d.value*100)/100; })}],po);
+      s.addChart(pptx.ChartType.bar,[{name:"Hours",labels:bars.map(function(d){ return chartLabel(d.label,28); }),values:bars.map(function(d){ return Math.round(d.value*100)/100; })}],po);
       return;
     }
     if(p.kind==="daily"){
@@ -2505,7 +2529,8 @@ function buildDeck(o){
         var col=pr?projColor(pr.id):UNTAGGED_COLOR, pt=hlFontFor(w.text,L,14)||hlFontFor(w.text,L,12)||12;
         s.addShape(pptx.ShapeType.roundRect,{x:cx,y:cy,w:B.cw,h:L.h,fill:{color:DK.TINT},line:{color:DK.TINT},rectRadius:0.08});
         chip(s,cx+0.3,cy+0.33,0.2,col);
-        txt(s,pr?clip(pr.name+(pr.tag?" · "+pr.tag:""),perLineAt(B.tw-0.35,12)):"No project",{x:cx+0.62,y:cy+0.25,w:B.tw-0.32,h:0.36,fontSize:12,color:DK.MUTED,valign:"middle"});
+        var hl=pr?pr.name+(pr.tag?" · "+pr.tag:""):"No project", hlLines=deckLines(hl,perLineAt(B.tw-0.32,12));
+        txt(s,hl,{x:cx+0.62,y:cy+0.22,w:B.tw-0.32,h:hlLines>1?0.48:0.36,fontSize:hlLines>2?10:12,color:DK.MUTED,valign:hlLines>1?"top":"middle"});
         txt(s,w.text,{x:cx+0.3,y:cy+0.75,w:B.tw,h:B.th,fontSize:pt,color:DK.INK,valign:"top",fit:"shrink"});
         txt(s,prettyDate(w.date),{x:cx+0.3,y:cy+L.h-0.42,w:B.tw,h:0.3,fontSize:11,color:DK.MUTED});
       });
