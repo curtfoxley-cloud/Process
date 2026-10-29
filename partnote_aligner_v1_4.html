@@ -1,0 +1,2331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EBOM Part Note Aligner</title>
+<style>
+/* ── PALETTE ─────────────────────────────────────────────────────────────────
+   Dark is the default and matches Comparator's dark palette. Light matches
+   Comparator's light palette. Every colour below is a token; nothing in the
+   rules further down writes a raw colour. */
+:root {
+  --bg: #111315; --surface: #181b1d; --surface2: #202427; --border: #34393d;
+  --accent: #5b9fc4; --accent-dim: #14222e; --on-accent: #0b0d0e;
+  --success: #3fb950; --success-dim: #0d2b1a;
+  --warn: #d29922; --warn-dim: #2d2000;
+  --danger: #f85149; --danger-dim: #2c0b0b;
+  --text: #e7e9e8; --text-muted: #92999c;
+  --row-hover: #21262a; --row-line: #ffffff20; --scrim: rgba(0,0,0,.72);
+  --fs-xs: 11px; --fs-sm: 12px; --fs-md: 13px; --fs-lg: 14px; --fs-hero: 26px;
+  --track-caps: .04em;
+  --radius-sm: 2px; --radius-md: 4px; --radius-lg: 6px;
+  --disabled-opacity: .5;
+  --mono: 'IBM Plex Mono', Consolas, 'Cascadia Mono', Menlo, monospace;
+  --sans: 'IBM Plex Sans', 'Segoe UI', system-ui, -apple-system, Arial, sans-serif;
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  --bg: #f5f5f3; --surface: #ffffff; --surface2: #f0f0ed; --border: #d2d2ce;
+  --accent: #265873; --accent-dim: #e3ecf1; --on-accent: #ffffff;
+  --success: #336645; --success-dim: #e4ede6;
+  --warn: #68641d; --warn-dim: #edecdc;
+  --danger: #9d4c2a; --danger-dim: #f0e5df;
+  --text: #1e262e; --text-muted: #56666f;
+  --row-hover: #eeeeea; --row-line: #1e262e14; --scrim: rgba(30,38,46,.45);
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--bg); }
+body { color: var(--text); font-family: var(--sans); font-size: var(--fs-lg); line-height: 1.45;
+       min-height: 100vh; font-variant-numeric: tabular-nums; }
+button, input, select { font: inherit; color: inherit; }
+[hidden] { display: none !important; }
+
+/* ── HEADER ── */
+.topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 28px;
+          display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.brand { display: flex; align-items: baseline; gap: 10px; }
+.brand-name { font-weight: 600; font-size: 18px; letter-spacing: .01em; }
+.pill { font-family: var(--mono); font-size: var(--fs-xs); color: var(--text-muted); border: 1px solid var(--border);
+        border-radius: var(--radius-md); padding: 1px 6px; }
+.topbar-right { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; font-size: var(--fs-sm); color: var(--text-muted); }
+.topbar select { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-md);
+                 padding: 3px 6px; margin-left: 6px; font-size: var(--fs-sm); }
+
+main { max-width: 1440px; margin: 0 auto; padding: 22px 28px 60px; }
+.section { margin-bottom: 26px; }
+.section-title { font-family: var(--mono); font-size: var(--fs-sm); font-weight: 700; text-transform: uppercase;
+                 letter-spacing: var(--track-caps); color: var(--text-muted); padding-bottom: 8px; margin-bottom: 14px;
+                 border-bottom: 1px solid var(--border); display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; }
+.section-title .sub { font-family: var(--sans); font-weight: 400; text-transform: none; letter-spacing: 0; }
+
+.banner { border: 1px solid; border-radius: var(--radius-lg); padding: 12px 16px; margin: 16px 28px 0; font-size: var(--fs-md); }
+.banner-danger { border-color: var(--danger); background: var(--danger-dim); color: var(--text); }
+
+/* ── FILE CARDS ── */
+.cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); display: flex; flex-direction: column; min-width: 0; }
+.drop { border: 1px dashed var(--border); border-radius: var(--radius-lg); margin: 12px; padding: 18px 14px; text-align: center;
+        cursor: pointer; transition: border-color .15s, background .15s; }
+.drop:hover, .drop:focus-visible { border-color: var(--accent); outline: none; }
+.drop.drag { border-color: var(--accent); background: var(--accent-dim); }
+.drop.loaded { border-style: solid; border-color: var(--text-muted); }
+.drop.busy { cursor: progress; }
+.tag { display: inline-block; font-family: var(--mono); font-size: var(--fs-xs); font-weight: 700; text-transform: uppercase;
+       letter-spacing: var(--track-caps); color: var(--text-muted); border: 1px solid var(--border); border-radius: var(--radius-md);
+       padding: 3px 10px; margin-bottom: 8px; }
+.drop-hint { font-size: var(--fs-sm); color: var(--text-muted); }
+.drop-file { font-family: var(--mono); font-size: var(--fs-sm); color: var(--text-muted); margin-top: 6px; word-break: break-all; }
+.drop.loaded .drop-file { color: var(--text); }
+.drop-meta { font-size: var(--fs-sm); color: var(--text-muted); margin-top: 2px; }
+.card-err { color: var(--danger); font-size: var(--fs-sm); margin: 0 14px 12px; }
+.card-err:empty { display: none; }
+
+.mapbar { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--border); flex-wrap: wrap; }
+.mapbar-label { font-family: var(--mono); font-size: var(--fs-xs); font-weight: 700; text-transform: uppercase; letter-spacing: var(--track-caps);
+                color: var(--text-muted); margin-right: 4px; }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; }
+.seg button { background: transparent; border: 0; padding: 4px 12px; font-family: var(--mono); font-size: var(--fs-xs); font-weight: 700;
+              text-transform: uppercase; letter-spacing: var(--track-caps); color: var(--text-muted); cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--border); }
+.seg button.active { background: var(--accent-dim); color: var(--accent); }
+.seg button:hover:not(.active) { color: var(--text); }
+
+.readout { padding: 0 14px 14px; overflow-x: auto; }
+.readout table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+.readout th { text-align: left; font-family: var(--mono); font-size: var(--fs-xs); font-weight: 700; text-transform: uppercase;
+              letter-spacing: var(--track-caps); color: var(--text-muted); padding: 6px 8px 6px 0; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.readout td { padding: 6px 8px 6px 0; border-bottom: 1px solid var(--row-line); vertical-align: top; color: var(--text-muted); }
+.readout td.col { font-family: var(--mono); color: var(--text); font-weight: 700; white-space: nowrap; }
+.readout td.fld { color: var(--text); white-space: nowrap; }
+.readout td.smp { font-family: var(--mono); overflow-wrap: anywhere; }
+.readout .note-warn { color: var(--warn); }
+.readout .note-ok { color: var(--text-muted); }
+
+/* ── RUN ── */
+.run-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.btn { font-family: var(--mono); font-size: var(--fs-sm); font-weight: 700; letter-spacing: var(--track-caps); text-transform: uppercase;
+       border: 1px solid transparent; border-radius: var(--radius-md); padding: 10px 20px; cursor: pointer; transition: opacity .15s, border-color .15s, color .15s; }
+.btn-primary { background: var(--accent); color: var(--on-accent); }
+.btn-primary:hover:not(:disabled) { opacity: .88; }
+.btn-secondary { background: transparent; color: var(--text-muted); border-color: var(--border); }
+.btn-secondary:hover:not(:disabled) { border-color: var(--text-muted); color: var(--text); }
+.btn:disabled { opacity: var(--disabled-opacity); cursor: not-allowed; }
+.run-status { font-size: var(--fs-sm); color: var(--text-muted); }
+.progress { height: 4px; background: var(--surface2); border-radius: var(--radius-sm); margin-top: 12px; overflow: hidden; max-width: 520px; }
+.progress .bar { height: 100%; width: 0; background: var(--accent); transition: width .1s; }
+.msg { border: 1px solid; border-radius: var(--radius-lg); padding: 12px 16px; margin-top: 14px; font-size: var(--fs-md); max-width: 980px; }
+.msg-danger { border-color: var(--danger); background: var(--danger-dim); }
+.msg-warn { border-color: var(--warn); background: var(--warn-dim); }
+.msg b { font-weight: 600; }
+
+/* ── RESULTS ── */
+.kpis { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 16px; }
+.kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px 16px; min-width: 0; }
+.kpi .n { font-family: var(--mono); font-size: var(--fs-hero); font-weight: 700; line-height: 1.15; }
+.kpi .l { font-family: var(--mono); font-size: var(--fs-xs); font-weight: 700; text-transform: uppercase; letter-spacing: var(--track-caps); color: var(--text-muted); margin-top: 4px; }
+.kpi .s { font-size: var(--fs-sm); color: var(--text-muted); margin-top: 2px; }
+.kpi.ok .n { color: var(--success); }
+.kpi.warn .n { color: var(--warn); }
+
+.grid2 { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 16px; margin-bottom: 16px; align-items: start; }
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px; min-width: 0; }
+.panel-title { font-family: var(--mono); font-size: var(--fs-xs); font-weight: 700; text-transform: uppercase; letter-spacing: var(--track-caps);
+               color: var(--text-muted); margin-bottom: 12px; }
+.dl { border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px 14px; display: flex; gap: 14px; align-items: center; justify-content: space-between; }
+.dl:not([hidden]) ~ .dl { margin-top: 10px; }
+.dl-name { font-weight: 600; font-size: var(--fs-lg); }
+.dl-desc { font-size: var(--fs-sm); color: var(--text-muted); margin-top: 2px; }
+.dl .btn { white-space: nowrap; flex: 0 0 auto; }
+.dl-foot { font-size: var(--fs-sm); color: var(--text-muted); margin-top: 12px; line-height: 1.5; }
+
+.counts { width: 100%; border-collapse: collapse; font-size: var(--fs-md); }
+.counts th { text-align: left; font-family: var(--mono); font-size: var(--fs-xs); font-weight: 700; text-transform: uppercase;
+             letter-spacing: var(--track-caps); color: var(--text-muted); padding: 12px 0 6px; border-bottom: 1px solid var(--border); }
+.counts tr:first-child th { padding-top: 0; }
+.counts td { padding: 5px 0; border-bottom: 1px solid var(--row-line); color: var(--text-muted); }
+.counts td.v { text-align: right; font-family: var(--mono); color: var(--text); padding-left: 16px; white-space: nowrap; }
+.counts td.v.warn { color: var(--warn); }
+.rules { font-size: var(--fs-sm); color: var(--text-muted); margin-top: 12px; line-height: 1.55; }
+.rules b { color: var(--text); font-weight: 600; }
+
+.toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+.tabs { display: inline-flex; gap: 4px; }
+.tab { background: transparent; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 6px 12px; font-size: var(--fs-md); color: var(--text-muted); cursor: pointer; }
+.tab.active { border-color: var(--accent); color: var(--text); background: var(--accent-dim); }
+.chips { display: inline-flex; gap: 4px; }
+.chip { background: transparent; border: 1px solid var(--border); border-radius: 999px; padding: 4px 10px; font-size: var(--fs-sm); color: var(--text-muted); cursor: pointer; }
+.chip.active { border-color: var(--text-muted); color: var(--text); background: var(--surface2); }
+.search { flex: 1 1 260px; min-width: 200px; max-width: 420px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-md);
+          padding: 6px 10px; font-size: var(--fs-md); }
+.search:focus { outline: none; border-color: var(--accent); }
+.tbl-wrap { overflow: auto; max-height: 68vh; border: 1px solid var(--border); border-radius: var(--radius-md); }
+table.data { border-collapse: collapse; width: 100%; font-size: var(--fs-sm); }
+table.data th { position: sticky; top: 0; z-index: 1; background: var(--surface2); text-align: left; font-family: var(--mono); font-size: var(--fs-xs);
+                font-weight: 700; text-transform: uppercase; letter-spacing: var(--track-caps); color: var(--text-muted);
+                padding: 8px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+table.data td { padding: 6px 10px; border-bottom: 1px solid var(--row-line); vertical-align: top; color: var(--text-muted); }
+table.data tr:hover td { background: var(--row-hover); }
+table.data td.key { font-family: var(--mono); color: var(--text); white-space: nowrap; }
+table.data td.num { font-family: var(--mono); text-align: right; white-space: nowrap; }
+table.data td.wrap { min-width: 180px; max-width: 360px; }
+.notes { display: grid; grid-template-columns: max-content minmax(220px, 520px); column-gap: 14px; row-gap: 3px; }
+.notes .c { font-family: var(--mono); color: var(--text); white-space: nowrap; }
+.notes .t { white-space: pre-wrap; word-break: break-word; }
+.empty { padding: 28px; text-align: center; color: var(--text-muted); font-size: var(--fs-md); }
+.pager { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 10px; font-size: var(--fs-sm); color: var(--text-muted); flex-wrap: wrap; }
+.pager .btn { padding: 6px 12px; }
+
+/* ── MODE ── */
+.modebar { display: flex; gap: 14px; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+           padding: 12px 16px; margin-bottom: 22px; }
+.modebar.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; background: var(--accent-dim); }
+.mode-name { font-weight: 600; cursor: pointer; }
+.mode-desc { font-size: var(--fs-sm); color: var(--text-muted); margin-top: 2px; }
+.modebar.on .mode-desc { color: var(--text); }
+.switch { position: relative; display: inline-block; width: 42px; height: 24px; flex: 0 0 auto; }
+.switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+.slider { position: absolute; inset: 0; background: var(--surface2); border: 1px solid var(--text-muted); border-radius: 999px; cursor: pointer; transition: background .15s, border-color .15s; }
+.slider::before { content: ''; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px; border-radius: 50%; background: var(--text-muted); transition: transform .15s, background .15s; }
+.switch input:checked + .slider { background: var(--accent); border-color: var(--accent); }
+.switch input:checked + .slider::before { transform: translateX(18px); background: var(--on-accent); }
+.switch input:focus-visible + .slider { outline: 2px solid var(--accent); outline-offset: 2px; }
+.switch input:disabled + .slider { opacity: var(--disabled-opacity); cursor: not-allowed; }
+.readout-note { font-size: var(--fs-sm); color: var(--text-muted); margin-top: 8px; line-height: 1.5; }
+.rules-off { font-size: var(--fs-md); color: var(--warn); margin-top: 12px; }
+table.data td.ssav-cell { font-family: var(--mono); white-space: nowrap; }
+.left-out { font-family: var(--sans); font-size: var(--fs-xs); color: var(--warn); margin-left: 6px; }
+.kpis.six { grid-template-columns: repeat(6, 1fr); }
+
+/* ── CODE RULES ── */
+.rules-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.rules-bar .btn { padding: 7px 14px; }
+.rules-empty { font-size: var(--fs-md); color: var(--text-muted); margin-top: 12px; }
+.rules-err { color: var(--danger); font-size: var(--fs-sm); margin-top: 10px; }
+.rules-err:empty { display: none; }
+.rules-note { font-size: var(--fs-sm); color: var(--text-muted); margin-top: 10px; line-height: 1.5; }
+.rules-table { border-collapse: collapse; width: 100%; font-size: var(--fs-md); margin-top: 14px; }
+.rules-table th { text-align: left; font-family: var(--mono); font-size: var(--fs-xs); font-weight: 700; text-transform: uppercase; letter-spacing: var(--track-caps);
+                  color: var(--text-muted); padding: 6px 12px 6px 0; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.rules-table th.r { text-align: right; }
+.rules-table td { padding: 6px 12px 6px 0; border-bottom: 1px solid var(--row-line); color: var(--text-muted); vertical-align: top; }
+.rules-table td.code { font-family: var(--mono); color: var(--text); white-space: nowrap; }
+.rules-table td.num { font-family: var(--mono); color: var(--text); text-align: right; white-space: nowrap; }
+.rules-table td.num.warn { color: var(--warn); }
+.rules-table td.op { color: var(--text-muted); padding-right: 12px; }
+.rules-wrap { overflow-x: auto; }
+.modal.modal-wide { width: min(920px, 100%); }
+.rule-edit { border-collapse: collapse; width: 100%; }
+.rule-edit th { text-align: left; font-family: var(--mono); font-size: var(--fs-xs); font-weight: 700; text-transform: uppercase; letter-spacing: var(--track-caps);
+                color: var(--text-muted); padding: 0 8px 6px 0; white-space: nowrap; }
+.rule-edit td { padding: 4px 8px 4px 0; vertical-align: middle; }
+.rule-edit td.n { font-family: var(--mono); font-size: var(--fs-sm); color: var(--text-muted); width: 24px; }
+.rule-edit td.op { color: var(--text-muted); font-size: var(--fs-md); padding-right: 8px; }
+.rule-in { width: 100%; min-width: 72px; font-family: var(--mono); font-size: var(--fs-md); background: var(--bg); border: 1px solid var(--border);
+           border-radius: var(--radius-md); padding: 5px 8px; }
+.rule-in.txt { font-family: var(--sans); min-width: 180px; }
+.rule-in:focus { outline: none; border-color: var(--accent); }
+
+/* ── MODAL ── */
+.overlay { position: fixed; inset: 0; background: var(--scrim); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 50; }
+.modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); width: min(640px, 100%); max-height: 90vh; overflow: auto; }
+.modal-head { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px 12px; border-bottom: 1px solid var(--border); }
+.modal-title { font-weight: 600; }
+.modal-body { padding: 16px 20px 20px; }
+.modal-intro { font-size: var(--fs-sm); color: var(--text-muted); line-height: 1.55; margin-bottom: 14px; }
+.map-table { border-collapse: collapse; width: 100%; }
+.map-table td { padding: 6px 12px 6px 0; vertical-align: middle; font-size: var(--fs-md); }
+.map-table td.lbl { white-space: nowrap; }
+.map-table td.hint { font-size: var(--fs-sm); color: var(--text-muted); }
+.map-col-input { width: calc(12ch + 20px); font-family: var(--mono); font-size: var(--fs-md); text-transform: uppercase; background: var(--bg);
+                 border: 1px solid var(--border); border-radius: var(--radius-md); padding: 5px 8px; }
+.map-col-input:focus { outline: none; border-color: var(--accent); }
+.map-col-input::placeholder { text-transform: none; color: var(--text-muted); }
+.modal-actions { display: flex; gap: 10px; margin-top: 18px; }
+.modal-err { color: var(--danger); font-size: var(--fs-sm); margin-top: 10px; min-height: 16px; }
+.icon-btn { background: transparent; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 3px 10px; font-size: var(--fs-sm); color: var(--text-muted); cursor: pointer; }
+.icon-btn:hover { color: var(--text); border-color: var(--text-muted); }
+
+.toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); background: var(--surface2); border: 1px solid var(--border);
+         border-radius: var(--radius-md); padding: 10px 16px; font-size: var(--fs-md); z-index: 60; max-width: calc(100% - 32px); }
+
+@media (max-width: 1100px) { .kpis, .kpis.six { grid-template-columns: repeat(3, 1fr); } .grid2 { grid-template-columns: 1fr; } }
+@media (max-width: 860px) { .cards { grid-template-columns: 1fr; } }
+@media (max-width: 600px) {
+  .topbar, main { padding-left: 16px; padding-right: 16px; }
+  .banner { margin-left: 16px; margin-right: 16px; }
+  .kpis, .kpis.six { grid-template-columns: repeat(2, 1fr); }
+  .dl { flex-direction: column; align-items: stretch; }
+}
+@media print { .topbar-right, .run-row, .mapbar, .toolbar, .pager { display: none !important; } .tbl-wrap { max-height: none; overflow: visible; } }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand"><span class="brand-name">EBOM Part Note Aligner</span><span class="pill" id="ver"></span></div>
+  <div class="topbar-right">
+    <span>Runs offline. Your files never leave this computer.</span>
+    <label>Theme<select id="theme-select"><option value="dark">Dark</option><option value="light">Light</option></select></label>
+  </div>
+</header>
+<div id="compat" class="banner banner-danger" hidden></div>
+
+<main>
+  <div class="modebar" id="modebar">
+    <label class="switch"><input type="checkbox" id="ssav-toggle" role="switch" aria-describedby="ssav-desc"><span class="slider" aria-hidden="true"></span></label>
+    <div class="mode-text">
+      <label for="ssav-toggle" class="mode-name">SSAV Output Mode</label>
+      <div class="mode-desc" id="ssav-desc"></div>
+    </div>
+  </div>
+
+  <section class="section">
+    <div class="section-title">1 · Load files <span class="sub">Excel .xlsx or .xlsm. The tool reads the first sheet of each file. The first row with data is the heading row.</span></div>
+    <div class="cards">
+      <div class="card" id="card-ebom">
+        <div class="drop" id="drop-ebom" role="button" tabindex="0" aria-label="Load the EBOM file">
+          <div class="tag">EBOM</div>
+          <div class="drop-hint">Drop the EBOM here, or click to choose it.</div>
+          <div class="drop-file" id="file-ebom">No file loaded</div>
+          <div class="drop-meta" id="meta-ebom"></div>
+        </div>
+        <div class="card-err" id="err-ebom"></div>
+        <div class="mapbar">
+          <span class="mapbar-label">Columns</span>
+          <span class="seg"><button type="button" id="map-default-ebom">Default</button><button type="button" id="map-manual-ebom">Manual…</button></span>
+        </div>
+        <div class="readout" id="readout-ebom"></div>
+        <input type="file" id="input-ebom" accept=".xlsx,.xlsm" hidden>
+      </div>
+      <div class="card" id="card-trace">
+        <div class="drop" id="drop-trace" role="button" tabindex="0" aria-label="Load the Part Traceability Codes file">
+          <div class="tag">Part Traceability Codes</div>
+          <div class="drop-hint">Drop the part traceability file here, or click to choose it.</div>
+          <div class="drop-file" id="file-trace">No file loaded</div>
+          <div class="drop-meta" id="meta-trace"></div>
+        </div>
+        <div class="card-err" id="err-trace"></div>
+        <div class="mapbar">
+          <span class="mapbar-label">Columns</span>
+          <span class="seg"><button type="button" id="map-default-trace">Default</button><button type="button" id="map-manual-trace">Manual…</button></span>
+        </div>
+        <div class="readout" id="readout-trace"></div>
+        <input type="file" id="input-trace" accept=".xlsx,.xlsm" hidden>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-title">2 · Code rules <span class="sub">Optional. Turn two part note codes on the same line into one new code, for example SER + LOT → M. Rules feed the Rule Members download only.</span></div>
+    <div class="panel rules-panel">
+      <div class="rules-bar">
+        <button type="button" class="btn btn-secondary" id="rules-edit">Edit rules…</button>
+        <button type="button" class="btn btn-secondary" id="rules-load">Load rules file…</button>
+        <button type="button" class="btn btn-secondary" id="rules-save">Save rules file</button>
+        <span class="run-status" id="rules-status"></span>
+      </div>
+      <div class="rules-err" id="rules-err"></div>
+      <div id="rules-list"></div>
+      <input type="file" id="input-rules" accept=".json,application/json" hidden>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-title">3 · Align <span class="sub">Each EBOM line gets the part notes whose part number and next higher both match. Spaces at either end are trimmed and case is ignored.</span></div>
+    <div class="run-row">
+      <button type="button" class="btn btn-primary" id="run-btn" disabled>Align part notes</button>
+      <button type="button" class="btn btn-secondary" id="reset-btn">Start over</button>
+      <span class="run-status" id="run-status">Load both files to begin.</span>
+    </div>
+    <div class="progress" id="progress" hidden><div class="bar" id="progress-bar"></div></div>
+    <div id="run-msg"></div>
+  </section>
+
+  <section class="section" id="results" hidden>
+    <div class="section-title">4 · Results <span class="sub" id="results-sub"></span></div>
+    <div class="kpis" id="kpis"></div>
+    <div class="grid2">
+      <div class="panel">
+        <div class="panel-title">Download</div>
+        <div class="dl" id="dl-ssav-box" hidden>
+          <div><div class="dl-name">SSAV file</div><div class="dl-desc" id="dl-ssav-desc"></div></div>
+          <button type="button" class="btn btn-primary" id="dl-ssav">Download .xlsx</button>
+        </div>
+        <div class="dl" id="dl-joined-box">
+          <div><div class="dl-name">Joined view</div><div class="dl-desc" id="dl-joined-desc"></div></div>
+          <button type="button" class="btn btn-primary" id="dl-joined">Download .xlsx</button>
+        </div>
+        <div class="dl" id="dl-columns-box">
+          <div><div class="dl-name">Columns view</div><div class="dl-desc" id="dl-columns-desc"></div></div>
+          <button type="button" class="btn btn-primary" id="dl-columns">Download .xlsx</button>
+        </div>
+        <div class="dl" id="dl-rules-box" hidden>
+          <div><div class="dl-name">Rule Members view</div><div class="dl-desc" id="dl-rules-desc"></div></div>
+          <button type="button" class="btn btn-primary" id="dl-rules">Download .xlsx</button>
+        </div>
+        <div class="dl-foot" id="dl-foot"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">Summary</div>
+        <div id="counts"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="toolbar">
+        <span class="tabs" id="tabs"></span>
+        <span class="chips" id="chips"></span>
+        <input type="search" class="search" id="search" placeholder="Search part number, next higher, code or text" aria-label="Search the preview">
+      </div>
+      <div id="preview"></div>
+    </div>
+  </section>
+</main>
+
+<div class="overlay" id="overlay" hidden><div class="modal" role="dialog" aria-modal="true" id="modal"></div></div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+'use strict';
+// ════════════════════════════════════════════════════════════════════════════
+// EBOM Part Note Aligner
+//
+// Reads an EBOM and a Part Traceability Codes file, joins them on part number
+// + next higher, and writes the part note codes and text into a COPY of the
+// EBOM workbook. The copy keeps the EBOM's formatting, other sheets and macros
+// because the tool edits the workbook's own XML instead of rebuilding it.
+//
+// No libraries. Excel files are zip archives of XML; the browser's built-in
+// DecompressionStream / CompressionStream do the unzip and zip.
+// ════════════════════════════════════════════════════════════════════════════
+
+const APP_NAME = 'EBOM Part Note Aligner';
+const APP_VERSION = 'v1.4';
+const SEP = '; ';                  // joins several codes (or texts) in one cell
+const BLANK_IN_LIST = '(blank)';   // a blank entry inside a list, so codes and texts stay aligned
+const EXCEL_CELL_MAX = 32767;      // Excel's limit on characters in one cell
+const PAGE_SIZE = 100;
+
+// Column positions are zero-based: A = 0, B = 1, ... AG = 32.
+const DEFAULT_COLS = {
+  // B, D, C; output from AG. The rest are read in SSAV Output Mode only: A Indenture,
+  // E Drawing Number, H Qty, J Drawing Rev Sheet 1, I Qty Text, Q CAGE, R Find No, Z Part Type.
+  ebom:  { pn: 1, nh: 3, desc: 2, out: 32, indenture: 0, dwgNo: 4, qty: 7, dwgRevSh1: 9, qtyText: 8, cage: 16, findNo: 17, partType: 25 },
+  trace: { pn: 1, nh: 3, code: 10, text: 11 },   // B, D, K, L
+};
+const FIELD_DEFS = {
+  ebom: [
+    { key: 'pn',   label: 'Part Number' },
+    { key: 'nh',   label: 'Next Higher Part Number' },
+    { key: 'desc', label: 'Description', hint: 'Shown in the on-screen preview only.' },
+    { key: 'out',  label: 'First output column', hint: 'The part note columns start here.', output: true },
+  ],
+  trace: [
+    { key: 'pn',   label: 'Part Number' },
+    { key: 'nh',   label: 'Next Higher Part Number' },
+    { key: 'code', label: 'Part Note Code' },
+    { key: 'text', label: 'Part Note Text' },
+  ],
+};
+// SSAV Output Mode reads more of the EBOM and writes no column into it.
+// In input column order.
+const SSAV_EBOM_FIELDS = [
+  { key: 'indenture', label: 'Indenture' },
+  { key: 'pn',        label: 'Part Number' },
+  { key: 'desc',      label: 'Description' },
+  { key: 'nh',        label: 'Next Higher Part Number' },
+  { key: 'dwgNo',     label: 'Drawing Number' },
+  { key: 'qty',       label: 'Qty' },
+  { key: 'qtyText',   label: 'Qty Text' },
+  { key: 'dwgRevSh1', label: 'Drawing Rev Sheet 1' },
+  { key: 'cage',      label: 'CAGE' },
+  { key: 'findNo',    label: 'Find No' },
+  { key: 'partType',  label: 'Part Type' },
+];
+// Columns of the owner's SSAV EBOM layout that the SSAV file does not use.
+const SSAV_UNUSED_INPUT = 'F Drawing Type, G Drawing Rev, K Drawing PL Rev, L Drawing Title';
+// The SSAV file (v1.4), column by column, zero-based. `src` copies an input
+// field; `calc` derives the value (see ssavRow). A column with neither is
+// written as a heading only.
+const SSAV_LAYOUT = [
+  { col: 0,  label: 'INDENTURE',        src: 'indenture' },
+  { col: 1,  label: 'NHA_PART_NO',      calc: 'nha' },
+  { col: 2,  label: 'PART_NO',          src: 'pn' },
+  { col: 3,  label: 'ALTFOR_PART_NO' },
+  { col: 4,  label: 'PART_NAME',        src: 'desc' },
+  { col: 5,  label: 'PART_TYPE',        calc: 'partType' },
+  { col: 6,  label: 'CAGE_CODE',        src: 'cage' },
+  { col: 7,  label: 'DWG_NO',           src: 'dwgNo' },
+  { col: 8,  label: 'DWG_REV',          src: 'dwgRevSh1' },
+  { col: 9,  label: 'QUANTITY',         src: 'qty' },
+  { col: 10, label: 'PART_CODE',        calc: 'partCode' },
+  { col: 11, label: 'NHA_FIND_NO',      src: 'findNo' },
+  { col: 12, label: 'TRACE_CODE',       calc: 'trace' },
+  { col: 13, label: 'FRACTURE_CRIT_YN' },
+  { col: 14, label: 'MASTER_MODEL_YN',  calc: 'masterModel' },
+  { col: 15, label: 'PART_SUB_TYPE' },
+  { col: 16, label: 'LIMITED_LIFE_YN',  calc: 'limitedLife' },
+  { col: 17, label: 'ORU_YN' },
+  { col: 18, label: 'EEE_CRIT_YN' },
+  { col: 19, label: 'HAZARD_CRIT_YN' },
+];
+function fieldDefs(type) { return type === 'ebom' && state.ssav ? SSAV_EBOM_FIELDS : FIELD_DEFS[type]; }
+const FILE_LABEL = { ebom: 'EBOM', trace: 'Part Traceability Codes' };
+
+const state = {
+  books: { ebom: null, trace: null },   // loaded workbooks
+  maps:  { ebom: null, trace: null },   // manual column maps, or null for Default
+  rules: [],                            // code rules {a, b, code, text}; empty means off
+  rulesSource: null,                    // the rules file they came from, if unedited
+  ssav: false,                          // SSAV Output Mode
+  result: null,
+  busy: false,
+  view: { tab: 'ebom', filter: 'all', q: '', page: 0 },
+};
+
+class UserError extends Error {}
+
+// ── Small helpers ───────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const tick = () => new Promise(r => setTimeout(r, 0));
+const fmt = n => Number(n).toLocaleString('en-US');
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function colLetter(idx) {
+  let n = Number(idx);
+  if (!(n >= 0)) return '';
+  let s = '';
+  n += 1;
+  while (n > 0) { const r = (n - 1) % 26; s = String.fromCharCode(65 + r) + s; n = Math.floor((n - 1) / 26); }
+  return s;
+}
+function colIndex(letter) {
+  const s = String(letter || '').trim().toUpperCase();
+  if (!/^[A-Z]{1,3}$/.test(s)) return -1;
+  let n = 0;
+  for (let i = 0; i < s.length; i++) n = n * 26 + (s.charCodeAt(i) - 64);
+  return n - 1 <= 16383 ? n - 1 : -1;   // XFD is Excel's last column
+}
+// Comparator's normPN: trim, then upper-case. Nothing else.
+function normPN(v) { return String(v == null ? '' : v).trim().toUpperCase(); }
+function colsFor(type) { return Object.assign({}, DEFAULT_COLS[type], state.maps[type] || {}); }
+
+// ── XML text ────────────────────────────────────────────────────────────────
+// Excel stores some characters as _xHHHH_ (for example _x000D_ for a carriage
+// return). Decoding entities first and then _xHHHH_ in one pass also turns the
+// escape _x005F_ back into a literal underscore, as the format requires.
+function xmlDecode(s) {
+  if (s.indexOf('&') >= 0) {
+    s = s.replace(/&(#x[0-9a-fA-F]+|#[0-9]+|amp|lt|gt|quot|apos);/g, (m, g) =>
+      g === 'amp' ? '&' : g === 'lt' ? '<' : g === 'gt' ? '>' : g === 'quot' ? '"' : g === 'apos' ? "'" :
+      g[1] === 'x' ? String.fromCodePoint(parseInt(g.slice(2), 16)) : String.fromCodePoint(parseInt(g.slice(1), 10)));
+  }
+  if (s.indexOf('_x') >= 0) s = s.replace(/_x([0-9A-Fa-f]{4})_/g, (m, h) => String.fromCharCode(parseInt(h, 16)));
+  return s;
+}
+function xmlText(s) {
+  return String(s)
+    .replace(/_x([0-9A-Fa-f]{4})_/g, '_x005F_x$1_')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/[\x00-\x08\x0B\x0C\x0D\x0E-\x1F\uFFFE\uFFFF]/g, c => '_x' + c.charCodeAt(0).toString(16).toUpperCase().padStart(4, '0') + '_');
+}
+function xmlAttr(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
+}
+const _attrRe = new Map();
+function getAttr(tag, name) {
+  let re = _attrRe.get(name);
+  if (!re) { re = new RegExp('\\s' + name + '\\s*=\\s*(?:"([^"]*)"|\'([^\']*)\')'); _attrRe.set(name, re); }
+  const m = re.exec(tag);
+  return m ? (m[1] !== undefined ? m[1] : m[2]) : null;
+}
+function isTagEnd(b) { return b === 32 || b === 62 || b === 47 || b === 9 || b === 10 || b === 13; }
+// The namespace prefix a part uses for its root element ('' or 'x:'), and the
+// namespace URI bound to it.
+function rootInfo(xml, local) {
+  const m = new RegExp('<(?:([A-Za-z_][\\w.-]*):)?' + local + '[\\s>/]').exec(xml);
+  const pfx = m && m[1] ? m[1] : '';
+  const nm = new RegExp('xmlns' + (pfx ? ':' + pfx : '') + '\\s*=\\s*"([^"]*)"').exec(xml);
+  return { P: pfx ? pfx + ':' : '', ns: nm ? nm[1] : '' };
+}
+// First occurrence of an element start tag (exact name), or -1.
+function findTag(xml, open, from, to) {
+  let s = xml.indexOf(open, from);
+  while (s >= 0 && (to === undefined || s < to)) {
+    if (isTagEnd(xml.charCodeAt(s + open.length))) return s;
+    s = xml.indexOf(open, s + 1);
+  }
+  return -1;
+}
+
+// ── Zip (read) ──────────────────────────────────────────────────────────────
+const utf8 = new TextDecoder('utf-8');
+const utf8enc = new TextEncoder();
+function readZip(buf) {
+  const u8 = new Uint8Array(buf);
+  const dv = new DataView(buf);
+  let eocd = -1;
+  for (let i = u8.length - 22; i >= Math.max(0, u8.length - 65557); i--) {
+    if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  }
+  if (eocd < 0) throw new UserError('This file is not a readable .xlsx workbook.');
+  let count = dv.getUint16(eocd + 10, true);
+  let cdOff = dv.getUint32(eocd + 16, true);
+  if (count === 0xFFFF || cdOff === 0xFFFFFFFF) {           // ZIP64
+    const loc = eocd - 20;
+    if (loc >= 0 && dv.getUint32(loc, true) === 0x07064b50) {
+      const z = Number(dv.getBigUint64(loc + 8, true));
+      if (dv.getUint32(z, true) === 0x06064b50) {
+        count = Number(dv.getBigUint64(z + 32, true));
+        cdOff = Number(dv.getBigUint64(z + 48, true));
+      }
+    }
+  }
+  const entries = [];
+  let p = cdOff;
+  for (let n = 0; n < count; n++) {
+    if (dv.getUint32(p, true) !== 0x02014b50) throw new UserError('This workbook is damaged (its file index cannot be read).');
+    const flags = dv.getUint16(p + 8, true), method = dv.getUint16(p + 10, true);
+    const time = dv.getUint16(p + 12, true), date = dv.getUint16(p + 14, true);
+    const crc = dv.getUint32(p + 16, true);
+    let csize = dv.getUint32(p + 20, true), usize = dv.getUint32(p + 24, true);
+    const nlen = dv.getUint16(p + 28, true), xlen = dv.getUint16(p + 30, true), clen = dv.getUint16(p + 32, true);
+    let lho = dv.getUint32(p + 42, true);
+    const nameBytes = u8.slice(p + 46, p + 46 + nlen);
+    if (usize === 0xFFFFFFFF || csize === 0xFFFFFFFF || lho === 0xFFFFFFFF) {
+      let x = p + 46 + nlen; const xe = x + xlen;
+      while (x + 4 <= xe) {
+        const id = dv.getUint16(x, true), sz = dv.getUint16(x + 2, true);
+        if (id === 1) {
+          let q = x + 4;
+          if (usize === 0xFFFFFFFF) { usize = Number(dv.getBigUint64(q, true)); q += 8; }
+          if (csize === 0xFFFFFFFF) { csize = Number(dv.getBigUint64(q, true)); q += 8; }
+          if (lho === 0xFFFFFFFF) { lho = Number(dv.getBigUint64(q, true)); q += 8; }
+        }
+        x += 4 + sz;
+      }
+    }
+    if (flags & 1) throw new UserError('This workbook is encrypted. Remove the password in Excel and save it again.');
+    if (dv.getUint32(lho, true) !== 0x04034b50) throw new UserError('This workbook is damaged (a part cannot be found).');
+    const start = lho + 30 + dv.getUint16(lho + 26, true) + dv.getUint16(lho + 28, true);
+    entries.push({ name: utf8.decode(nameBytes), nameBytes, flags, method, time, date, crc, csize, usize,
+                   data: u8.subarray(start, start + csize) });
+    p += 46 + nlen + xlen + clen;
+  }
+  return entries;
+}
+async function pipeBytes(u8, transform) {
+  const out = new Response(new Blob([u8]).stream().pipeThrough(transform));
+  return new Uint8Array(await out.arrayBuffer());
+}
+const inflateRaw = u8 => pipeBytes(u8, new DecompressionStream('deflate-raw'));
+const deflateRaw = u8 => pipeBytes(u8, new CompressionStream('deflate-raw'));
+async function entryBytes(e) {
+  if (e.method === 0) return e.data;
+  if (e.method === 8) return inflateRaw(e.data);
+  throw new UserError('This workbook uses a compression method the tool cannot read (method ' + e.method + ').');
+}
+
+// ── Zip (write) ─────────────────────────────────────────────────────────────
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; }
+  return t;
+})();
+function crcUpdate(c, u8) {
+  for (let i = 0; i < u8.length; i++) c = CRC_TABLE[(c ^ u8[i]) & 255] ^ (c >>> 8);
+  return c;
+}
+function crc32(u8) { return (crcUpdate(0xFFFFFFFF, u8) ^ 0xFFFFFFFF) >>> 0; }
+function dosNow() {
+  const d = new Date();
+  return { time: (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1),
+           date: ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate() };
+}
+function hasNonAscii(u8) { for (let i = 0; i < u8.length; i++) if (u8[i] > 127) return true; return false; }
+async function packEntry(nameBytes, data, orig) {
+  const comp = await deflateRaw(data);
+  const t = orig ? { time: orig.time, date: orig.date } : dosNow();
+  return { nameBytes, method: 8, crc: crc32(data), csize: comp.length, usize: data.length, data: comp, time: t.time, date: t.date };
+}
+// The edited sheet as a list of string pieces, encoded and compressed about a
+// megabyte at a time. A large EBOM's sheet runs to 150 MB of text; joining and
+// encoding it in one go takes several seconds and three copies of memory.
+async function packPieces(nameBytes, pieces, orig, onProgress) {
+  const CH = 1 << 20;
+  const cs = new CompressionStream('deflate-raw');
+  const writer = cs.writable.getWriter();
+  const compressed = new Response(cs.readable).arrayBuffer();
+  let crc = 0xFFFFFFFF, usize = 0, buf = '', done = 0;
+  const total = pieces.reduce((a, p) => a + p.length, 0) || 1;
+  const flush = async () => {
+    if (!buf) return;
+    const b = utf8enc.encode(buf);
+    done += buf.length; buf = '';
+    crc = crcUpdate(crc, b); usize += b.length;
+    await writer.write(b);
+    if (onProgress) onProgress(done / total);
+  };
+  for (const p of pieces) {
+    let i = 0;
+    while (i < p.length) {
+      let end = Math.min(p.length, i + CH - buf.length);
+      // never split a surrogate pair between two chunks
+      if (end < p.length && end > i) { const c = p.charCodeAt(end - 1); if (c >= 0xD800 && c <= 0xDBFF) end--; }
+      if (end <= i) { await flush(); continue; }
+      buf += p.slice(i, end);
+      i = end;
+      if (buf.length >= CH - 1) await flush();
+    }
+  }
+  await flush();
+  await writer.close();
+  const comp = new Uint8Array(await compressed);
+  return { nameBytes, method: 8, crc: (crc ^ 0xFFFFFFFF) >>> 0, csize: comp.length, usize, data: comp, time: orig.time, date: orig.date };
+}
+function writeZip(list, mime) {
+  const parts = [], cds = [];
+  let off = 0;
+  for (const e of list) {
+    const nl = e.nameBytes.length, flags = hasNonAscii(e.nameBytes) ? 0x800 : 0;
+    const lh = new Uint8Array(30 + nl), lv = new DataView(lh.buffer);
+    lv.setUint32(0, 0x04034b50, true); lv.setUint16(4, 20, true); lv.setUint16(6, flags, true);
+    lv.setUint16(8, e.method, true); lv.setUint16(10, e.time, true); lv.setUint16(12, e.date, true);
+    lv.setUint32(14, e.crc, true); lv.setUint32(18, e.csize, true); lv.setUint32(22, e.usize, true);
+    lv.setUint16(26, nl, true); lv.setUint16(28, 0, true); lh.set(e.nameBytes, 30);
+    const ch = new Uint8Array(46 + nl), cv = new DataView(ch.buffer);
+    cv.setUint32(0, 0x02014b50, true); cv.setUint16(4, 20, true); cv.setUint16(6, 20, true); cv.setUint16(8, flags, true);
+    cv.setUint16(10, e.method, true); cv.setUint16(12, e.time, true); cv.setUint16(14, e.date, true);
+    cv.setUint32(16, e.crc, true); cv.setUint32(20, e.csize, true); cv.setUint32(24, e.usize, true);
+    cv.setUint16(28, nl, true); cv.setUint32(42, off, true); ch.set(e.nameBytes, 46);
+    parts.push(lh, e.data); cds.push(ch);
+    off += lh.length + e.data.length;
+  }
+  const cdSize = cds.reduce((a, c) => a + c.length, 0);
+  if (list.length > 0xFFFF || off + cdSize > 0xFFFFFFFF) throw new UserError('The output would be larger than 4 GB, which this tool cannot write.');
+  const eo = new Uint8Array(22), ev = new DataView(eo.buffer);
+  ev.setUint32(0, 0x06054b50, true); ev.setUint16(8, list.length, true); ev.setUint16(10, list.length, true);
+  ev.setUint32(12, cdSize, true); ev.setUint32(16, off, true);
+  return new Blob([...parts, ...cds, eo], { type: mime });
+}
+
+// ── Package (the parts inside a workbook) ──────────────────────────────────
+function normPart(p) { return String(p).replace(/\\/g, '/').replace(/^\/+/, ''); }
+function dirOf(p) { const i = p.lastIndexOf('/'); return i < 0 ? '' : p.slice(0, i + 1); }
+function relsPathFor(p) { const d = dirOf(p); return d + '_rels/' + p.slice(d.length) + '.rels'; }
+function resolvePart(baseDir, target) {
+  if (target.startsWith('/')) return normPart(target);
+  const out = [];
+  for (const s of (baseDir + target).split('/')) { if (s === '..') out.pop(); else if (s !== '.' && s !== '') out.push(s); }
+  return out.join('/');
+}
+function safeDecodeURI(s) { try { return decodeURI(s); } catch (e) { return s; } }
+class Pkg {
+  constructor(entries) {
+    this.entries = entries;
+    this.map = new Map(entries.map(e => [normPart(e.name).toLowerCase(), e]));
+  }
+  get(path) { return this.map.get(normPart(path).toLowerCase()) || null; }
+  has(path) { return this.map.has(normPart(path).toLowerCase()); }
+  async text(path) { const e = this.get(path); return e ? utf8.decode(await entryBytes(e)) : null; }
+}
+function parseRels(xml) {
+  const out = [], re = /<(?:[\w.-]+:)?Relationship\s[^>]*>/g;
+  let m;
+  while ((m = re.exec(xml))) {
+    const t = m[0];
+    out.push({ id: getAttr(t, 'Id'), type: getAttr(t, 'Type') || '', target: safeDecodeURI(xmlDecode(getAttr(t, 'Target') || '')), mode: getAttr(t, 'TargetMode') });
+  }
+  return out;
+}
+function parseSheets(wbXml) {
+  const out = [], re = /<(?:[\w.-]+:)?sheet\s[^>]*>/g;
+  let m;
+  while ((m = re.exec(wbXml))) {
+    const t = m[0], rid = /\s[\w.-]+:id\s*=\s*"([^"]*)"/.exec(t);
+    out.push({ name: xmlDecode(getAttr(t, 'name') || ''), sheetId: parseInt(getAttr(t, 'sheetId') || '0', 10), rid: rid ? rid[1] : null });
+  }
+  return out;
+}
+// Shared strings. Rich text runs are joined; phonetic runs (rPh) are left out.
+function parseSST(xml) {
+  const P = rootInfo(xml, 'sst').P, out = [];
+  const open = '<' + P + 'si', close = '</' + P + 'si>';
+  let pos = 0;
+  for (;;) {
+    const s = findTag(xml, open, pos);
+    if (s < 0) break;
+    const gt = xml.indexOf('>', s);
+    if (xml.charCodeAt(gt - 1) === 47) { out.push(''); pos = gt + 1; continue; }
+    const e = xml.indexOf(close, gt);
+    out.push(xmlDecode(collectT(xml.slice(gt + 1, e), P)));
+    pos = e + close.length;
+  }
+  return out;
+}
+function collectT(inner, P) {
+  if (inner.indexOf('rPh') >= 0) inner = inner.replace(/<([\w.-]+:)?rPh\b[\s\S]*?<\/([\w.-]+:)?rPh>/g, '');
+  const open = '<' + P + 't', close = '</' + P + 't>';
+  let out = '', pos = 0;
+  for (;;) {
+    const s = findTag(inner, open, pos);
+    if (s < 0) break;
+    const gt = inner.indexOf('>', s);
+    if (inner.charCodeAt(gt - 1) === 47) { pos = gt + 1; continue; }
+    const e = inner.indexOf(close, gt);
+    if (e < 0) break;
+    out += inner.slice(gt + 1, e);
+    pos = e + close.length;
+  }
+  return out;
+}
+
+// ── Sheet reading ───────────────────────────────────────────────────────────
+// Rows and cells are found with indexOf, not a DOM parser, so an 80,000-line
+// EBOM reads in seconds. Cell text cannot contain '<', so the next '</c>' or
+// '</row>' always closes the element that is open.
+function* iterRows(book) {
+  const xml = book.sheetXml, P = book.P;
+  const open = '<' + P + 'row', close = '</' + P + 'row>';
+  let pos = book.sdInnerStart, prev = 0;
+  const end = book.sdInnerEnd;
+  while (pos < end) {
+    const s = findTag(xml, open, pos, end);
+    if (s < 0) return;
+    const gt = xml.indexOf('>', s);
+    const self = xml.charCodeAt(gt - 1) === 47;
+    const openTag = xml.slice(s, gt + 1);
+    let innerEnd, e;
+    if (self) { innerEnd = gt + 1; e = gt + 1; }
+    else {
+      innerEnd = xml.indexOf(close, gt);
+      if (innerEnd < 0) throw new UserError('The sheet is damaged (a row is not closed).');
+      e = innerEnd + close.length;
+    }
+    const ra = getAttr(openTag, 'r');
+    const num = ra ? parseInt(ra, 10) : prev + 1;
+    prev = num;
+    yield { num, s, gt, innerEnd, e, self, open: openTag };
+    pos = e;
+  }
+}
+function refCol(ref) {
+  let n = 0;
+  for (let i = 0; i < ref.length; i++) {
+    const c = ref.charCodeAt(i);
+    if (c >= 65 && c <= 90) n = n * 26 + c - 64;
+    else if (c >= 97 && c <= 122) n = n * 26 + c - 96;
+    else break;
+  }
+  return n - 1;
+}
+function parseCells(book, row) {
+  const out = [];
+  if (row.self) return out;
+  const xml = book.sheetXml, P = book.P;
+  const open = '<' + P + 'c', close = '</' + P + 'c>';
+  let pos = row.gt + 1, implicit = -1;
+  for (;;) {
+    const s = findTag(xml, open, pos, row.innerEnd);
+    if (s < 0) break;
+    const gt = xml.indexOf('>', s);
+    const self = xml.charCodeAt(gt - 1) === 47;
+    const openTag = xml.slice(s, gt + 1);
+    let iE = gt + 1, e = gt + 1;
+    if (!self) { iE = xml.indexOf(close, gt); e = iE + close.length; }
+    const r = getAttr(openTag, 'r');
+    const col = r ? refCol(r) : implicit + 1;
+    implicit = col;
+    out.push({ col, s, e, iS: gt + 1, iE, open: openTag, hasR: !!r });
+    pos = e;
+  }
+  return out;
+}
+function vText(inner, P) {
+  const s = findTag(inner, '<' + P + 'v', 0);
+  if (s < 0) return null;
+  const gt = inner.indexOf('>', s);
+  if (inner.charCodeAt(gt - 1) === 47) return '';
+  const e = inner.indexOf('</' + P + 'v>', gt);
+  return e < 0 ? null : inner.slice(gt + 1, e);
+}
+// A cell's value as text, the way Comparator reads it: shared and inline
+// strings as written, numbers as JavaScript prints them (123450, not 1.2345E5).
+function cellValue(book, cell) {
+  if (cell.iS >= cell.iE) return '';
+  const inner = book.sheetXml.slice(cell.iS, cell.iE);
+  const t = getAttr(cell.open, 't') || 'n';
+  if (t === 'inlineStr') return xmlDecode(collectT(inner, book.P));
+  const v = vText(inner, book.P);
+  if (v === null || v === '') return '';
+  switch (t) {
+    case 's': { const i = parseInt(v, 10); return book.sst[i] != null ? book.sst[i] : ''; }
+    case 'str': case 'e': case 'd': return xmlDecode(v);
+    case 'b': return v.trim() === '1' ? 'TRUE' : 'FALSE';
+    default: { const n = Number(v); return Number.isFinite(n) ? String(n) : xmlDecode(v); }
+  }
+}
+function cellHasContent(book, cell) {
+  if (cellValue(book, cell) !== '') return true;
+  return findTag(book.sheetXml.slice(cell.iS, cell.iE), '<' + book.P + 'f', 0) >= 0;   // a formula, even with no cached value
+}
+
+async function openBook(file) {
+  const ext = (/\.([^.]+)$/.exec(file.name) || [, ''])[1].toLowerCase();
+  if (['xls', 'xlsb', 'csv', 'ods', 'txt'].includes(ext)) {
+    throw new UserError('This tool reads .xlsx and .xlsm files. Open "' + file.name + '" in Excel and save it as an Excel Workbook (.xlsx).');
+  }
+  const buf = await file.arrayBuffer();
+  const u8 = new Uint8Array(buf);
+  if (u8.length >= 4 && u8[0] === 0xD0 && u8[1] === 0xCF && u8[2] === 0x11 && u8[3] === 0xE0) {
+    throw new UserError('This is an older .xls workbook, or a workbook with a password. Open it in Excel, remove any password, and save it as an Excel Workbook (.xlsx).');
+  }
+  if (!(u8.length > 4 && u8[0] === 0x50 && u8[1] === 0x4B)) throw new UserError('This file is not an Excel .xlsx workbook.');
+  const pkg = new Pkg(readZip(buf));
+
+  const rootRels = parseRels((await pkg.text('_rels/.rels')) || '');
+  const office = rootRels.find(r => /\/officeDocument$/.test(r.type));
+  const wbPath = office ? resolvePart('', office.target) : 'xl/workbook.xml';
+  const wbXml = await pkg.text(wbPath);
+  if (wbXml == null) throw new UserError('No workbook was found inside this file.');
+  const wbRelsPath = relsPathFor(wbPath);
+  const wbRelsXml = (await pkg.text(wbRelsPath)) || '';
+  const wbRels = parseRels(wbRelsXml);
+  const sheets = parseSheets(wbXml);
+  if (!sheets.length) throw new UserError('This workbook has no sheets.');
+  const first = sheets[0];
+  const rel = wbRels.find(r => r.id === first.rid);
+  if (!rel) throw new UserError('The first sheet cannot be found inside the workbook.');
+  if (!/\/worksheet$/.test(rel.type)) {
+    throw new UserError('The first sheet, "' + first.name + '", is not a worksheet (it may be a chart). Move the data sheet to the first position and save again.');
+  }
+  const sheetPath = resolvePart(dirOf(wbPath), rel.target);
+  const sstRel = wbRels.find(r => /\/sharedStrings$/.test(r.type));
+  const sstXml = sstRel ? await pkg.text(resolvePart(dirOf(wbPath), sstRel.target)) : null;
+  const sheetXml = await pkg.text(sheetPath);
+  if (sheetXml == null) throw new UserError('The first sheet, "' + first.name + '", is missing from the file.');
+
+  const book = {
+    fileName: file.name, ext: ext === 'xlsm' ? 'xlsm' : 'xlsx', size: file.size,
+    pkg, wbPath, wbXml, wbRelsPath, wbRelsXml, sheets, sheetName: first.name, sheetPath, sheetRelType: rel.type,
+    sst: sstXml ? parseSST(sstXml) : [], sheetXml, P: rootInfo(sheetXml, 'worksheet').P,
+  };
+  const sd = findTag(sheetXml, '<' + book.P + 'sheetData', 0);
+  if (sd < 0) throw new UserError('The first sheet, "' + first.name + '", has no cell data.');
+  const sdGt = sheetXml.indexOf('>', sd);
+  book.sdStart = sd;
+  if (sheetXml.charCodeAt(sdGt - 1) === 47) { book.sdInnerStart = book.sdInnerEnd = sdGt + 1; }
+  else { book.sdInnerStart = sdGt + 1; book.sdInnerEnd = sheetXml.indexOf('</' + book.P + 'sheetData>', sdGt); }
+  sniff(book);
+  if (!book.header) throw new UserError('The first sheet, "' + first.name + '", is empty.');
+  return book;
+}
+
+// The heading row (first row with any value) and the first 200 data rows, for
+// the column readout. Nothing here decides a result.
+function sniff(book) {
+  book.header = null;
+  book.samples = [];
+  for (const row of iterRows(book)) {
+    const vals = new Map();
+    for (const c of parseCells(book, row)) { const v = cellValue(book, c); if (v !== '') vals.set(c.col, v); }
+    if (!book.header) { if (vals.size) book.header = { num: row.num, vals }; continue; }
+    if (vals.size) book.samples.push(vals);
+    if (book.samples.length >= 200) break;
+  }
+}
+
+// Reads every data row below the heading. `need` maps a field name to its
+// column. With `outCol`, any cell at or right of it that holds a value or a
+// formula is reported, because the output would overwrite it.
+async function scanSheet(book, need, outCol, onProgress) {
+  const byCol = new Map();
+  for (const k of Object.keys(need)) { const c = need[k]; if (!byCol.has(c)) byCol.set(c, []); byCol.get(c).push(k); }
+  const rows = [], collisions = [];
+  let maxCell = -1, n = 0, hdrPnStyle = null;
+  const span = Math.max(1, book.sdInnerEnd - book.sdInnerStart);
+  const hdr = book.header.num;
+  for (const row of iterRows(book)) {
+    if (++n % 3000 === 0) { if (onProgress) onProgress((row.s - book.sdInnerStart) / span); await tick(); }
+    if (row.num < hdr) continue;
+    const isHeader = row.num === hdr;
+    const vals = {};
+    let any = false, pnStyle = null, nums = null;
+    for (const c of parseCells(book, row)) {
+      if (c.col > maxCell) maxCell = c.col;
+      if (outCol != null && c.col >= outCol && collisions.length < 1000 && cellHasContent(book, c)) collisions.push({ row: row.num, col: c.col, value: cellValue(book, c) });
+      if (c.col === need.pn) { if (isHeader) hdrPnStyle = getAttr(c.open, 's'); else pnStyle = getAttr(c.open, 's'); }
+      if (isHeader) continue;
+      const ks = byCol.get(c.col);
+      if (ks) {
+        const v = cellValue(book, c);
+        if (v !== '') {
+          any = true;
+          for (const k of ks) vals[k] = v;
+          // A number in the source stays a number in the SSAV file (Find No 10, not "10").
+          const t = getAttr(c.open, 't');
+          if ((t === null || t === 'n') && Number.isFinite(Number(v))) { if (!nums) nums = {}; for (const k of ks) nums[k] = true; }
+        }
+      }
+    }
+    if (!isHeader && any) rows.push({ row: row.num, vals, nums, pnStyle });
+  }
+  if (onProgress) onProgress(1);
+  return { rows, collisions, maxCell, hdrPnStyle };
+}
+// Merged cells that reach the output columns would hide what is written there.
+function mergesReaching(book, outCol) {
+  const tail = book.sheetXml.slice(book.sdInnerEnd);
+  const re = /<(?:[\w.-]+:)?mergeCell\s[^>]*?ref\s*=\s*"([^"]+)"/g;
+  const hits = [];
+  let m;
+  while ((m = re.exec(tail))) {
+    const parts = m[1].split(':');
+    const last = parts[parts.length - 1];
+    if (refCol(last) >= outCol) hits.push(m[1]);
+  }
+  return hits;
+}
+
+// ── Alignment engine ────────────────────────────────────────────────────────
+function cleanText(v) { return String(v == null ? '' : v).trim(); }
+function joinList(arr) {
+  if (arr.every(x => x === '')) return '';
+  return arr.map(x => (x === '' ? BLANK_IN_LIST : x)).join(SEP);
+}
+function capCell(s, st) {
+  if (s.length <= EXCEL_CELL_MAX) return s;
+  st.truncated++;
+  const mark = ' [cut at Excel limit]';
+  return s.slice(0, EXCEL_CELL_MAX - mark.length) + mark;
+}
+
+// Pure: scanned rows in, lines and counts out.
+//   key        normPN(part number) + '||' + normPN(next higher)
+//   a note     one code + text pair; each pair is listed once per key, in
+//              trace-file order (a repeated row adds nothing)
+//   a line     one EBOM row with a part number; lines that share a key each
+//              receive the same notes
+//   an orphan  a trace row with a code or text whose key is on no EBOM line
+function align(ebomScan, traceScan) {
+  const st = {
+    ebomLines: 0, ebomWith: 0, ebomWithout: 0, ebomKeys: 0, ebomSharedLines: 0, notesWritten: 0, maxNotes: 0,
+    traceRows: 0, traceNoPn: 0, traceNoNote: 0, traceMatchedRows: 0, traceRepeatRows: 0,
+    orphanRows: 0, orphanKeys: 0, truncated: 0,
+  };
+  const groups = new Map();
+  for (const r of traceScan.rows) {
+    const pnRaw = cleanText(r.vals.pn), nhRaw = cleanText(r.vals.nh);
+    const code = cleanText(r.vals.code), text = cleanText(r.vals.text);
+    const pn = normPN(pnRaw);
+    if (!pn) { if (code || text) st.traceNoPn++; continue; }
+    st.traceRows++;
+    if (!code && !text) { st.traceNoNote++; continue; }
+    const key = pn + '||' + normPN(nhRaw);
+    let g = groups.get(key);
+    if (!g) { g = { notes: [], seen: new Map(), rows: [] }; groups.set(key, g); }
+    g.rows.push({ row: r.row, pn: pnRaw, nh: nhRaw, code, text });
+    const dk = code + '\u0001' + text;
+    const known = g.seen.get(dk);
+    if (known) { st.traceRepeatRows++; known.rows.push(r.row); }
+    else { const note = { code, text, rows: [r.row] }; g.seen.set(dk, note); g.notes.push(note); }
+  }
+
+  const lines = [], keyCount = new Map(), nhByPn = new Map();
+  for (const r of ebomScan.rows) {
+    const pnRaw = cleanText(r.vals.pn), pn = normPN(pnRaw);
+    if (!pn) continue;
+    const nhRaw = cleanText(r.vals.nh);
+    const key = pn + '||' + normPN(nhRaw);
+    const g = groups.get(key);
+    const notes = g ? g.notes : [];
+    const line = { idx: lines.length, row: r.row, pn: pnRaw, nh: nhRaw, desc: cleanText(r.vals.desc), key, notes, style: r.pnStyle, vals: r.vals, nums: r.nums };
+    if (notes.length) {
+      line.joinedCodes = capCell(joinList(notes.map(x => x.code)), st);
+      line.joinedText = capCell(joinList(notes.map(x => x.text)), st);
+    }
+    lines.push(line);
+    keyCount.set(key, (keyCount.get(key) || 0) + 1);
+    if (!nhByPn.has(pn)) nhByPn.set(pn, []);
+    const list = nhByPn.get(pn);
+    const nhShown = nhRaw || '(blank)';
+    if (!list.includes(nhShown)) list.push(nhShown);
+  }
+  st.ebomLines = lines.length;
+  st.ebomKeys = keyCount.size;
+  for (const line of lines) {
+    if (line.notes.length) { st.ebomWith++; st.notesWritten += line.notes.length; if (line.notes.length > st.maxNotes) st.maxNotes = line.notes.length; }
+    if (keyCount.get(line.key) > 1) st.ebomSharedLines++;
+  }
+  st.ebomWithout = st.ebomLines - st.ebomWith;
+
+  const orphans = [];
+  for (const [key, g] of groups) {
+    if (keyCount.has(key)) { st.traceMatchedRows += g.rows.length; continue; }
+    st.orphanKeys++;
+    for (const r of g.rows) {
+      const elsewhere = nhByPn.get(normPN(r.pn));
+      orphans.push(Object.assign({}, r, { elsewhere: elsewhere ? elsewhere : null }));
+    }
+  }
+  orphans.sort((a, b) => a.row - b.row);
+  st.orphanRows = orphans.length;
+  return { lines, orphans, stats: st };
+}
+
+// One list of counts feeds both the screen and the Summary sheet.
+function summaryRows(st) {
+  const pct = (a, b) => (b ? ' (' + (Math.round((a / b) * 1000) / 10) + '%)' : '');
+  const rows = [
+    { group: 'EBOM' },
+    { label: 'Lines read (rows with a part number)', value: st.ebomLines },
+    { label: 'Lines with part notes', value: st.ebomWith, extra: pct(st.ebomWith, st.ebomLines) },
+    { label: 'Lines without part notes', value: st.ebomWithout },
+    { label: 'Distinct PN + NH positions', value: st.ebomKeys },
+    { label: 'Lines that share a PN + NH with another line (each gets the same notes)', value: st.ebomSharedLines },
+    { label: 'Part notes written (code and text pairs, all lines)', value: st.notesWritten },
+    { label: 'Most part notes on one line', value: st.maxNotes },
+    { group: 'Part traceability file' },
+    { label: 'Rows read (rows with a part number)', value: st.traceRows },
+    { label: 'Rows matched to an EBOM line', value: st.traceMatchedRows },
+    { label: 'Rows that repeat a code and text already listed for that PN + NH (listed once)', value: st.traceRepeatRows },
+    { label: 'Orphan rows (PN + NH not in the EBOM)', value: st.orphanRows, warn: st.orphanRows > 0 },
+    { label: 'Distinct orphan PN + NH positions', value: st.orphanKeys, warn: st.orphanKeys > 0 },
+    { label: 'Rows with no code and no text (skipped)', value: st.traceNoNote },
+  ];
+  if (st.traceNoPn) rows.push({ label: 'Rows with a code or text but no part number (skipped)', value: st.traceNoPn, warn: true });
+  if (st.truncated) rows.push({ group: 'Output' }, { label: 'Joined cells cut at Excel\u2019s 32,767-character limit', value: st.truncated, warn: true });
+  return rows;
+}
+function mappingText(type, cols) {
+  return fieldDefs(type).map(d => d.label + ' ' + colLetter(cols[d.key])).join(', ');
+}
+const MATCH_RULE = 'Part number + next higher, exact after trimming spaces at either end and ignoring case. No part-number-only fallback.';
+const VIEW_TEXT = {
+  joined: 'Joined view: codes in one column, text in the next, each joined with "' + SEP + '" in the same order. A blank entry inside a list reads ' + BLANK_IN_LIST + '.',
+  columns: 'Columns view: one code and text pair per column pair (Code 1, Text 1, Code 2, Text 2, and so on).',
+  rules: 'Rule Members view: codes and text after the code rules, joined as in the Joined view, and a Rule Members column naming each rule that fired.',
+};
+
+const VIEW_NAME = { joined: 'Joined', columns: 'Columns', rules: 'Rule Members', ssav: 'SSAV' };
+
+// ── Code rules (optional) ───────────────────────────────────────────────────
+// A rule turns two part note codes on the same line into one new code:
+// "if a PN + NH has SER and LOT, write M". Rules shape the Rule Members view
+// only; the Joined and Columns views never see them.
+//   matching   codes compared after trimming and ignoring case
+//   firing     every rule checks the line's ORIGINAL codes, so a new code
+//              never triggers another rule, and the order of rules does not
+//              change which ones fire
+//   replacing  every note whose code is a member of a fired rule is removed;
+//              the new code (with the rule's text) sits where the first
+//              member was
+const RULE_TEXT = 'Codes are compared after trimming spaces and ignoring case. Each rule checks the line’s original codes, so a new code never triggers another rule. ' +
+  'When a rule fires, its two member codes are replaced by the new code, placed where the first member was. The Rule Members column records each replacement.';
+function normCode(v) { return String(v == null ? '' : v).trim().toUpperCase(); }
+function ruleLabel(r) { return r.a + ' + ' + r.b + ' → ' + r.code; }
+// Checks a rule list. Returns { rules } or { error }. Blank rows are dropped.
+function validateRules(list) {
+  const rules = [], pairs = new Map();
+  for (let i = 0; i < list.length; i++) {
+    const r = list[i] || {};
+    const a = cleanText(r.a), b = cleanText(r.b), code = cleanText(r.code), text = cleanText(r.text);
+    if (!a && !b && !code && !text) continue;
+    const n = rules.length + 1;
+    if (!a || !b) return { error: 'Rule ' + n + ' needs two member codes.' };
+    if (!code) return { error: 'Rule ' + n + ' needs a new code.' };
+    if (normCode(a) === normCode(b)) return { error: 'Rule ' + n + ' uses ' + a + ' twice. Its two member codes must differ.' };
+    if (normCode(code) === normCode(a) || normCode(code) === normCode(b)) return { error: 'Rule ' + n + '’s new code must differ from its member codes.' };
+    const pk = [normCode(a), normCode(b)].sort().join('\u0001');
+    if (pairs.has(pk)) return { error: 'Rules ' + pairs.get(pk) + ' and ' + n + ' both use ' + a + ' + ' + b + '.' };
+    pairs.set(pk, n);
+    rules.push({ a, b, code, text });
+  }
+  return { rules };
+}
+// Pure: lines and rules in; per-line results and counts out.
+function applyRules(lines, rules) {
+  const out = { rules: rules.map(r => Object.assign({}, r)), byLine: new Array(lines.length).fill(null), firings: [],
+                linesFired: 0, perRule: rules.map(() => ({ fired: 0, onlyA: 0, onlyB: 0 })), truncated: 0 };
+  if (!rules.length) return out;
+  const keys = rules.map(r => [normCode(r.a), normCode(r.b)]);
+  const cap = { truncated: 0 };
+  lines.forEach((line, li) => {
+    if (!line.notes.length) return;
+    const present = new Set(line.notes.map(n => normCode(n.code)));
+    const fired = [];
+    keys.forEach(([A, B], i) => {
+      const hasA = present.has(A), hasB = present.has(B);
+      if (hasA && hasB) fired.push(i);
+      else if (hasA) out.perRule[i].onlyA++;
+      else if (hasB) out.perRule[i].onlyB++;
+    });
+    if (!fired.length) return;
+    const memberOf = new Map();
+    for (const i of fired) for (const k of keys[i]) { if (!memberOf.has(k)) memberOf.set(k, []); memberOf.get(k).push(i); }
+    const after = [], placed = new Set();
+    for (const n of line.notes) {
+      const rs = memberOf.get(normCode(n.code));
+      if (!rs) { after.push(n); continue; }
+      for (const i of rs) {
+        if (placed.has(i)) continue;
+        placed.add(i);
+        const r = rules[i];
+        if (!after.some(x => x.code === r.code && x.text === r.text)) after.push({ code: r.code, text: r.text, rule: i });
+      }
+    }
+    const members = fired.map(i => rules[i].code + ' = ' + rules[i].a + ' + ' + rules[i].b).join(SEP);
+    out.byLine[li] = {
+      after, fired,
+      joinedCodes: capCell(joinList(after.map(x => x.code)), cap),
+      joinedText: capCell(joinList(after.map(x => x.text)), cap),
+      members: capCell(members, cap),
+    };
+    out.linesFired++;
+    for (const i of fired) {
+      out.perRule[i].fired++;
+      const ma = line.notes.filter(n => normCode(n.code) === keys[i][0]);
+      const mb = line.notes.filter(n => normCode(n.code) === keys[i][1]);
+      const rows = [...new Set(ma.concat(mb).flatMap(n => n.rows || []))].sort((x, y) => x - y);
+      out.firings.push({ li, row: line.row, pn: line.pn, nh: line.nh, rule: i, a: ma, b: mb, traceRows: rows });
+    }
+  });
+  out.truncated = cap.truncated;
+  return out;
+}
+function ruleSummaryRows(rs) {
+  const rows = [
+    { group: 'Code rules' },
+    { label: 'Rules in use', value: rs.rules.length },
+    { label: 'Lines where a rule fired', value: rs.linesFired },
+    { label: 'Rule firings (one per rule per line)', value: rs.firings.length },
+  ];
+  rs.rules.forEach((r, i) => {
+    const p = rs.perRule[i];
+    rows.push({ label: 'Rule ' + (i + 1) + ': ' + ruleLabel(r) + ', fired on', value: p.fired });
+    rows.push({ label: 'Rule ' + (i + 1) + ': lines with ' + r.a + ' but not ' + r.b, value: p.onlyA, warn: p.onlyA > 0 });
+    rows.push({ label: 'Rule ' + (i + 1) + ': lines with ' + r.b + ' but not ' + r.a, value: p.onlyB, warn: p.onlyB > 0 });
+  });
+  if (rs.truncated) rows.push({ label: 'Rule Members cells cut at Excel’s 32,767-character limit', value: rs.truncated, warn: true });
+  return rows;
+}
+
+// ── SSAV Output Mode ────────────────────────────────────────────────────────
+// Trace Code from a line's ORIGINAL codes (code rules never apply here):
+//   SER and LOT  -> B      SER only -> S      LOT only -> L      neither -> E
+// Codes match after trimming and ignoring case. Any other code is left out of
+// the Trace Code; such lines are counted so nothing is dropped unseen.
+const SSAV_RULE_TEXT = 'TRACE_CODE from each line\u2019s original part note codes: SER and LOT give B, SER alone gives S, LOT alone gives L, neither gives E. ' +
+  'LL sets LIMITED_LIFE_YN to Y. Codes match after trimming spaces and ignoring case. A code cell holding several codes (for example "SER, TR", or one per line) ' +
+  'is split on spaces, line breaks, commas, semicolons, slashes, pipes, plus signs and ampersands. PART_CODE: a number gives NUMBE, AR gives AS RE, SUB gives ALT. ' +
+  'PART_TYPE: VENDOR gives VE, ASSEMBLY AS, DETAIL DE, STANDARD ST. Other values are copied as they are. MASTER_MODEL_YN is Y when the drawing number ends in ' +
+  'a dash and one to three digits. The first line\u2019s NHA_PART_NO is left blank. Code rules are not used.';
+// v1.3. One code cell can hold several codes: "SER, TR", or SER and TR on two
+// lines of the same cell. v1.2 compared the whole cell with SER and LOT, so
+// such a line read as E. The cell is now split into codes first. Hyphens,
+// periods and underscores do not split, so "NON-SER" stays one code.
+const CODE_SPLIT = /[\s,;\/|+&]+/;
+function codeTokens(v) { return normCode(v).split(CODE_SPLIT).filter(Boolean); }
+const SSAV_CODE_LABEL = { B: 'SER and LOT', S: 'SER only', L: 'LOT only', E: 'Neither SER nor LOT' };
+// SER and LOT set TRACE_CODE; LL sets LIMITED_LIFE_YN. Any other code is
+// "other": it reaches no SSAV column and is counted.
+function ssavTraceCode(notes) {
+  let ser = false, lot = false, ll = false, split = false;
+  const other = [];
+  for (const n of notes) {
+    const toks = codeTokens(n.code);
+    if (toks.length > 1) split = true;
+    for (const t of toks) {
+      if (t === 'SER') ser = true;
+      else if (t === 'LOT') lot = true;
+      else if (t === 'LL') ll = true;
+      else if (!other.includes(t)) other.push(t);
+    }
+  }
+  return { code: ser && lot ? 'B' : ser ? 'S' : lot ? 'L' : 'E', ll, other, split };
+}
+
+// ── v1.4 value rules ──
+// PART_CODE from Qty Text (input I): a number -> NUMBE, AR -> AS RE, SUB -> ALT.
+// PART_TYPE from Part Type (input Z): VENDOR -> VE, ASSEMBLY -> AS,
+// DETAIL -> DE, STANDARD -> ST. Matching is trimmed and ignores case. Any
+// other value is copied as it is and counted.
+const PART_CODE_MAP = { AR: 'AS RE', SUB: 'ALT' };
+const PART_TYPE_MAP = { VENDOR: 'VE', ASSEMBLY: 'AS', DETAIL: 'DE', STANDARD: 'ST' };
+// "A number": a number cell, or text that is only digits with an optional
+// sign and decimal point (1, 12, 2.5, .5). "1/2" or "2 EA" are not numbers.
+const NUMERIC_TEXT = /^[+-]?(\d+(\.\d*)?|\.\d+)$/;
+function ssavPartCode(v, isNum) {
+  const t = cleanText(v);
+  if (!t) return { v: '', kind: 'blank' };
+  if (isNum || NUMERIC_TEXT.test(t)) return { v: 'NUMBE', kind: 'NUMBE' };
+  const m = PART_CODE_MAP[t.toUpperCase()];
+  return m ? { v: m, kind: m } : { v: t, kind: 'asis' };
+}
+function ssavPartType(v) {
+  const t = cleanText(v);
+  if (!t) return { v: '', kind: 'blank' };
+  const m = PART_TYPE_MAP[t.toUpperCase()];
+  return m ? { v: m, kind: m } : { v: t, kind: 'asis' };
+}
+// MASTER_MODEL_YN: Y when the drawing number ends in a dash and one, two or
+// three digits (12345-1, 12345-12, 65B1234-501); N otherwise, blank included.
+// A hyphen, an en dash (as Word and Outlook type it), an em dash, a minus
+// sign and the non-breaking hyphen all count as the dash.
+const MASTER_MODEL_END = /[-\u2010\u2011\u2013\u2014\u2212]\d{1,3}$/;
+function ssavMasterModel(dwg) { return MASTER_MODEL_END.test(cleanText(dwg)) ? 'Y' : 'N'; }
+
+// One SSAV row per line. Values are strings, or numbers that were numbers in
+// the EBOM (INDENTURE, PART_NO, QUANTITY, NHA_FIND_NO and the like).
+// The first line's NHA_PART_NO is left blank: it is the top item, and the
+// EBOM gives it a next higher anyway.
+function ssavRow(line, t, isFirst) {
+  const src = key => {
+    const v = key === 'pn' ? line.pn : key === 'nh' ? line.nh : key === 'desc' ? line.desc : cleanText(line.vals[key]);
+    if (v === '') return '';
+    return line.nums && line.nums[key] ? Number(v) : v;
+  };
+  const row = new Array(SSAV_LAYOUT[SSAV_LAYOUT.length - 1].col + 1).fill('');
+  const meta = {};
+  for (const f of SSAV_LAYOUT) {
+    let v = '';
+    if (f.src) v = src(f.src);
+    else if (f.calc === 'nha') v = isFirst ? '' : src('nh');
+    else if (f.calc === 'partType') { const r = ssavPartType(line.vals.partType); v = r.v; meta.partType = r.kind; }
+    else if (f.calc === 'partCode') { const r = ssavPartCode(line.vals.qtyText, !!(line.nums && line.nums.qtyText)); v = r.v; meta.partCode = r.kind; }
+    else if (f.calc === 'trace') v = t.code;
+    else if (f.calc === 'masterModel') v = ssavMasterModel(line.vals.dwgNo);
+    else if (f.calc === 'limitedLife') v = t.ll ? 'Y' : 'N';
+    row[f.col] = v;
+  }
+  return { row, meta };
+}
+// Pure: lines in; per-line codes, rows and counts out.
+function ssavScore(lines) {
+  const s = { byLine: new Array(lines.length), rows: new Array(lines.length), counts: { B: 0, S: 0, L: 0, E: 0 },
+              eNoNotes: 0, eOtherOnly: 0, otherLeftOut: 0, splitLines: 0, ll: 0, masterY: 0,
+              partCode: { NUMBE: 0, 'AS RE': 0, ALT: 0, asis: 0, blank: 0 }, partCodeAsIs: [],
+              partType: { VE: 0, AS: 0, DE: 0, ST: 0, asis: 0, blank: 0 }, partTypeAsIs: [],
+              first: null, otherA: 0 };
+  const COL = {};
+  SSAV_LAYOUT.forEach(f => { COL[f.calc || f.src || f.label] = f.col; });
+  const asIsCode = new Set(), asIsType = new Set();
+  lines.forEach((line, i) => {
+    const t = ssavTraceCode(line.notes);
+    const { row, meta } = ssavRow(line, t, i === 0);
+    s.byLine[i] = t;
+    s.rows[i] = row;
+    s.counts[t.code]++;
+    if (t.other.length) s.otherLeftOut++;
+    if (t.split) s.splitLines++;
+    if (t.ll) s.ll++;
+    if (t.code === 'E') { if (!line.notes.length) s.eNoNotes++; else if (t.other.length) s.eOtherOnly++; }
+    if (row[COL.masterModel] === 'Y') s.masterY++;
+    // Distinct no-rule values, kept in a Set: a list searched per line took
+    // minutes on an 80,000-line EBOM whose Qty Text values were all different.
+    s.partCode[meta.partCode]++;
+    if (meta.partCode === 'asis') asIsCode.add(String(row[COL.partCode]));
+    s.partType[meta.partType]++;
+    if (meta.partType === 'asis') asIsType.add(String(row[COL.partType]));
+    const ind = cleanText(line.vals.indenture).toUpperCase();
+    if (i === 0) s.first = { row: line.row, pn: line.pn, nh: line.nh, indenture: cleanText(line.vals.indenture) };
+    else if (ind === 'A') s.otherA++;
+  });
+  s.partCodeAsIs = [...asIsCode];
+  s.partTypeAsIs = [...asIsType];
+  return s;
+}
+const listed = (vals, n) => vals.slice(0, n).join(', ') + (vals.length > n ? ' and ' + (vals.length - n) + ' more' : '');
+function ssavSummaryRows(s, lines) {
+  const rows = [
+    { group: 'SSAV file' },
+    { label: 'Rows written (one per EBOM line)', value: lines },
+    { label: 'TRACE_CODE B (SER and LOT)', value: s.counts.B },
+    { label: 'TRACE_CODE S (SER only)', value: s.counts.S },
+    { label: 'TRACE_CODE L (LOT only)', value: s.counts.L },
+    { label: 'TRACE_CODE E (neither SER nor LOT)', value: s.counts.E },
+    { label: 'E lines with no part notes at all', value: s.eNoNotes },
+    { label: 'E lines whose only codes are other codes', value: s.eOtherOnly, warn: s.eOtherOnly > 0 },
+    { label: 'Lines with other codes (not SER, LOT or LL) that reach no SSAV column', value: s.otherLeftOut, warn: s.otherLeftOut > 0 },
+    { label: 'Lines with a code cell holding several codes (split to find SER, LOT and LL)', value: s.splitLines },
+    { label: 'LIMITED_LIFE_YN Y (line has LL)', value: s.ll },
+    { label: 'MASTER_MODEL_YN Y (drawing number ends in a dash and 1 to 3 digits)', value: s.masterY },
+    { label: 'PART_CODE NUMBE (Qty Text is a number)', value: s.partCode.NUMBE },
+    { label: 'PART_CODE AS RE (Qty Text AR)', value: s.partCode['AS RE'] },
+    { label: 'PART_CODE ALT (Qty Text SUB)', value: s.partCode.ALT },
+    { label: 'PART_CODE copied as is (no rule' + (s.partCodeAsIs.length ? ': ' + listed(s.partCodeAsIs, 8) : '') + ')', value: s.partCode.asis, warn: s.partCode.asis > 0 },
+    { label: 'PART_CODE blank (no Qty Text)', value: s.partCode.blank },
+    { label: 'PART_TYPE VE / AS / DE / ST', value: s.partType.VE + s.partType.AS + s.partType.DE + s.partType.ST,
+      extra: ' (' + s.partType.VE + ' / ' + s.partType.AS + ' / ' + s.partType.DE + ' / ' + s.partType.ST + ')' },
+    { label: 'PART_TYPE copied as is (no rule' + (s.partTypeAsIs.length ? ': ' + listed(s.partTypeAsIs, 8) : '') + ')', value: s.partType.asis, warn: s.partType.asis > 0 },
+    { label: 'PART_TYPE blank (no Part Type)', value: s.partType.blank },
+  ];
+  if (s.first) {
+    rows.push({ label: 'First line (EBOM row ' + s.first.row + ', ' + s.first.pn + '): NHA_PART_NO left blank' + (s.first.nh ? ' (EBOM had ' + s.first.nh + ')' : ''), value: 1 });
+    if (s.first.indenture.toUpperCase() !== 'A') rows.push({ label: 'First line is not at indenture A (it is ' + (s.first.indenture || 'blank') + ')', value: 1, warn: true });
+  }
+  rows.push({ label: 'Lines after the first at indenture A (their NHA_PART_NO is kept)', value: s.otherA, warn: s.otherA > 0 });
+  return rows;
+}
+// The SSAV file is a new workbook with one sheet. Shared strings, the form
+// Excel itself writes, so other systems can import it.
+async function buildSsav(onProgress) {
+  const res = state.result, NS = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
+  const sstIndex = new Map(), sstList = [];
+  let sstRefs = 0;
+  const strCell = (ref, s, style) => {
+    let i = sstIndex.get(s);
+    if (i === undefined) { i = sstList.length; sstIndex.set(s, i); sstList.push(s); }
+    sstRefs++;
+    return '<c r="' + ref + '"' + (style ? ' s="' + style + '"' : '') + ' t="s"><v>' + i + '</v></c>';
+  };
+  const lastCol = SSAV_LAYOUT[SSAV_LAYOUT.length - 1].col;
+  const rowsXml = [];
+  rowsXml.push('<row r="1">' + SSAV_LAYOUT.map(f => strCell(colLetter(f.col) + '1', f.label, 1)).join('') + '</row>');
+  res.ssav.rows.forEach((row, i) => {
+    const rn = i + 2;
+    let x = '<row r="' + rn + '">';
+    row.forEach((v, c) => {
+      if (v === '') return;
+      const ref = colLetter(c) + rn;
+      x += typeof v === 'number' ? '<c r="' + ref + '"><v>' + v + '</v></c>' : strCell(ref, v);
+    });
+    rowsXml.push(x + '</row>');
+  });
+  const widths = {};
+  SSAV_LAYOUT.forEach(f => { widths[f.col] = Math.max(f.label.length + 2, { pn: 24, desc: 36, dwgNo: 20, cage: 10 }[f.src] || (f.calc === 'nha' ? 24 : 0)); });
+  const sheet = ['<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<worksheet xmlns="' + NS + '">' +
+    '<dimension ref="A1:' + colLetter(lastCol) + (res.lines.length + 1) + '"/>' +
+    '<sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/>' +
+    '<selection pane="bottomLeft" activeCell="A2" sqref="A2"/></sheetView></sheetViews><sheetFormatPr defaultRowHeight="15"/><cols>' +
+    Object.keys(widths).map(c => '<col min="' + (+c + 1) + '" max="' + (+c + 1) + '" width="' + widths[c] + '" customWidth="1"/>').join('') +
+    '</cols><sheetData>'].concat(rowsXml, ['</sheetData></worksheet>']);
+  const sst = ['<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<sst xmlns="' + NS + '" count="' + sstRefs + '" uniqueCount="' + sstList.length + '">']
+    .concat(sstList.map(s => '<si><t xml:space="preserve">' + xmlText(s) + '</t></si>'), ['</sst>']);
+  const parts = {
+    '[Content_Types].xml': '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+      '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>' +
+      '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+      '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' +
+      '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' +
+      '<Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/></Types>',
+    '_rels/.rels': '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+      '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>',
+    'xl/workbook.xml': '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<workbook xmlns="' + NS + '" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+      '<bookViews><workbookView/></bookViews><sheets><sheet name="SSAV" sheetId="1" r:id="rId1"/></sheets></workbook>',
+    'xl/_rels/workbook.xml.rels': '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+      '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>' +
+      '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
+      '<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/></Relationships>',
+    'xl/styles.xml': '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<styleSheet xmlns="' + NS + '">' +
+      '<fonts count="2"><font><sz val="11"/><name val="Calibri"/><family val="2"/></font><font><b/><sz val="11"/><name val="Calibri"/><family val="2"/></font></fonts>' +
+      '<fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>' +
+      '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>' +
+      '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
+      '<cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/></cellXfs>' +
+      '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>',
+  };
+  const now = dosNow(), list = [];
+  for (const name of ['[Content_Types].xml', '_rels/.rels', 'xl/workbook.xml', 'xl/_rels/workbook.xml.rels', 'xl/styles.xml']) {
+    list.push(await packEntry(utf8enc.encode(name), utf8enc.encode(parts[name]), now));
+  }
+  list.push(await packPieces(utf8enc.encode('xl/sharedStrings.xml'), sst, now, p => onProgress && onProgress(p * 0.3)));
+  list.push(await packPieces(utf8enc.encode('xl/worksheets/sheet1.xml'), sheet, now, p => onProgress && onProgress(0.3 + p * 0.7)));
+  if (onProgress) onProgress(1);
+  return writeZip(list, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+}
+
+// ── Writing the output workbook ─────────────────────────────────────────────
+function newCellXml(P, col, rowNum, v, s) {
+  const ref = colLetter(col) + rowNum;
+  const sa = s != null ? ' s="' + s + '"' : '';
+  if (typeof v === 'number') return '<' + P + 'c r="' + ref + '"' + sa + '><' + P + 'v>' + v + '</' + P + 'v></' + P + 'c>';
+  return '<' + P + 'c r="' + ref + '"' + sa + ' t="inlineStr"><' + P + 'is><' + P + 't xml:space="preserve">' + xmlText(v) +
+         '</' + P + 't></' + P + 'is></' + P + 'c>';
+}
+// Adds cells to one row. In the usual case the row ends before the output
+// columns and the new cells are appended. Otherwise (empty formatted cells at
+// or past the output column) the row is rebuilt in column order, with every
+// existing cell given an explicit reference so none of them moves.
+function rewriteRow(book, row, newCells, styleS) {
+  const xml = book.sheetXml, P = book.P, close = '</' + P + 'row>';
+  let open = row.open.replace(/\sspans\s*=\s*"[^"]*"/, '');
+  if (row.self) open = open.replace(/\s*\/>$/, '>');
+  const cells = parseCells(book, row);
+  const inner = row.self ? '' : xml.slice(row.gt + 1, row.innerEnd);
+  const addXml = newCells.map(c => newCellXml(P, c.col, row.num, c.v, styleS)).join('');
+  const lastCol = cells.reduce((m, c) => Math.max(m, c.col), -1);
+  if (lastCol < newCells[0].col && findTag(inner, '<' + P + 'extLst', 0) < 0) return open + inner + addXml + close;
+  const taken = new Set(newCells.map(c => c.col));
+  const ownStyle = new Map();   // an empty cell already formatted where a new value goes keeps its format
+  const items = [];
+  for (const c of cells) {
+    if (taken.has(c.col)) { const s = getAttr(c.open, 's'); if (s != null) ownStyle.set(c.col, s); continue; }
+    let cx = xml.slice(c.s, c.e);
+    if (!c.hasR) cx = '<' + P + 'c r="' + colLetter(c.col) + row.num + '"' + cx.slice(P.length + 2);
+    items.push({ col: c.col, x: cx });
+  }
+  for (const c of newCells) items.push({ col: c.col, x: newCellXml(P, c.col, row.num, c.v, ownStyle.has(c.col) ? ownStyle.get(c.col) : styleS) });
+  items.sort((a, b) => a.col - b.col);
+  const tail = cells.length ? xml.slice(cells[cells.length - 1].e, row.innerEnd) : inner;
+  return open + items.map(i => i.x).join('') + tail + close;
+}
+function extendRef(ref, lastCol) {
+  const parts = ref.split(':');
+  const a = parts[0], b = parts[1] || parts[0];
+  const m = /^([A-Za-z]+)(\d+)$/.exec(b);
+  if (!m) return ref;
+  const endCol = Math.max(refCol(m[1]), lastCol);
+  return a + ':' + colLetter(endCol) + m[2];
+}
+// The part of the sheet before <sheetData>: widen the used range and set
+// widths for the new columns. A column range in the sheet that covers the new
+// columns (often "E to the last column", sometimes hidden) is split around
+// them, so every other column keeps its width, style and visibility.
+function setMinMax(tag, min, max) {
+  return tag.replace(/\s*\/?>$/, '/>')
+            .replace(/(\smin\s*=\s*")[^"]*"/, '$1' + min + '"')
+            .replace(/(\smax\s*=\s*")[^"]*"/, '$1' + max + '"');
+}
+function modifyHead(head, P, outCol, widths) {
+  const lastNew = outCol + widths.length - 1;
+  head = head.replace(new RegExp('(<' + P + 'dimension\\b[^>]*?\\sref\\s*=\\s*")([^"]*)(")'), (m, a, ref, b) => a + extendRef(ref, lastNew) + b);
+  const lo = outCol + 1, hi = lastNew + 1;   // <col> numbers columns from 1
+  const fresh = widths.map((w, i) => ({ min: lo + i, max: lo + i, tag: '<' + P + 'col min="' + (lo + i) + '" max="' + (lo + i) + '" width="' + w + '" customWidth="1"/>' }));
+  const cs = findTag(head, '<' + P + 'cols', 0);
+  if (cs < 0) return head + '<' + P + 'cols>' + fresh.map(f => f.tag).join('') + '</' + P + 'cols>';
+  const gt = head.indexOf('>', cs);
+  if (head.charCodeAt(gt - 1) === 47) return head;   // <cols/> is not valid; leave it alone
+  const ce = head.indexOf('</' + P + 'cols>', gt);
+  const inner = head.slice(gt + 1, ce);
+  const re = new RegExp('<' + P + 'col\\b[^>]*>', 'g');
+  const kept = [];
+  let m;
+  while ((m = re.exec(inner))) {
+    const tag = m[0].replace(/\s*\/?>$/, '/>');
+    const min = parseInt(getAttr(tag, 'min'), 10), max = parseInt(getAttr(tag, 'max'), 10);
+    if (!(min > 0) || !(max >= min)) { kept.push({ min: 0, max: 0, tag }); continue; }
+    if (max < lo || min > hi) { kept.push({ min, max, tag }); continue; }
+    if (min < lo) kept.push({ min, max: lo - 1, tag: setMinMax(tag, min, lo - 1) });
+    if (max > hi) kept.push({ min: hi + 1, max, tag: setMinMax(tag, hi + 1, max) });
+  }
+  const all = kept.concat(fresh).sort((a, b) => a.min - b.min);
+  return head.slice(0, gt + 1) + all.map(x => x.tag).join('') + head.slice(ce);
+}
+function outputHeaders(view, maxNotes) {
+  if (view === 'joined') return ['Part Note Codes', 'Part Note Text'];
+  if (view === 'rules') return ['Part Note Codes (after rules)', 'Part Note Text (after rules)', 'Rule Members'];
+  const h = [];
+  for (let i = 1; i <= Math.max(1, maxNotes); i++) h.push('Part Note Code ' + i, 'Part Note Text ' + i);
+  return h;
+}
+// `info` is the line's code-rule result (Rule Members view only), or null
+// when no rule fired on the line.
+function outputValues(view, line, info) {
+  if (view === 'joined') return [line.joinedCodes, line.joinedText];
+  if (view === 'rules') return info ? [info.joinedCodes, info.joinedText, info.members] : [line.joinedCodes, line.joinedText, ''];
+  const v = [];
+  for (const n of line.notes) v.push(n.code, n.text);
+  return v;
+}
+async function buildSheetXml(book, res, view, onProgress) {
+  const xml = book.sheetXml, P = book.P, out = res.cols.ebom.out;
+  const headers = outputHeaders(view, res.stats.maxNotes);
+  const byLine = view === 'rules' ? res.ruleSet.byLine : null;
+  const want = new Map();
+  res.lines.forEach((line, li) => {
+    if (!line.notes.length) return;
+    const cells = [];
+    outputValues(view, line, byLine ? byLine[li] : null).forEach((v, i) => { if (v !== '') cells.push({ col: out + i, v }); });
+    if (cells.length) want.set(line.row, { cells, style: line.style });
+  });
+  want.set(book.header.num, { cells: headers.map((h, i) => ({ col: out + i, v: h })), style: res.hdrPnStyle });
+  const widths = view === 'rules' ? [20, 60, 28] : headers.map((h, i) => (i % 2 === 0 ? 18 : (view === 'joined' ? 60 : 44)));
+  const pieces = [modifyHead(xml.slice(0, book.sdStart), P, out, widths)];
+  let last = book.sdStart, n = 0;
+  const span = Math.max(1, book.sdInnerEnd - book.sdInnerStart);
+  for (const row of iterRows(book)) {
+    if (++n % 3000 === 0) { if (onProgress) onProgress((row.s - book.sdInnerStart) / span); await tick(); }
+    const w = want.get(row.num);
+    if (!w) continue;
+    pieces.push(xml.slice(last, row.s), rewriteRow(book, row, w.cells, w.style));
+    last = row.e;
+  }
+  pieces.push(xml.slice(last));
+  return pieces;   // the edited sheet, in order; packPieces encodes it
+}
+// A plain sheet for the Summary and Orphan lists. Header rows reuse the EBOM
+// heading's cell style, which already exists in this workbook.
+function simpleSheetXml(ns, rows, widths, opts) {
+  const freeze = opts.freeze || 0, hdrRows = opts.hdrRows || new Set(), hs = opts.hdrStyle;
+  let x = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<worksheet xmlns="' + xmlAttr(ns) + '">';
+  if (freeze && opts.hasBookViews) {
+    const tl = 'A' + (freeze + 1);
+    x += '<sheetViews><sheetView workbookViewId="0"><pane ySplit="' + freeze + '" topLeftCell="' + tl + '" activePane="bottomLeft" state="frozen"/>' +
+         '<selection pane="bottomLeft" activeCell="' + tl + '" sqref="' + tl + '"/></sheetView></sheetViews>';
+  }
+  x += '<sheetFormatPr defaultRowHeight="15"/><cols>' +
+       widths.map((w, i) => '<col min="' + (i + 1) + '" max="' + (i + 1) + '" width="' + w + '" customWidth="1"/>').join('') + '</cols><sheetData>';
+  rows.forEach((r, i) => {
+    const rn = i + 1;
+    let cells = '';
+    r.forEach((v, c) => { if (v !== '' && v != null) cells += newCellXml('', c, rn, v, hdrRows.has(i) ? hs : null); });
+    x += '<row r="' + rn + '">' + cells + '</row>';
+  });
+  return x + '</sheetData></worksheet>';
+}
+function uniqueSheetName(want, taken) {
+  let name = want, i = 2;
+  while (taken.has(name.toLowerCase())) { const sfx = ' ' + i++; name = want.slice(0, 31 - sfx.length) + sfx; }
+  taken.add(name.toLowerCase());
+  return name;
+}
+function uniquePart(pkg, dir, base) {
+  let p = dir + base + '.xml', i = 2;
+  while (pkg.has(p)) p = dir + base + '_' + i++ + '.xml';
+  return p;
+}
+function insertBefore(xml, closeLocal, add) {
+  const re = new RegExp('</(?:[\\w.-]+:)?' + closeLocal + '>');
+  const m = re.exec(xml);
+  if (!m) throw new UserError('The workbook structure is not one this tool can extend (no ' + closeLocal + ' element).');
+  return xml.slice(0, m.index) + add + xml.slice(m.index);
+}
+function provenanceRows(res, view) {
+  const ebom = state.books.ebom, trace = state.books.trace;
+  const rows = [
+    ['Part Note Summary', ''],
+    ['Tool', APP_NAME + ' ' + APP_VERSION],
+    ['Run at', res.when],
+    ['Output view', VIEW_TEXT[view]],
+    ['EBOM file', ebom.fileName + ' (sheet "' + ebom.sheetName + '", heading row ' + ebom.header.num + ')'],
+    ['Part traceability file', trace.fileName + ' (sheet "' + trace.sheetName + '", heading row ' + trace.header.num + ')'],
+    ['EBOM columns (' + (res.manual.ebom ? 'Manual' : 'Default') + ')', mappingText('ebom', res.cols.ebom)],
+    ['Part traceability columns (' + (res.manual.trace ? 'Manual' : 'Default') + ')', mappingText('trace', res.cols.trace)],
+    ['Match rule', MATCH_RULE],
+    ['Repeated notes', 'A code and text pair is listed once per PN + NH, in part traceability file order.'],
+  ];
+  if (view === 'rules') {
+    rows.push(['Code rules', RULE_TEXT]);
+    res.ruleSet.rules.forEach((r, i) => rows.push(['Rule ' + (i + 1), ruleLabel(r) + (r.text ? ', new code text "' + r.text + '"' : ', no new code text')]));
+  }
+  return rows;
+}
+function ruleTraceRows(res) {
+  const rs = res.ruleSet;
+  const rows = [['EBOM Row', 'Part Number', 'Next Higher Part Number', 'Rule', 'New Part Note Code', 'New Part Note Text',
+                 'Member Code 1', 'Member Code 1 Text', 'Member Code 2', 'Member Code 2 Text', 'Trace Rows']];
+  const codes = notes => [...new Set(notes.map(n => n.code))].join(SEP);
+  for (const f of rs.firings) {
+    const r = rs.rules[f.rule];
+    rows.push([f.row, f.pn, f.nh, 'Rule ' + (f.rule + 1) + ': ' + ruleLabel(r), r.code, r.text,
+               codes(f.a), joinList(f.a.map(n => n.text)), codes(f.b), joinList(f.b.map(n => n.text)), f.traceRows.join(', ')]);
+  }
+  return rows;
+}
+async function buildOutput(view, onProgress) {
+  const book = state.books.ebom, res = state.result, pkg = book.pkg;
+  const sheetPieces = await buildSheetXml(book, res, view, p => onProgress && onProgress(p * 0.25));
+
+  // Summary and orphan sheets
+  const wbInfo = rootInfo(book.wbXml, 'workbook');
+  const relNs = /"http:\/\/purl\.oclc\.org\/ooxml\/officeDocument\/relationships"/.test(book.wbXml)
+    ? 'http://purl.oclc.org/ooxml/officeDocument/relationships'          // Strict Open XML
+    : 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+  const hasBookViews = /<(?:[\w.-]+:)?workbookView\b/.test(book.wbXml);
+  const taken = new Set(book.sheets.map(s => s.name.toLowerCase()));
+  const sumRows = provenanceRows(res, view);
+  const hdrIdx = new Set([0]);
+  sumRows.push(['', '']);
+  for (const r of summaryRows(res.stats).concat(view === 'rules' ? ruleSummaryRows(res.ruleSet) : [])) {
+    if (r.group) { hdrIdx.add(sumRows.length); sumRows.push([r.group, '']); }
+    else sumRows.push([r.label, r.value]);
+  }
+  const orphanRows = [['Trace Row', 'Part Number', 'Next Higher Part Number', 'Part Note Code', 'Part Note Text', 'Part Number in EBOM Under']];
+  for (const o of res.orphans) {
+    orphanRows.push([o.row, o.pn, o.nh, o.code, o.text,
+      o.elsewhere ? o.elsewhere.slice(0, 25).join(SEP) + (o.elsewhere.length > 25 ? SEP + '+' + (o.elsewhere.length - 25) + ' more' : '') : 'Not in EBOM']);
+  }
+  const sheetDir = dirOf(book.sheetPath);
+  const newSheets = [
+    { name: uniqueSheetName('Part Note Summary', taken), path: uniquePart(pkg, sheetDir, 'partnote_summary'),
+      xml: simpleSheetXml(wbInfo.ns, sumRows, [62, 90], { hdrRows: hdrIdx, hdrStyle: res.hdrPnStyle }) },
+    { name: uniqueSheetName('Orphan Part Notes', taken), path: uniquePart(pkg, sheetDir, 'partnote_orphans'),
+      xml: simpleSheetXml(wbInfo.ns, orphanRows, [11, 22, 24, 18, 60, 34], { freeze: 1, hasBookViews, hdrRows: new Set([0]), hdrStyle: res.hdrPnStyle }) },
+  ];
+  if (view === 'rules') {
+    newSheets.push({ name: uniqueSheetName('Rule Member Traceability', taken), path: uniquePart(pkg, sheetDir, 'partnote_rule_members'),
+      xml: simpleSheetXml(wbInfo.ns, ruleTraceRows(res), [11, 22, 24, 26, 18, 40, 16, 40, 16, 40, 16],
+                          { freeze: 1, hasBookViews, hdrRows: new Set([0]), hdrStyle: res.hdrPnStyle }) });
+  }
+
+  // Register them: workbook, its relationships, and content types.
+  let wbXml = book.wbXml, relsXml = book.wbRelsXml;
+  const relIds = new Set(parseRels(relsXml).map(r => r.id));
+  let nextSheetId = Math.max(0, ...book.sheets.map(s => s.sheetId || 0)) + 1;
+  const ctPath = '[Content_Types].xml';
+  let ctXml = await pkg.text(ctPath);
+  if (ctXml == null) throw new UserError('The workbook has no content types part.');
+  const wbDir = dirOf(book.wbPath);
+  const relsP = rootInfo(relsXml, 'Relationships').P, ctP = rootInfo(ctXml, 'Types').P;
+  for (const s of newSheets) {
+    let id = 'rIdPna1', k = 1;
+    while (relIds.has(id)) id = 'rIdPna' + ++k;
+    relIds.add(id);
+    const target = s.path.startsWith(wbDir) ? s.path.slice(wbDir.length) : '/' + s.path;
+    // Declared on the element itself: some writers (openpyxl) declare the
+    // prefix on each <sheet> rather than on the root, so it may not be in scope.
+    const idAttr = 'xmlns:r="' + relNs + '" r:id="' + id + '"';
+    wbXml = insertBefore(wbXml, 'sheets', '<' + wbInfo.P + 'sheet name="' + xmlAttr(s.name) + '" sheetId="' + nextSheetId++ + '" ' + idAttr + '/>');
+    relsXml = insertBefore(relsXml, 'Relationships', '<' + relsP + 'Relationship Id="' + id + '" Type="' + xmlAttr(book.sheetRelType) + '" Target="' + xmlAttr(target) + '"/>');
+    ctXml = insertBefore(ctXml, 'Types', '<' + ctP + 'Override PartName="/' + xmlAttr(s.path) + '" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>');
+  }
+
+  const sheetKey = normPart(book.sheetPath).toLowerCase();
+  const changed = new Map([
+    [normPart(book.wbPath).toLowerCase(), wbXml],
+    [normPart(book.wbRelsPath).toLowerCase(), relsXml],
+    [ctPath.toLowerCase(), ctXml],
+  ]);
+  const list = [];
+  for (const e of pkg.entries) {
+    const k = normPart(e.name).toLowerCase();
+    if (k === sheetKey) list.push(await packPieces(e.nameBytes, sheetPieces, e, p => onProgress && onProgress(0.25 + p * 0.7)));
+    else if (changed.has(k)) list.push(await packEntry(e.nameBytes, utf8enc.encode(changed.get(k)), e));
+    else list.push({ nameBytes: e.nameBytes, method: e.method, crc: e.crc, csize: e.data.length, usize: e.usize, data: e.data, time: e.time, date: e.date });
+  }
+  if (!pkg.has(book.wbRelsPath)) list.push(await packEntry(utf8enc.encode(book.wbRelsPath), utf8enc.encode(relsXml)));
+  for (const s of newSheets) list.push(await packEntry(utf8enc.encode(s.path), utf8enc.encode(s.xml)));
+  const mime = book.ext === 'xlsm' ? 'application/vnd.ms-excel.sheet.macroEnabled.12' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+  if (onProgress) onProgress(1);
+  return writeZip(list, mime);
+}
+function outputName(view) {
+  const b = state.books.ebom;
+  const base = b.fileName.replace(/\.[^.]+$/, '');
+  if (view === 'ssav') return base + '_SSAV.xlsx';   // a new workbook, never macro-enabled
+  return base + '_PartNotes_' + VIEW_NAME[view].replace(/\s+/g, '') + '.' + b.ext;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// INTERFACE
+// ════════════════════════════════════════════════════════════════════════════
+let toastTimer = null;
+function toast(msg) {
+  const t = $('toast');
+  t.textContent = msg; t.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.hidden = true; }, 3800);
+}
+function setProgress(p) {
+  if (p == null) { $('progress').hidden = true; return; }
+  $('progress').hidden = false;
+  $('progress-bar').style.width = Math.round(Math.max(0, Math.min(1, p)) * 100) + '%';
+}
+function invalidate(reason) {
+  const had = !!state.result;
+  state.result = null;
+  $('results').hidden = true;
+  $('run-msg').innerHTML = had && reason ? '<div class="msg msg-warn">' + esc(reason) + ' Run the alignment again to see results.</div>' : '';
+  renderRun();
+}
+
+// ── File cards ──────────────────────────────────────────────────────────────
+function renderCard(type) {
+  const b = state.books[type];
+  const drop = $('drop-' + type);
+  drop.classList.toggle('loaded', !!b);
+  $('file-' + type).textContent = b ? b.fileName : 'No file loaded';
+  $('meta-' + type).textContent = b
+    ? 'Sheet "' + b.sheetName + '" · heading in row ' + b.header.num + (b.sheets.length > 1 ? ' · first of ' + b.sheets.length + ' sheets' : '')
+    : '';
+  const manual = !!state.maps[type];
+  $('map-default-' + type).classList.toggle('active', !manual);
+  $('map-manual-' + type).classList.toggle('active', manual);
+  $('map-manual-' + type).textContent = manual ? 'Manual ✓' : 'Manual…';
+  renderReadout(type);
+}
+function renderReadout(type) {
+  const b = state.books[type], cols = colsFor(type);
+  const rows = fieldDefs(type).map(d => {
+    const c = cols[d.key], L = colLetter(c);
+    if (d.output) {
+      let note = 'New columns are written here.';
+      let cls = 'note-ok';
+      if (b) {
+        const used = [...b.header.vals.keys()].filter(k => k >= c).sort((x, y) => x - y);
+        if (used.length) { cls = 'note-warn'; note = 'Column ' + colLetter(used[0]) + ' already has a heading ("' + b.header.vals.get(used[0]) + '"). Choose a later column in Manual.'; }
+      }
+      return '<tr><td class="fld">' + esc(d.label) + '</td><td class="col">' + L + '</td><td colspan="2" class="' + cls + '">' + esc(note) + '</td></tr>';
+    }
+    if (!b) return '<tr><td class="fld">' + esc(d.label) + '</td><td class="col">' + L + '</td><td></td><td></td></tr>';
+    const head = b.header.vals.get(c) || '';
+    const seen = [];
+    for (const s of b.samples) { const v = s.get(c); if (v !== undefined && !seen.includes(v)) seen.push(v); if (seen.length >= 3) break; }
+    const smp = seen.length ? esc(seen.map(v => (v.length > 40 ? v.slice(0, 40) + '…' : v)).join(', '))
+                            : '<span class="note-warn">No values in the first ' + b.samples.length + ' rows</span>';
+    return '<tr><td class="fld">' + esc(d.label) + '</td><td class="col">' + L + '</td><td>' + (head ? esc(head) : '<span class="note-warn">No heading</span>') +
+           '</td><td class="smp">' + smp + '</td></tr>';
+  }).join('');
+  $('readout-' + type).innerHTML = '<table><thead><tr><th>Field</th><th>Col</th><th>Heading in file</th><th>First values</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+    (type === 'ebom' && state.ssav ? '<div class="readout-note">SSAV Output Mode. Not used by the SSAV file: ' + esc(SSAV_UNUSED_INPUT) + '.</div>' : '');
+}
+async function loadFile(type, file) {
+  if (!file || state.busy) return;
+  const drop = $('drop-' + type);
+  $('err-' + type).textContent = '';
+  drop.classList.add('busy');
+  $('file-' + type).textContent = 'Reading ' + file.name + '…';
+  try {
+    await tick();
+    const book = await openBook(file);
+    state.books[type] = book;
+    invalidate('The ' + FILE_LABEL[type] + ' file changed.');
+  } catch (e) {
+    $('err-' + type).textContent = e instanceof UserError ? e.message : 'This file could not be read: ' + (e && e.message ? e.message : e);
+    if (!(e instanceof UserError)) console.error(e);
+  } finally {
+    drop.classList.remove('busy');
+    renderCard(type);
+    renderRun();
+  }
+}
+function wireCard(type) {
+  const drop = $('drop-' + type), input = $('input-' + type);
+  drop.addEventListener('click', () => { if (!state.busy) input.click(); });
+  drop.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (!state.busy) input.click(); } });
+  input.addEventListener('change', () => { const f = input.files && input.files[0]; input.value = ''; loadFile(type, f); });
+  drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('drag'); });
+  drop.addEventListener('dragleave', () => drop.classList.remove('drag'));
+  drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('drag'); const f = e.dataTransfer.files && e.dataTransfer.files[0]; loadFile(type, f); });
+  $('map-default-' + type).addEventListener('click', () => {
+    if (state.busy || !state.maps[type]) return;
+    state.maps[type] = null;
+    renderCard(type);
+    invalidate('The ' + FILE_LABEL[type] + ' columns changed.');
+    toast(FILE_LABEL[type] + ': Default columns in use.');
+  });
+  $('map-manual-' + type).addEventListener('click', () => { if (!state.busy) openMapper(type); });
+}
+
+// ── Manual column mapping ───────────────────────────────────────────────────
+function openMapper(type) {
+  const cur = state.maps[type] || {};
+  const rows = fieldDefs(type).map(d => {
+    const v = cur[d.key] !== undefined ? colLetter(cur[d.key]) : '';
+    return '<tr><td class="lbl">' + esc(d.label) + '</td><td><input type="text" class="map-col-input" id="map-in-' + d.key + '" value="' + esc(v) +
+           '" placeholder="DEFAULT: ' + colLetter(DEFAULT_COLS[type][d.key]) + '" maxlength="3" autocomplete="off" spellcheck="false"></td><td class="hint">' + esc(d.hint || '') + '</td></tr>';
+  }).join('');
+  $('modal').innerHTML =
+    '<div class="modal-head"><span class="modal-title">' + esc(FILE_LABEL[type]) + ': Manual Column Mapping' + (type === 'ebom' && state.ssav ? ' (SSAV)' : '') + '</span><button type="button" class="icon-btn" id="map-close">Close</button></div>' +
+    '<div class="modal-body"><div class="modal-intro">Type the column letter that holds each field. Leave a field blank to use its default (shown in the box). ' +
+    'The loaded file is re-read at once; nothing needs to be loaded again.</div>' +
+    '<table class="map-table">' + rows + '</table>' +
+    '<div class="modal-actions"><button type="button" class="btn btn-primary" id="map-apply">Apply mapping</button><button type="button" class="btn btn-secondary" id="map-cancel">Cancel</button></div>' +
+    '<div class="modal-err" id="map-err"></div></div>';
+  $('overlay').hidden = false;
+  $('map-close').onclick = closeMapper;
+  $('map-cancel').onclick = closeMapper;
+  $('map-apply').onclick = () => applyMapper(type);
+  $('modal').querySelectorAll('input').forEach(i => i.addEventListener('keydown', e => { if (e.key === 'Enter') applyMapper(type); }));
+  const firstIn = $('modal').querySelector('input');
+  if (firstIn) firstIn.focus();
+}
+function closeMapper() { $('overlay').hidden = true; $('modal').innerHTML = ''; $('modal').classList.remove('modal-wide'); }
+function applyMapper(type) {
+  const err = $('map-err'), map = Object.assign({}, state.maps[type] || {}), usedBy = {};
+  for (const d of fieldDefs(type)) {
+    const raw = ($('map-in-' + d.key).value || '').trim();
+    let idx = DEFAULT_COLS[type][d.key];
+    if (raw) {
+      idx = colIndex(raw);
+      if (idx < 0) { err.textContent = '"' + raw + '" is not a column letter (for ' + d.label + '). Use letters such as B, K or AG.'; return; }
+    }
+    if (usedBy[idx] !== undefined) { err.textContent = 'Column ' + colLetter(idx) + ' is set for both ' + usedBy[idx] + ' and ' + d.label + '.'; return; }
+    usedBy[idx] = d.label;
+    map[d.key] = idx;
+  }
+  if (type === 'ebom' && !state.ssav && [map.pn, map.nh, map.desc].some(c => c >= map.out)) {
+    err.textContent = 'The first output column must be to the right of the Part Number, Next Higher and Description columns.';
+    return;
+  }
+  const same = Object.keys(DEFAULT_COLS[type]).every(k => map[k] === undefined || map[k] === DEFAULT_COLS[type][k]);
+  const before = JSON.stringify(state.maps[type]);
+  state.maps[type] = same ? null : map;
+  closeMapper();
+  renderCard(type);
+  if (JSON.stringify(state.maps[type]) !== before) invalidate('The ' + FILE_LABEL[type] + ' columns changed.');
+  toast(same ? FILE_LABEL[type] + ': these are the Default columns.' : FILE_LABEL[type] + ': Manual columns applied.');
+}
+
+// ── Run ─────────────────────────────────────────────────────────────────────
+function renderRun() {
+  const ready = !!(state.books.ebom && state.books.trace);
+  $('run-btn').disabled = !ready || state.busy;
+  $('reset-btn').disabled = state.busy;
+  $('ssav-toggle').disabled = state.busy;
+  if (state.busy) return;
+  $('run-status').textContent = state.result ? 'Aligned. Change a file or a column to run again.'
+    : ready ? 'Ready.' : 'Load both files to begin.';
+}
+function collisionMessage(scan, cols) {
+  const c = scan.collisions;
+  const first = c[0];
+  const more = c.length > 1 ? ' and ' + (c.length >= 1000 ? 'at least ' : '') + fmt(c.length - 1) + ' more cell' + (c.length > 2 ? 's' : '') : '';
+  const suggest = colLetter(Math.max(scan.maxCell + 1, cols.out + 1));
+  return '<b>The EBOM already has data in column ' + colLetter(cols.out) + ' or to its right</b> (cell ' + colLetter(first.col) + first.row +
+    (first.value ? ', "' + esc(first.value.length > 60 ? first.value.slice(0, 60) + '…' : first.value) + '"' : '') + more + '). ' +
+    'The tool will not overwrite it. Open <b>Manual</b> on the EBOM card and set <b>First output column</b> to ' + suggest +
+    ' (the first column after all cells in the sheet), then run again.';
+}
+async function run() {
+  if (state.busy || !state.books.ebom || !state.books.trace) return;
+  state.busy = true;
+  renderRun();
+  $('run-msg').innerHTML = '';
+  $('results').hidden = true;
+  state.result = null;
+  const status = $('run-status');
+  try {
+    const eb = state.books.ebom, tr = state.books.trace;
+    const ec = colsFor('ebom'), tc = colsFor('trace'), ssav = state.ssav;
+    const need = { pn: ec.pn, nh: ec.nh, desc: ec.desc };
+    if (ssav) {
+      const used = {};
+      for (const f of SSAV_EBOM_FIELDS) {
+        need[f.key] = ec[f.key];
+        if (used[ec[f.key]]) throw new UserError('<b>Column ' + colLetter(ec[f.key]) + ' is set for both ' + esc(used[ec[f.key]]) + ' and ' + esc(f.label) + '.</b> Open Manual on the EBOM card and fix the SSAV columns.');
+        used[ec[f.key]] = f.label;
+      }
+    }
+    status.textContent = 'Reading the EBOM…';
+    // SSAV writes a new workbook, so the EBOM's own columns cannot be overwritten.
+    const es = await scanSheet(eb, need, ssav ? null : ec.out, p => setProgress(p * 0.5));
+    if (es.collisions.length) throw new UserError(collisionMessage(es, ec));
+    const merges = ssav ? [] : mergesReaching(eb, ec.out);
+    if (merges.length) {
+      throw new UserError('<b>The EBOM has merged cells that reach column ' + colLetter(ec.out) + ' or beyond</b> (' + esc(merges.slice(0, 3).join(', ')) +
+        (merges.length > 3 ? ' and ' + (merges.length - 3) + ' more' : '') + '). Unmerge them, or set a later <b>First output column</b> in Manual.');
+    }
+    status.textContent = 'Reading the part traceability file…';
+    const ts = await scanSheet(tr, { pn: tc.pn, nh: tc.nh, code: tc.code, text: tc.text }, null, p => setProgress(0.5 + p * 0.45));
+    status.textContent = 'Aligning…';
+    await tick();
+    const res = align(es, ts);
+    res.cols = { ebom: ec, trace: tc };
+    res.manual = { ebom: !!state.maps.ebom, trace: !!state.maps.trace };
+    res.hdrPnStyle = es.hdrPnStyle;
+    res.ruleSet = applyRules(res.lines, activeRules());
+    res.ssav = ssav ? ssavScore(res.lines) : null;
+    const d = new Date(), z = n => String(n).padStart(2, '0');
+    res.when = d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate()) + ' ' + z(d.getHours()) + ':' + z(d.getMinutes()) + ' (this computer\u2019s time)';
+    if (!res.stats.ebomLines) throw new UserError('<b>No EBOM lines were found.</b> Column ' + colLetter(ec.pn) + ' (Part Number) is empty below the heading. Check the EBOM columns.');
+    if (!res.stats.traceRows) throw new UserError('<b>No part traceability rows were found.</b> Column ' + colLetter(tc.pn) + ' (Part Number) is empty below the heading. Check the part traceability columns.');
+    state.result = res;
+    state.view = { tab: 'ebom', filter: 'all', q: '', page: 0 };
+    $('search').value = '';
+    setProgress(1);
+    renderResults();
+  } catch (e) {
+    $('run-msg').innerHTML = '<div class="msg msg-danger">' + (e instanceof UserError ? e.message : 'Something went wrong: ' + esc(e && e.message ? e.message : e)) + '</div>';
+    if (!(e instanceof UserError)) console.error(e);
+  } finally {
+    state.busy = false;
+    setTimeout(() => setProgress(null), 400);
+    renderRun();
+  }
+}
+const DL_IDS = ['dl-joined', 'dl-columns', 'dl-rules', 'dl-ssav'];
+// Code rules shape the Rule Members view; SSAV Output Mode never uses them.
+function activeRules() { return state.ssav ? [] : state.rules; }
+async function downloadView(view) {
+  if (state.busy || !state.result) return;
+  state.busy = true;
+  renderRun();
+  const btn = $('dl-' + view), label = btn.textContent;
+  DL_IDS.forEach(id => { $(id).disabled = true; });
+  btn.textContent = 'Building…';
+  $('run-status').textContent = view === 'ssav' ? 'Building the SSAV file…' : 'Building the ' + VIEW_NAME[view] + ' view…';
+  try {
+    const blob = view === 'ssav' ? await buildSsav(setProgress) : await buildOutput(view, setProgress);
+    const name = outputName(view);
+    const a = document.createElement('a'), url = URL.createObjectURL(blob);
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    toast('Saved ' + name);
+  } catch (e) {
+    $('run-msg').innerHTML = '<div class="msg msg-danger">' + (e instanceof UserError ? e.message : 'The file could not be built: ' + esc(e && e.message ? e.message : e)) + '</div>';
+    if (!(e instanceof UserError)) console.error(e);
+  } finally {
+    btn.textContent = label;
+    DL_IDS.forEach(id => { $(id).disabled = false; });
+    state.busy = false;
+    setTimeout(() => setProgress(null), 400);
+    renderRun();
+  }
+}
+
+// ── Results ─────────────────────────────────────────────────────────────────
+function renderResults() {
+  const res = state.result, st = res.stats, out = res.cols.ebom.out;
+  $('results').hidden = false;
+  $('results-sub').textContent = state.books.ebom.fileName + ' with ' + state.books.trace.fileName;
+  const pct = st.ebomLines ? Math.round((st.ebomWith / st.ebomLines) * 1000) / 10 : 0;
+  const kpi = (n, l, s, cls) => '<div class="kpi ' + (cls || '') + '"><div class="n">' + fmt(n) + '</div><div class="l">' + esc(l) + '</div>' + (s ? '<div class="s">' + esc(s) + '</div>' : '') + '</div>';
+  const sv = res.ssav;
+  $('kpis').classList.toggle('six', !!sv);
+  if (sv) {
+    $('kpis').innerHTML =
+      kpi(st.ebomLines, 'EBOM lines', 'Rows in the SSAV file') +
+      kpi(sv.counts.B, 'B · SER and LOT', '') + kpi(sv.counts.S, 'S · SER only', '') + kpi(sv.counts.L, 'L · LOT only', '') +
+      kpi(sv.counts.E, 'E · Neither', sv.eOtherOnly ? fmt(sv.eOtherOnly) + ' had only other codes' : '', sv.eOtherOnly ? 'warn' : '') +
+      kpi(st.orphanRows, 'Orphan trace rows', st.orphanRows ? 'PN + NH not in the EBOM' : 'Every trace row matched', st.orphanRows ? 'warn' : 'ok');
+  } else $('kpis').innerHTML =
+    kpi(st.ebomLines, 'EBOM lines', fmt(st.ebomKeys) + ' distinct PN + NH') +
+    kpi(st.ebomWith, 'With part notes', pct + '% of lines', st.ebomWith ? 'ok' : '') +
+    kpi(st.ebomWithout, 'Without part notes', '') +
+    kpi(st.orphanRows, 'Orphan trace rows', st.orphanRows ? 'PN + NH not in the EBOM' : 'Every trace row matched', st.orphanRows ? 'warn' : 'ok') +
+    kpi(st.maxNotes, 'Most notes on a line', st.maxNotes ? 'Columns view: ' + st.maxNotes + ' code and text pair' + (st.maxNotes > 1 ? 's' : '') : '');
+
+  const L = i => colLetter(out + i);
+  $('dl-joined-desc').textContent = L(0) + ' Part Note Codes and ' + L(1) + ' Part Note Text. Several notes on a line are joined with "' + SEP + '" in the same order.';
+  const pairs = Math.max(1, st.maxNotes);
+  $('dl-columns-desc').textContent = 'One code and text pair per column pair: ' + L(0) + ' Code 1, ' + L(1) + ' Text 1' +
+    (pairs > 1 ? ', ' + L(2) + ' Code 2, ' + L(3) + ' Text 2' : '') + (pairs > 2 ? ', out to ' + L(pairs * 2 - 1) + ' Text ' + pairs : '') + '.';
+  const rs = res.ruleSet, hasRules = rs.rules.length > 0;
+  // SSAV Output Mode offers the SSAV file and nothing else.
+  ['dl-joined-box', 'dl-columns-box'].forEach(id => { $(id).hidden = !!sv; });
+  $('dl-ssav-box').hidden = !sv;
+  $('dl-rules-box').hidden = !hasRules;
+  if (hasRules) {
+    const r0 = rs.rules[0];
+    $('dl-rules-desc').textContent = L(0) + ' Part Note Codes and ' + L(1) + ' Part Note Text after the code rules, and ' + L(2) +
+      ' Rule Members (for example "' + r0.code + ' = ' + r0.a + ' + ' + r0.b + '"). Rules fired on ' + fmt(rs.linesFired) + ' line' + (rs.linesFired === 1 ? '' : 's') + '.';
+  }
+  const headOnly = SSAV_LAYOUT.filter(f => !f.src && !f.calc).map(f => colLetter(f.col));
+  $('dl-ssav-desc').textContent = 'One sheet, "SSAV", ' + SSAV_LAYOUT.length + ' columns: ' + SSAV_LAYOUT.map(f => colLetter(f.col) + ' ' + f.label).join(', ') +
+    '. ' + headOnly.slice(0, -1).join(', ') + ' and ' + headOnly[headOnly.length - 1] + ' have a heading only.';
+  $('dl-foot').innerHTML = sv
+    ? 'A new workbook, not a copy of the EBOM. One row per EBOM line with a part number, in EBOM order, below a heading row. ' +
+      'Numbers in the EBOM stay numbers. Code rules are not used. Turn SSAV Output Mode off for the Joined, Columns and Rule Members files.'
+    : 'Each file is a copy of <b>' + esc(state.books.ebom.fileName) + '</b> with the new columns added to sheet "' + esc(state.books.ebom.sheetName) +
+    '". Its formatting, other sheets and macros are kept. Two sheets are added: <b>Part Note Summary</b> and <b>Orphan Part Notes</b>.' +
+    (hasRules ? ' The Rule Members file also adds <b>Rule Member Traceability</b>. The Joined and Columns files do not use the code rules.' : '');
+
+  let h = '<table class="counts"><tbody>';
+  for (const r of summaryRows(st).concat(hasRules ? ruleSummaryRows(rs) : [], sv ? ssavSummaryRows(sv, st.ebomLines) : [])) {
+    if (r.group) h += '<tr><th colspan="2">' + esc(r.group) + '</th></tr>';
+    else h += '<tr><td>' + esc(r.label) + '</td><td class="v' + (r.warn ? ' warn' : '') + '">' + fmt(r.value) + esc(r.extra || '') + '</td></tr>';
+  }
+  h += '</tbody></table><div class="rules"><b>Match rule.</b> ' + esc(MATCH_RULE) + '<br><b>EBOM columns' + (res.manual.ebom ? ' (Manual)' : '') + '.</b> ' + esc(mappingText('ebom', res.cols.ebom)) +
+       '<br><b>Part traceability columns' + (res.manual.trace ? ' (Manual)' : '') + '.</b> ' + esc(mappingText('trace', res.cols.trace)) +
+       (sv ? '<br><b>SSAV trace codes.</b> ' + esc(SSAV_RULE_TEXT) : '') + '</div>';
+  $('counts').innerHTML = h;
+  renderRules();
+  renderPreview();
+}
+function lineHay(l) {
+  if (l._hay === undefined) l._hay = [l.pn, l.nh, l.desc].concat(l.notes.map(n => n.code + ' ' + n.text)).join('\n').toLowerCase();
+  return l._hay;
+}
+function orphanHay(o) {
+  if (o._hay === undefined) o._hay = [o.pn, o.nh, o.code, o.text].join('\n').toLowerCase();
+  return o._hay;
+}
+function firingHay(f, rs) {
+  if (f._hay === undefined) {
+    const r = rs.rules[f.rule];
+    f._hay = [f.pn, f.nh, r.a, r.b, r.code, r.text].concat(f.a.concat(f.b).map(n => n.text)).join('\n').toLowerCase();
+  }
+  return f._hay;
+}
+function notesHtml(notes) {
+  if (!notes.length) return '';
+  return '<div class="notes">' + notes.map(n => '<span class="c">' + esc(n.code) + '</span><span class="t">' + esc(n.text) + '</span>').join('') + '</div>';
+}
+function renderPreview() {
+  const res = state.result;
+  if (!res) return;
+  const v = state.view, st = res.stats, q = v.q.trim().toLowerCase(), rs = res.ruleSet;
+  if (v.tab === 'rules' && !rs.rules.length) v.tab = 'ebom';
+  if (v.tab === 'ssav' && !res.ssav) v.tab = 'ebom';
+  $('tabs').innerHTML =
+    '<button type="button" class="tab' + (v.tab === 'ebom' ? ' active' : '') + '" data-tab="ebom">EBOM lines (' + fmt(st.ebomLines) + ')</button>' +
+    '<button type="button" class="tab' + (v.tab === 'orphans' ? ' active' : '') + '" data-tab="orphans">Orphan trace rows (' + fmt(st.orphanRows) + ')</button>' +
+    (rs.rules.length ? '<button type="button" class="tab' + (v.tab === 'rules' ? ' active' : '') + '" data-tab="rules">Rule members (' + fmt(rs.firings.length) + ')</button>' : '') +
+    (res.ssav ? '<button type="button" class="tab' + (v.tab === 'ssav' ? ' active' : '') + '" data-tab="ssav">SSAV rows (' + fmt(st.ebomLines) + ')</button>' : '');
+  const sv = res.ssav;
+  if (sv && !['all', 'B', 'S', 'L', 'E'].includes(v.filter)) v.filter = 'all';
+  if (!sv && ['B', 'S', 'L', 'E'].includes(v.filter)) v.filter = 'all';
+  const chipSet = sv ? [['all', 'All', st.ebomLines], ['B', 'B', sv.counts.B], ['S', 'S', sv.counts.S], ['L', 'L', sv.counts.L], ['E', 'E', sv.counts.E]]
+                     : [['all', 'All', st.ebomLines], ['with', 'With notes', st.ebomWith], ['without', 'Without notes', st.ebomWithout]];
+  $('chips').innerHTML = v.tab !== 'ebom' && v.tab !== 'ssav' ? '' : chipSet
+    .map(([k, l, n]) => '<button type="button" class="chip' + (v.filter === k ? ' active' : '') + '" data-filter="' + k + '">' + l + ' (' + fmt(n) + ')</button>').join('');
+  let list, head, rowFn;
+  if (v.tab === 'ebom') {
+    list = res.lines;
+    if (v.filter === 'with') list = list.filter(l => l.notes.length);
+    else if (v.filter === 'without') list = list.filter(l => !l.notes.length);
+    else if (sv && v.filter !== 'all') list = list.filter(l => sv.byLine[l.idx].code === v.filter);
+    if (q) list = list.filter(l => lineHay(l).includes(q));
+    head = ['EBOM Row', 'Part Number', 'Next Higher'].concat(sv ? ['Trace Code'] : [], ['Description', 'Part Note Code · Text']);
+    const traceCell = l => {
+      if (!sv) return '';
+      const t = sv.byLine[l.idx];
+      return '<td class="key" title="' + esc(SSAV_CODE_LABEL[t.code] + (t.ll ? '. LL: LIMITED_LIFE_YN Y' : '') + (t.other.length ? '. Left out: ' + t.other.join(', ') : '')) + '">' + t.code +
+             (t.other.length ? ' <span class="left-out">+' + t.other.length + ' left out</span>' : '') + '</td>';
+    };
+    rowFn = l => '<tr><td class="num">' + l.row + '</td><td class="key">' + esc(l.pn) + '</td><td class="key">' + esc(l.nh) + '</td>' + traceCell(l) +
+                 '<td class="wrap">' + esc(l.desc) + '</td><td>' + notesHtml(l.notes) + '</td></tr>';
+  } else if (v.tab === 'ssav') {
+    // The rows exactly as the SSAV file will hold them, below the same headings.
+    list = res.lines;
+    if (v.filter !== 'all') list = list.filter(l => sv.byLine[l.idx].code === v.filter);
+    if (q) list = list.filter(l => lineHay(l).includes(q));
+    head = ['EBOM Row'].concat(SSAV_LAYOUT.map(f => colLetter(f.col) + ' ' + f.label));
+    rowFn = l => '<tr><td class="num">' + l.row + '</td>' + sv.rows[l.idx].map((x, c) =>
+      '<td class="' + (c === 12 ? 'key' : 'ssav-cell') + '">' + esc(x) + '</td>').join('') + '</tr>';
+  } else if (v.tab === 'rules') {
+    list = rs.firings;
+    if (q) list = list.filter(f => firingHay(f, rs).includes(q));
+    head = ['EBOM Row', 'Part Number', 'Next Higher', 'Rule', 'New Code · Text', 'Member Codes · Text', 'Trace Rows'];
+    rowFn = f => {
+      const r = rs.rules[f.rule];
+      return '<tr><td class="num">' + f.row + '</td><td class="key">' + esc(f.pn) + '</td><td class="key">' + esc(f.nh) + '</td><td class="key">' +
+             esc('Rule ' + (f.rule + 1) + ': ' + ruleLabel(r)) + '</td><td>' + notesHtml([r]) + '</td><td>' + notesHtml(f.a.concat(f.b)) +
+             '</td><td class="wrap">' + esc(f.traceRows.join(', ')) + '</td></tr>';
+    };
+  } else {
+    list = res.orphans;
+    if (q) list = list.filter(o => orphanHay(o).includes(q));
+    head = ['Trace Row', 'Part Number', 'Next Higher', 'Part Note Code · Text', 'Part Number in EBOM Under'];
+    rowFn = o => '<tr><td class="num">' + o.row + '</td><td class="key">' + esc(o.pn) + '</td><td class="key">' + esc(o.nh) + '</td><td>' + notesHtml([o]) +
+                 '</td><td class="wrap">' + (o.elsewhere ? esc(o.elsewhere.slice(0, 25).join(SEP) + (o.elsewhere.length > 25 ? ' +' + (o.elsewhere.length - 25) + ' more' : '')) : 'Not in EBOM') + '</td></tr>';
+  }
+  const pages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
+  if (v.page >= pages) v.page = pages - 1;
+  const slice = list.slice(v.page * PAGE_SIZE, (v.page + 1) * PAGE_SIZE);
+  let h;
+  if (!list.length) {
+    h = '<div class="empty">' + (q ? 'Nothing matches "' + esc(v.q.trim()) + '".' : v.tab === 'orphans' ? 'No orphan rows. Every part traceability row matched an EBOM line.'
+        : v.tab === 'rules' ? 'No rule fired. No line has both member codes of any rule.' : 'No lines in this view.') + '</div>';
+  } else {
+    h = '<div class="tbl-wrap"><table class="data"><thead><tr>' + head.map(x => '<th>' + esc(x) + '</th>').join('') + '</tr></thead><tbody>' +
+        slice.map(rowFn).join('') + '</tbody></table></div>' +
+        '<div class="pager"><span>Rows ' + fmt(v.page * PAGE_SIZE + 1) + ' to ' + fmt(v.page * PAGE_SIZE + slice.length) + ' of ' + fmt(list.length) + '</span><span>' +
+        '<button type="button" class="btn btn-secondary" data-page="-1"' + (v.page === 0 ? ' disabled' : '') + '>Previous</button> ' +
+        '<button type="button" class="btn btn-secondary" data-page="1"' + (v.page >= pages - 1 ? ' disabled' : '') + '>Next</button></span></div>';
+  }
+  $('preview').innerHTML = h;
+}
+
+// ── Code rules panel ────────────────────────────────────────────────────────
+function renderRules() {
+  const rules = state.rules;
+  const rs = state.result ? state.result.ruleSet : null;
+  $('rules-save').disabled = !rules.length;
+  $('rules-status').textContent = rules.length
+    ? rules.length + ' rule' + (rules.length === 1 ? '' : 's') + ' in use' + (state.rulesSource ? ', from ' + state.rulesSource : '') + '.'
+    : '';
+  const off = state.ssav ? '<div class="rules-off">SSAV Output Mode is on. These rules are kept but not used.</div>' : '';
+  if (!rules.length) {
+    $('rules-list').innerHTML = off + '<div class="rules-empty">No rules. The tool runs as normal and the Rule Members download is off.</div>';
+    return;
+  }
+  const counted = rs && rs.rules.length === rules.length;
+  const cnt = (n, warn) => counted ? '<td class="num' + (warn && n ? ' warn' : '') + '">' + fmt(n) + '</td>' : '<td class="num">·</td>';
+  let h = '<div class="rules-wrap"><table class="rules-table"><thead><tr><th>#</th><th>Code 1</th><th></th><th>Code 2</th><th></th><th>New code</th><th>New code text</th>' +
+          '<th class="r">Fired on</th><th class="r">Code 1 only</th><th class="r">Code 2 only</th></tr></thead><tbody>';
+  rules.forEach((r, i) => {
+    const p = counted ? rs.perRule[i] : null;
+    h += '<tr><td class="num">' + (i + 1) + '</td><td class="code">' + esc(r.a) + '</td><td class="op">+</td><td class="code">' + esc(r.b) +
+         '</td><td class="op">→</td><td class="code">' + esc(r.code) + '</td><td>' + (r.text ? esc(r.text) : '<i>no text</i>') + '</td>' +
+         cnt(p ? p.fired : 0) + cnt(p ? p.onlyA : 0, true) + cnt(p ? p.onlyB : 0, true) + '</tr>';
+  });
+  h += '</tbody></table></div><div class="rules-note">' + esc(RULE_TEXT) + ' ' +
+       (counted ? '"Code 1 only" counts lines that have the first member code but not the second, and the reverse for "Code 2 only".' : 'Counts appear after you align.') + '</div>';
+  $('rules-list').innerHTML = off + h;
+}
+// One place changes the rules. A finished run is re-scored at once (rules
+// only touch notes already found), so no new run is needed.
+function setRules(rules, source) {
+  state.rules = rules;
+  state.rulesSource = source || null;
+  $('rules-err').textContent = '';
+  if (state.result) {
+    state.result.ruleSet = applyRules(state.result.lines, activeRules());
+    renderResults();
+  } else {
+    renderRules();
+  }
+}
+let ruleDraft = [];
+function readRuleDraft() {
+  ruleDraft = ruleDraft.map((r, i) => ({
+    a: $('rule-a-' + i).value, b: $('rule-b-' + i).value, code: $('rule-code-' + i).value, text: $('rule-text-' + i).value,
+  }));
+}
+function renderRuleDraft(focusRow) {
+  const inp = (id, v, cls, ph) => '<input type="text" class="rule-in' + (cls ? ' ' + cls : '') + '" id="' + id + '" value="' + esc(v) + '" placeholder="' + ph + '" autocomplete="off" spellcheck="false">';
+  $('rule-rows').innerHTML = ruleDraft.map((r, i) =>
+    '<tr><td class="n">' + (i + 1) + '</td><td>' + inp('rule-a-' + i, r.a, '', 'e.g. SER') + '</td><td class="op">+</td><td>' + inp('rule-b-' + i, r.b, '', 'e.g. LOT') +
+    '</td><td class="op">→</td><td>' + inp('rule-code-' + i, r.code, '', 'e.g. M') + '</td><td>' + inp('rule-text-' + i, r.text, 'txt', 'Text for the new code') +
+    '</td><td><button type="button" class="icon-btn" data-remove="' + i + '" aria-label="Remove rule ' + (i + 1) + '">Remove</button></td></tr>').join('');
+  if (focusRow != null && $('rule-a-' + focusRow)) $('rule-a-' + focusRow).focus();
+}
+function openRulesEditor() {
+  ruleDraft = state.rules.length ? state.rules.map(r => Object.assign({}, r)) : [{ a: '', b: '', code: '', text: '' }];
+  $('modal').classList.add('modal-wide');
+  $('modal').innerHTML =
+    '<div class="modal-head"><span class="modal-title">Code rules</span><button type="button" class="icon-btn" id="rules-close">Close</button></div>' +
+    '<div class="modal-body"><div class="modal-intro">Each rule reads: if a part number + next higher has <b>Code 1</b> and <b>Code 2</b>, write the <b>New code</b> in their place. ' +
+    'Codes match after trimming spaces and ignoring case. Leave a row empty to drop it. The rules shape the Rule Members download only.</div>' +
+    '<table class="rule-edit"><thead><tr><th></th><th>Code 1</th><th></th><th>Code 2</th><th></th><th>New code</th><th>New code text</th><th></th></tr></thead><tbody id="rule-rows"></tbody></table>' +
+    '<div class="modal-actions"><button type="button" class="btn btn-secondary" id="rules-add">Add rule</button></div>' +
+    '<div class="modal-actions"><button type="button" class="btn btn-primary" id="rules-apply">Apply rules</button><button type="button" class="btn btn-secondary" id="rules-cancel">Cancel</button></div>' +
+    '<div class="modal-err" id="rules-modal-err"></div></div>';
+  renderRuleDraft(0);
+  $('overlay').hidden = false;
+  $('rules-close').onclick = closeMapper;
+  $('rules-cancel').onclick = closeMapper;
+  $('rules-add').onclick = () => { readRuleDraft(); ruleDraft.push({ a: '', b: '', code: '', text: '' }); renderRuleDraft(ruleDraft.length - 1); };
+  $('rule-rows').onclick = e => {
+    const b = e.target.closest('[data-remove]');
+    if (!b) return;
+    readRuleDraft(); ruleDraft.splice(Number(b.dataset.remove), 1);
+    if (!ruleDraft.length) ruleDraft.push({ a: '', b: '', code: '', text: '' });
+    renderRuleDraft();
+  };
+  $('rules-apply').onclick = () => {
+    readRuleDraft();
+    const v = validateRules(ruleDraft);
+    if (v.error) { $('rules-modal-err').textContent = v.error; return; }
+    const before = JSON.stringify(state.rules);
+    closeMapper();
+    if (JSON.stringify(v.rules) === before) { toast('No change to the rules.'); return; }
+    setRules(v.rules, null);
+    toast(v.rules.length ? v.rules.length + ' rule' + (v.rules.length === 1 ? '' : 's') + ' applied.' : 'Rules cleared. The Rule Members download is off.');
+  };
+}
+const RULES_KIND = 'part-note-code-rules';
+function saveRulesFile() {
+  if (!state.rules.length) return;
+  const d = new Date(), z = n => String(n).padStart(2, '0');
+  const data = {
+    kind: RULES_KIND, tool: APP_NAME + ' ' + APP_VERSION,
+    saved: d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate()) + ' ' + z(d.getHours()) + ':' + z(d.getMinutes()),
+    rules: state.rules.map(r => ({ codes: [r.a, r.b], newCode: r.code, newText: r.text })),
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2) + '\n'], { type: 'application/json' });
+  const a = document.createElement('a'), url = URL.createObjectURL(blob);
+  a.href = url; a.download = 'PartNote_Code_Rules.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+  toast('Saved PartNote_Code_Rules.json');
+}
+async function loadRulesFile(file) {
+  if (!file) return;
+  $('rules-err').textContent = '';
+  try {
+    let d;
+    try { d = JSON.parse(await file.text()); } catch (e) { throw new UserError('"' + file.name + '" is not a rules file. Rules files are saved by this tool with Save rules file.'); }
+    if (!d || d.kind !== RULES_KIND || !Array.isArray(d.rules)) throw new UserError('"' + file.name + '" is not a rules file. Rules files are saved by this tool with Save rules file.');
+    const list = d.rules.map(r => ({ a: r && r.codes ? r.codes[0] : '', b: r && r.codes ? r.codes[1] : '', code: r ? r.newCode : '', text: r ? r.newText : '' }));
+    const v = validateRules(list);
+    if (v.error) throw new UserError('"' + file.name + '" was not loaded. ' + v.error);
+    const replaced = state.rules.length;
+    setRules(v.rules, file.name);
+    toast('Loaded ' + v.rules.length + ' rule' + (v.rules.length === 1 ? '' : 's') + ' from ' + file.name + (replaced ? ', replacing the ' + replaced + ' in use.' : '.'));
+  } catch (e) {
+    $('rules-err').textContent = e instanceof UserError ? e.message : 'The rules file could not be read: ' + (e && e.message ? e.message : e);
+  }
+}
+
+// ── SSAV Output Mode ────────────────────────────────────────────────────────
+function renderMode() {
+  $('ssav-toggle').checked = state.ssav;
+  $('modebar').classList.toggle('on', state.ssav);
+  $('ssav-desc').textContent = state.ssav
+    ? 'On. The tool writes one SSAV file: the EBOM’s lines in the 20-column SSAV layout, A INDENTURE to T HAZARD_CRIT_YN. The EBOM card reads the SSAV input columns.'
+    : 'Off. The tool writes the Joined, Columns and Rule Members files.';
+}
+function setSsav(on) {
+  if (state.busy || state.ssav === on) { renderMode(); return; }
+  state.ssav = on;
+  renderMode();
+  renderCard('ebom');
+  invalidate('SSAV Output Mode was turned ' + (on ? 'on' : 'off') + '.');
+  renderRules();
+  toast('SSAV Output Mode ' + (on ? 'on' : 'off') + '.');
+}
+
+// ── Theme ───────────────────────────────────────────────────────────────────
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  $('theme-select').value = t;
+}
+function initTheme() {
+  let t = null;
+  try { t = localStorage.getItem('pna-theme'); } catch (e) { /* storage blocked */ }
+  if (t !== 'dark' && t !== 'light') t = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  applyTheme(t);
+  $('theme-select').addEventListener('change', e => {
+    applyTheme(e.target.value);
+    try { localStorage.setItem('pna-theme', e.target.value); } catch (err) { /* storage blocked */ }
+  });
+}
+
+// ── Start ───────────────────────────────────────────────────────────────────
+function browserSupported() {
+  try { new DecompressionStream('deflate-raw'); new CompressionStream('deflate-raw'); return true; } catch (e) { return false; }
+}
+function init() {
+  $('ver').textContent = APP_VERSION;
+  initTheme();
+  if (!browserSupported()) {
+    $('compat').hidden = false;
+    $('compat').textContent = 'This browser is too old for this tool. Open the file in Microsoft Edge or Google Chrome (2023 or later), or a current Firefox or Safari.';
+  }
+  wireCard('ebom'); wireCard('trace');
+  renderCard('ebom'); renderCard('trace');
+  $('run-btn').addEventListener('click', run);
+  $('reset-btn').addEventListener('click', () => {
+    if (state.busy) return;
+    state.books = { ebom: null, trace: null };
+    state.maps = { ebom: null, trace: null };
+    state.result = null;
+    $('results').hidden = true;
+    $('run-msg').innerHTML = '';
+    ['ebom', 'trace'].forEach(t => { $('err-' + t).textContent = ''; renderCard(t); });
+    setRules([], null);   // Start over clears the rules too, so they cannot carry into another program unseen
+    renderRun();
+  });
+  $('dl-joined').addEventListener('click', () => downloadView('joined'));
+  $('dl-columns').addEventListener('click', () => downloadView('columns'));
+  $('dl-rules').addEventListener('click', () => downloadView('rules'));
+  $('dl-ssav').addEventListener('click', () => downloadView('ssav'));
+  $('ssav-toggle').addEventListener('change', e => setSsav(e.target.checked));
+  renderMode();
+  $('rules-edit').addEventListener('click', () => { if (!state.busy) openRulesEditor(); });
+  $('rules-load').addEventListener('click', () => { if (!state.busy) $('input-rules').click(); });
+  $('input-rules').addEventListener('change', () => { const f = $('input-rules').files && $('input-rules').files[0]; $('input-rules').value = ''; loadRulesFile(f); });
+  $('rules-save').addEventListener('click', saveRulesFile);
+  renderRules();
+  $('tabs').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (!b) return; state.view.tab = b.dataset.tab; state.view.page = 0; renderPreview(); });
+  $('chips').addEventListener('click', e => { const b = e.target.closest('[data-filter]'); if (!b) return; state.view.filter = b.dataset.filter; state.view.page = 0; renderPreview(); });
+  $('preview').addEventListener('click', e => { const b = e.target.closest('[data-page]'); if (!b || b.disabled) return; state.view.page += Number(b.dataset.page); renderPreview(); });
+  let searchTimer = null;
+  $('search').addEventListener('input', e => { clearTimeout(searchTimer); searchTimer = setTimeout(() => { state.view.q = e.target.value; state.view.page = 0; renderPreview(); }, 150); });
+  $('overlay').addEventListener('click', e => { if (e.target === $('overlay')) closeMapper(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('overlay').hidden) closeMapper(); });
+  renderRun();
+}
+init();
+</script>
+</body>
+</html>
